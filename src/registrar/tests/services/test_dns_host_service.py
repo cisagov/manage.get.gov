@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock, ANY
+from unittest.mock import patch, Mock, ANY, PropertyMock
 from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from httpx import HTTPStatusError
@@ -23,7 +23,7 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
-from registrar.utility.errors import APIError, EnrollmentNotAllowedError
+from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
     create_dns_account,
@@ -462,42 +462,50 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup = Mock()
         self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
-
-        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
-            self.service.enroll_domain(domain)
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
+            with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                self.service.enroll_domain(domain)
 
         self.service.dns_account_setup.assert_called_once_with(domain_name)
         self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
         self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.rainbow.gov", "ns2.rainbow.gov"])
 
+        self.assertEqual(domain.state, Domain.State.READY)
         log_entries = json_log_entries(stream, containing="Successfully enrolled")
         self.assertTrue(log_entries, "Expected a 'Successfully enrolled' log line")
         for entry in log_entries:
             self.assertEqual(entry.get("domain_name"), domain_name)
 
     @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_allowed_domain_enrollment_in_production_succeeds(self):
-        allowed_domain = create_domain(**{"domain_name": "igorville.gov"})
+    def test_enroll_domain_enrollment_in_production_succeeds(self):
+        allowed_domain = create_domain(**{"domain_name": "notigorville.gov"})
 
         mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
         self.service.dns_zone_setup = Mock()
         self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
-        self.service.register_nameservers = Mock()
 
-        self.service.enroll_domain(allowed_domain)
-        self.service.dns_account_setup.assert_called()  # got past allowllist conditional
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
+            self.service.enroll_domain(allowed_domain)
 
-    @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_disallowed_domain_enrollment_in_production_fails(self):
-        not_allowed_domain = create_domain(**{"domain_name": "not-igorville.gov"})
-        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
-        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
-        self.service.dns_account_setup = Mock(return_value="12345")
-
-        with self.assertRaises(EnrollmentNotAllowedError):
-            self.service.enroll_domain(not_allowed_domain)
+        self.service.dns_account_setup.assert_called()
 
     @override_settings(IS_LOCAL=False)
     def test_logging_for_registry_error_for_register_nameservers(self):
@@ -972,6 +980,23 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
         self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
 
+    def update_db_record_ignores_fields_not_in_allow_list(self):
+        """Only allow-listed fields are copied from the Cloudflare response"""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+
+        payload = {"result": {**self.updated_record_data["result"], "type": "TXT"}}
+        DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, payload)
+
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.type, "A")
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+
     def test_update_db_record_with_error_fails(self):
         """Preserve original DNS record data when update fails."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
@@ -993,7 +1018,8 @@ class TestDnsHostServiceDB(TestCase):
         # Record data should still preserve original vendor record data on failed update
         self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
         self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        # Cloudflare "auto" (1) will be stored as 300 in our DB
+        self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):

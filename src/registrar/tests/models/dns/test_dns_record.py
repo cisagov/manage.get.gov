@@ -536,3 +536,9 @@ class DnsRecordTest(TestCase):
         # self.dns_record is blank per setUp, so it is ordered first
         # Of the two A records, magic is before www, so...
         self.assertEqual(ordered, [self.dns_record, a_record, a_root, aaaa, mx, txt])
+
+    def test_ttl_of_one_is_saved_as_300(self):
+        """Cloudflare's auto TTL (1) is stored in our DB as 300."""
+        record = DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=1, content="192.0.2.1")
+        record.refresh_from_db()
+        self.assertEqual(record.ttl, 300)

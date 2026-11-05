@@ -623,16 +623,8 @@ class DomainExport(BaseExport):
         # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
         return {
             "converted_org_type": Case(
-                # When portfolio is present and is_election_board is True
+                # When portfolio is present, use portfolio organization type
                 When(
-                    portfolio__isnull=False,
-                    portfolio__organization_type__isnull=False,
-                    is_election_board=True,
-                    then=Concat(F("portfolio__organization_type"), Value("_election")),
-                ),
-                # When portfolio is present and is_election_board is False or None
-                When(
-                    Q(is_election_board=False) | Q(is_election_board__isnull=True),
                     portfolio__isnull=False,
                     portfolio__organization_type__isnull=False,
                     then=F("portfolio__organization_type"),
@@ -880,15 +872,12 @@ class DomainExport(BaseExport):
         if first_ready_on is None:
             first_ready_on = "(blank)"
 
-        # organization_type has organization_type AND is_election
-        # domain_org_type includes "- Election" org_type variants
-
         domain_org_type = model.get("converted_org_type")
-        human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
+        human_readable_domain_org_type = DomainRequest.OrganizationChoices.get_org_label(domain_org_type)
         domain_federal_type = model.get("converted_federal_type")
         human_readable_domain_federal_type = BranchChoices.get_branch_label(domain_federal_type)
         domain_type = human_readable_domain_org_type
-        if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
+        if domain_federal_type and domain_org_type == DomainRequest.OrganizationChoices.FEDERAL:
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
         security_contact_email = model.get("security_contact_email")
@@ -959,7 +948,7 @@ class DomainExport(BaseExport):
 
     @classmethod
     def get_sliced_domains(cls, filter_condition):
-        """Get filtered domains counts sliced by org type and election office.
+        """Get filtered domains counts sliced by org type.
         Pass distinct=True when filtering by permissions so we do not to count multiples
         when a domain has more that one manager.
         """
@@ -1008,7 +997,6 @@ class DomainExport(BaseExport):
             .distinct()
             .count()
         )
-        election_board = domain_informations.filter(is_election_board=True).distinct().count()
 
         return [
             domains_count,
@@ -1020,7 +1008,6 @@ class DomainExport(BaseExport):
             city,
             special_district,
             school_district,
-            election_board,
         ]
 
 
@@ -1637,7 +1624,6 @@ class DomainManaged(DomainExport):
                 "City",
                 "Special district",
                 "School district",
-                "Election office",
             ]
         )
         csv_writer.writerow(managed_domains_sliced_at_start_date)
@@ -1661,7 +1647,6 @@ class DomainManaged(DomainExport):
                 "City",
                 "Special district",
                 "School district",
-                "Election office",
             ]
         )
         csv_writer.writerow(managed_domains_sliced_at_end_date)
@@ -1757,7 +1742,6 @@ class DomainUnmanaged(DomainExport):
                 "City",
                 "Special district",
                 "School district",
-                "Election office",
             ]
         )
         csv_writer.writerow(unmanaged_domains_sliced_at_start_date)
@@ -1781,7 +1765,6 @@ class DomainUnmanaged(DomainExport):
                 "City",
                 "Special district",
                 "School district",
-                "Election office",
             ]
         )
         csv_writer.writerow(unmanaged_domains_sliced_at_end_date)
@@ -1940,7 +1923,7 @@ class DomainRequestExport(BaseExport):
 
     @classmethod
     def get_sliced_requests(cls, filter_condition):
-        """Get filtered requests counts sliced by org type and election office."""
+        """Get filtered requests counts sliced by org type."""
         requests = DomainRequest.objects.all().filter(**filter_condition).distinct()
         requests_count = requests.count()
         federal = (
@@ -1981,7 +1964,6 @@ class DomainRequestExport(BaseExport):
             .distinct()
             .count()
         )
-        election_board = requests.filter(is_election_board=True).distinct().count()
 
         return [
             requests_count,
@@ -1993,7 +1975,6 @@ class DomainRequestExport(BaseExport):
             city,
             special_district,
             school_district,
-            election_board,
         ]
 
     @classmethod
@@ -2026,12 +2007,6 @@ class DomainRequestExport(BaseExport):
         requested_domain = model.get("requested_domain__name")
         requested_domain_name = requested_domain if requested_domain else "No requested domain"
 
-        # Handle the election field. N/A if None, "Yes"/"No" if boolean
-        human_readable_election_board = "N/A"
-        is_election_board = model.get("is_election_board")
-        if is_election_board is not None:
-            human_readable_election_board = "Yes" if is_election_board else "No"
-
         # Handle the additional details field. Pipe seperated.
         cisa_rep_first = model.get("cisa_representative_first_name")
         cisa_rep_last = model.get("cisa_representative_last_name")
@@ -2054,7 +2029,6 @@ class DomainRequestExport(BaseExport):
             "Domain request": requested_domain_name,
             "Region": region,
             "Status": status_display,
-            "Election office": human_readable_election_board,
             "Federal type": human_readable_federal_type,
             "Domain type": human_readable_org_type,
             "Portfolio": portfolio_display,
@@ -2113,7 +2087,6 @@ class DomainRequestDataType(DomainRequestExport):
             "Domain request",
             "Region",
             "Status",
-            "Election office",
             "Federal type",
             "Domain type",
             "Request additional details",
@@ -2262,7 +2235,6 @@ class DomainRequestDataFull(DomainRequestExport):
             "Federal type",
             "Federal agency",
             "Organization name",
-            "Election office",
             "City",
             "State/territory",
             "Region",

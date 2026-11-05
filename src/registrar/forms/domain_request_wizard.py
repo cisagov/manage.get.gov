@@ -93,8 +93,8 @@ class RequestingEntityForm(RegistrarForm):
             self.fields["sub_organization"].queryset = queryset
 
             # Modify the choices to include "other" so that form can display options properly
-            self.fields["sub_organization"].choices = [(obj.id, str(obj)) for obj in queryset] + [
-                ("other", "Other (enter your suborganization manually)")
+            self.fields["sub_organization"].choices = [("other", "Other (enter your suborganization manually)")] + [
+                (obj.id, str(obj)) for obj in queryset
             ]
 
     @classmethod

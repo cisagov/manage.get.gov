@@ -13,7 +13,6 @@ from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
-from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
@@ -49,7 +48,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
-    EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -861,7 +859,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -1078,6 +1075,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record = None
         return is_first_record
 
+    def _handle_delete(self, request, x_zone_id: str, dns_record: DnsRecord):
+        """Handle deletion for DNS records via htmx."""
+
+        self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
+        messages.success(request, "The DNS record for this domain has been deleted.")
+
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
@@ -1100,18 +1103,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_first_record = False
         response_form = None
         headers = None
+        # set domain pk in the session for the permissions checks(alert messages)
+        request.session["domain_pk"] = self.object.id
         is_edit = False
 
+        self.dns_host_service = DnsHostService()
         try:
-            allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
-            if settings.IS_PRODUCTION and self.object.name not in allowlist:
-                verb = "is" if len(allowlist) == 1 else "are"
-                allowed_domains_string = f"{', '.join(allowlist)} {verb}"
-                raise EnrollmentNotAllowedError(
-                    f"Create/update/delete dns record called for domain {self.object.name}. "
-                    f"Only {allowed_domains_string} is allowed in production right now."
-                )
-
             x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if x_zone_id is None:
                 messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
@@ -1165,12 +1162,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             headers=headers,
             status=200,
         )
-
-    def _handle_delete(self, request, x_zone_id: str, dns_record: DnsRecord):
-        """Handle deletion for DNS records via htmx."""
-
-        self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
-        messages.success(request, "The DNS record for this domain has been deleted.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
