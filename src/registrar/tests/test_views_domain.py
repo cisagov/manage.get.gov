@@ -12,7 +12,7 @@ from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.domain import DomainDNSRecordsView
-from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_domain_manager_user, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
@@ -34,6 +34,7 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainInvitation,
+    UserDomainRole,
     AllowedEmail,
     Contact,
     PublicContact,
@@ -1667,17 +1668,28 @@ class TestDomainManagers(TestDomainOverview):
         DomainInvitation.objects.filter(email=email_address).delete()
 
     @less_console_noise_decorator
-    def test_domain_invitation_cancel_no_permissions(self):
-        """Posting to the cancel view as a different user should fail."""
+    def test_domain_invitation_cancel_no_permission_forbidden(self):
+        """Logged in user (as domain manager or staff managing domain) cannot cancel domain they don't manage"""
         email_address = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
+        user_role, _ = UserDomainRole.objects.get_or_create(domain=self.domain, email=email_address)
 
+        # Domain manager forbidden without user domain role
+        other_domain_user = create_domain_manager_user()
+        other_domain_user.save()
+        self.client.force_login(other_domain_user)
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            result = self.client.post(reverse("invitation-cancel", kwargs={"user_domain_role_pk": user_role.id}))
+
+        self.assertEqual(result.status_code, 403)
+
+        # Staff managing domain forbidden without user domain role
         other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"user_domain_role_pk": user_role.id}))
 
         self.assertEqual(result.status_code, 403)
 
