@@ -10,10 +10,10 @@
 
 ```bash
 cd src
-docker compose run app bash -c "pipenv lock && pipenv requirements > requirements.txt"
+docker compose run app bash -c "pipenv lock && pipenv requirements --hash > requirements.txt"
 ```
 
-This will generate a new [Pipfile.lock](../../../src/Pipfile.lock) and create a new [requirements.txt](../../../src/requirements.txt). It will not install anything.
+This will generate a new [Pipfile.lock](../../../src/Pipfile.lock) and a hash-pinned [requirements.txt](../../../src/requirements.txt). It will not install anything.
 
 It is necessary to use `bash -c` because `run pipenv requirements` will not recognize that it is running non-interactively and will include garbage formatting characters.
 
@@ -43,7 +43,7 @@ If you're updating the Python version, follow these steps:
 
 ```bash
 cd src
-docker compose run app bash -c "pipenv lock && pipenv requirements > requirements.txt"
+docker compose run app bash -c "pipenv lock && pipenv requirements --hash > requirements.txt"
 ```
 
 7. Run `docker compose build` a second time to pick up the freshly generated lock file.

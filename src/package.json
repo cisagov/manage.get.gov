@@ -20,6 +20,7 @@
     "@uswds/compile": "1.2.1",
     "babel-loader": "^10.1.1",
     "sass-loader": "^12.6.0",
+    "terser-webpack-plugin": "^5.6.1",
     "webpack": "^5.105.0",
     "webpack-stream": "^7.0.0"
   },
