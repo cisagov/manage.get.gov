@@ -1551,6 +1551,7 @@ class DomainRequest(TimeStampedModel):
         if self.state_tribe_id:
             return self.state_tribe.tribe_name
         return self.tribe_name
+
     # NOTE: This will be used in 5502
     # @property
     # def tribe_display_name(self):

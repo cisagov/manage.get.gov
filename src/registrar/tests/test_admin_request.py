@@ -2041,6 +2041,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "current_websites",
             "alternative_domains",
             "status_history",
+            "tribe_recognition",
             "id",
             "created_at",
             "updated_at",
@@ -2096,6 +2097,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "last_submitted_date",
             "last_status_update",
             "notes",
+            "tribe",
             "alternative_domains",
         ]
         self.assertEqual(readonly_fields, expected_fields)
@@ -2122,6 +2124,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "status_history",
+                "tribe_recognition",
                 "federal_agency",
                 "requester",
                 "about_your_organization",
@@ -2161,6 +2164,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "status_history",
+                "tribe_recognition",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2188,6 +2192,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "current_websites",
                 "alternative_domains",
                 "status_history",
+                "tribe_recognition",
                 "federal_agency",
                 "requester",
                 "about_your_organization",
@@ -2226,6 +2231,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "organization_type",
                 "federal_type",
                 "federal_agency",
+                "tribe",
                 "tribe_name",
                 "federally_recognized_tribe",
                 "state_recognized_tribe",
