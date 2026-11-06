@@ -1103,8 +1103,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_first_record = False
         response_form = None
         headers = None
-        # set domain pk in the session for the permissions checks(alert messages)
-        request.session["domain_pk"] = self.object.id
         is_edit = False
 
         self.dns_host_service = DnsHostService()

@@ -518,7 +518,13 @@ export function initDNSRecordTabOrder() {
         }
     }
 
+    function isModalOpen(){
+        const modal = document.querySelector(".usa-modal-wrapper.is-visible");
+        return modal;
+    }
+
     table.addEventListener('click', (e) => {
+        if(isModalOpen()) return;
         const trigger = e.target.closest('[data-action="edit"], [data-action="form-cancel"]');
         if (!trigger) return;
         const recordId = trigger.dataset.recordId;
@@ -760,6 +766,20 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
     }
 }
 
+// TXT content can be up to 4080 characters. Only this many characters of it are
+// shown in the text preview (and so read by screen readers); 
+// the full value stays in the input.
+const TXT_PREVIEW_CONTENT_MAX = 200;
+
+// Shortens text to `max` characters and adds an ellipsis if anything was cut. 
+function truncatePreviewContent(text, max) {
+    if (text.length <= max) {
+        return text
+    }
+    let truncated = text.substring(0, max).replace(/\.+$/, "");
+    return truncated + "…";
+}
+
 /*
 Recomputes the live preview sentence for one DNS record form.
 "@" is the root domain, so there's a conditional for that (via data-domain-name)
@@ -804,12 +824,29 @@ function updateDNSRecordPreview(scope, config) {
     if (!displayName) {
         displayName = "[name]"
     }
-    const values = {
-        name: displayName,
-        content: contentField?.value.trim() || `[${contentPlaceholder}]`,
+
+    let displayContent = contentField?.value.trim();
+    let hideClosingPeriod = false;
+
+    if (displayContent && typeField.value == "TXT") {
+        if (displayContent.endsWith(".") || displayContent.length > TXT_PREVIEW_CONTENT_MAX) {
+            hideClosingPeriod = true;
+        }
+
+        displayContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
     }
 
-    renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
+    const values = {
+        name: displayName,
+        content: displayContent || `[${contentPlaceholder}]`,
+    }
+
+    let previewTemplate = info.previewTemplate;
+    if (hideClosingPeriod) {
+        previewTemplate = previewTemplate.replace(/\.$/, "")
+    }
+
+    renderDNSRecordPreviewText(previewText, previewTemplate, values);
 }
 /* 
 Wires up the live preview on every DNS record form (for both add and edit row).
