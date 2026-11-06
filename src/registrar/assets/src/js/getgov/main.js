@@ -21,6 +21,7 @@ import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
 import { initDynamicDNSRecordFormFields, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus, initDNSRecordCancelModal, initDeleteDnsRecord, initDNSRecordPreview } from './domain-dns-record-content.js';
+import { initializeTribalGovernmentToggle } from './tribal-govt-form.js';
 
 initDomainValidators();
 
@@ -79,6 +80,9 @@ initDNSRecordAlertFocus()
 initDNSRecordPreview()
 // Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
 initDNSRecordCancelModal()
+
+// Init the state/federal tribe dropdown
+initializeTribalGovernmentToggle();
 
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();

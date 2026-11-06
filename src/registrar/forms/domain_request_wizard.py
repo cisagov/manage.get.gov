@@ -15,7 +15,17 @@ from registrar.forms.utility.wizard_form_helper import (
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency, Suborganization
+from registrar.models import (
+    Contact,
+    DomainRequest,
+    DraftDomain,
+    Domain,
+    FederalAgency,
+    FederalTribe,
+    StateTribe,
+    Suborganization,
+)
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from django.core.exceptions import ValidationError
@@ -274,12 +284,68 @@ class TribalGovernmentForm(RegistrarForm):
         required=False,
     )
 
+    # To be legacy free text field - used when is_tribal_embd flag is off
     tribe_name = forms.CharField(
         label="Name of tribe",
         error_messages={"required": "Enter the tribe you represent."},
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
+
+    # To replace tribe_name when is_tribal_embd is on
+    federal_tribe = forms.ModelChoiceField(
+        label="Which tribe do you represent?",
+        required=False,
+        queryset=FederalTribe.objects.none(),
+        widget=ComboboxWidget,
+    )
+
+    # To replace tribe_name when is_embd_tribal is on
+    state_tribe = forms.ModelChoiceField(
+        label="Which tribe do you represent?",
+        required=False,
+        queryset=StateTribe.objects.none(),
+        widget=ComboboxWidget,
+    )
+
+    @property
+    def tribe_dropdown_enabled(self):
+        """
+        The tribal dropdown will replace the free text field when the
+        is_embd_tribal flag is on
+        """
+        requester = getattr(self.domain_request, "requester", None)
+        if not requester:
+            return False
+        return flag_is_active_for_user(requester, "is_embd_tribal")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # is_embd_tribal flag OFF: legacy flow, free text
+        # Also droppingt he dropdown data so it stays out of
+        # cleaned_data so it wont overwrrite the FKs
+        if not self.tribe_dropdown_enabled:
+            del self.fields["federal_tribe"]
+            del self.fields["state_tribe"]
+            return
+
+        # is_embd_tribal flag is ON, so the free text field goes away
+        del self.fields["tribe_name"]
+
+        # Build dropdown for both tribe tables
+        # queryset: what django validates the submitted id against
+        # choices: what user actually sees, with delta for tribes that alr have a portfolio
+        for field_name, model in (("federal_tribe", FederalTribe), ("state_tribe", StateTribe)):
+            choices = [("", "- Select -")]
+            for option in model.get_dropdown_options():
+                name = option["name"]
+                if option["has_existing_portfolio"]:
+                    name = f"∆ {name}"
+                choices.append((option["id"], name))
+
+            self.fields[field_name].queryset = model.objects.all()
+            self.fields[field_name].choices = choices
 
     def clean(self):
         """Needs to be either state or federally recognized."""
@@ -297,6 +363,22 @@ class TribalGovernmentForm(RegistrarForm):
                 ),
                 code="invalid",
             )
+
+        if not self.tribe_dropdown_enabled:
+            return
+
+        # If Federal AND State are checked, we show Federal Tribes
+        # If someone picks a tribe and then switches which kind of tribe
+        # they are, the now hidden dropdown still keeps what was "picked"
+        # Only one tribe can be saved, so we drop the prev "picK" otherwise the save will fail
+        if self.cleaned_data.get("federally_recognized_tribe"):
+            self.cleaned_data["state_tribe"] = None
+            if not self.cleaned_data.get("federal_tribe"):
+                self.add_error("federal_tribe", "Select the tribe you represent")
+        elif self.cleaned_data.get("state_recognized_tribe"):
+            self.cleaned_data["federal_tribe"] = None
+            if not self.cleaned_data.get("state_tribe"):
+                self.add_error("state_tribe", "Select the tribe you represent")
 
 
 class OrganizationContactForm(RegistrarForm):
