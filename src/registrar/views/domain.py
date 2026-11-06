@@ -1002,12 +1002,25 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": None,
                 "domain": self.object,
                 "form": form or DomainDNSRecordForm(),
-                "is_edit": False,
+                "edit_form_id": None,
                 "is_first_record": False,
             },
             headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
             status=status,
         )
+
+    def _delete_response(self, request, *, failed=False):
+        """
+        Response for a delete request (empty body, no row markup).
+
+        On success, htmx swaps the row out.
+        On failure, leave the DOM untouched.
+        """
+        if failed:
+            headers = {"HX-Reswap": "none", "HX-trigger": json.dumps({"messagesRefresh": ""})}
+        else:
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+        return TemplateResponse(request, "empty_response.html", {"dns_record": None}, headers=headers, status=200)
 
     def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
@@ -1045,7 +1058,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     "domain": self.object,
                     "form": DomainDNSRecordForm(),
                     "nameservers": None,
-                    "is_edit": True,
+                    "edit_form_id": self.dns_record.id,
                     "is_first_record": False,
                     "update_cells": False,
                 },
@@ -1054,13 +1067,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             )
 
         # Add record form
-        return TemplateResponse(
-            request,
-            "domain_dns_record_form_response.html",
-            {"dns_record": None, "domain": self.object, "form": form, "is_edit": False, "is_first_record": False},
-            headers={"HX-TRIGGER": "messagesRefresh"},
-            status=200,
-        )
+        return self._error_response(request, form=form)
 
     def _handle_create(self, request, x_zone_id, form_record_data):
         """Create a new DNS record and prepare the DB-backed row for rendering."""
@@ -1105,7 +1112,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         headers = None
         # set domain pk in the session for the permissions checks(alert messages)
         request.session["domain_pk"] = self.object.id
-        is_edit = False
+        edit_form_id = None
 
         self.dns_host_service = DnsHostService()
         try:
@@ -1123,7 +1130,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if self.dns_record:
-                    is_edit = True
+                    edit_form_id = self.dns_record.id
                     self._handle_edit(request, x_zone_id, form_record_data)
 
                 # CREATE
@@ -1131,6 +1138,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
+            if delete_record:
+                return self._delete_response(request, failed=True)
             response_form = form  # retain form data when experiencing external DNS service error
             if self.dns_record:
                 self._attach_form(dns_record=self.dns_record, form=form)
@@ -1141,13 +1150,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_host_service.client.close()
 
         if delete_record:
-            return TemplateResponse(
-                request,
-                "empty_response.html",
-                {"dns_record": None},
-                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
-                status=200,
-            )
+            return self._delete_response(request)
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
@@ -1156,8 +1159,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "domain": self.object,
                 "form": response_form,
                 "is_first_record": is_first_record,
-                "update_cells": is_edit and self.dns_record,
-                "is_edit": is_edit,
+                "update_cells": edit_form_id is not None and self.dns_record,
+                "edit_form_id": edit_form_id,
             },
             headers=headers,
             status=200,
