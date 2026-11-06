@@ -2,6 +2,10 @@
 
 npm install
 npm rebuild
+# Pre-fetch Chromium for the playwright service (no-op if already cached).
+if [ -d "./node_modules/@playwright/test" ]; then
+  npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+fi
 dir=./registrar/assets
 if [ -d "$dir" ]
 then
