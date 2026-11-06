@@ -1,4 +1,4 @@
-FROM python:3.14@sha256:22caa054c0d309b1eee6f448326a8821a674a75b98653247fe706db90491fc87
+FROM python:3.14@sha256:22caa054c0d309b1eee6f448326a8821a674a75b98653247fe706db90491fc87 # 3.14.10
 
 RUN apt-get update && apt-get install -y postgresql-client
 
