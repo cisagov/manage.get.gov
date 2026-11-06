@@ -24,14 +24,18 @@
     </legend>
     <p><i>Organizations marked with a delta symbol don't accept requests through this form (<span class="text-base">∆</span>).</i></p>
 
-    <p>Select your tribe<abbr class="usa-hint usa-hint--required" title="required">*</abbr>.</p>
+    <p class="margin-bottom-05">Select your tribe<abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
 
     <div id="federal-tribe-field" class="display-none">
-      {% input_with_errors forms.0.federal_tribe %}
+      {% with add_label_class="usa-sr-only" %}
+        {% input_with_errors forms.0.federal_tribe %}
+      {% endwith %}
     </div>
 
     <div id="state-tribe-field" class="display-none">
-      {% input_with_errors forms.0.state_tribe %}
+      {% with add_label_class="usa-sr-only"%}
+        {% input_with_errors forms.0.state_tribe %}
+      {% endwith %}
     </div>
   </div>
 
