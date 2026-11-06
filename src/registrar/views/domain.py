@@ -1002,7 +1002,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": None,
                 "domain": self.object,
                 "form": form or DomainDNSRecordForm(),
-                "is_edit": False,
+                "edit_form_id": None,
                 "is_first_record": False,
             },
             headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
@@ -1058,7 +1058,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     "domain": self.object,
                     "form": DomainDNSRecordForm(),
                     "nameservers": None,
-                    "is_edit": True,
+                    "edit_form_id": self.dns_record.id,
                     "is_first_record": False,
                     "update_cells": False,
                 },
@@ -1112,7 +1112,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         headers = None
         # set domain pk in the session for the permissions checks(alert messages)
         request.session["domain_pk"] = self.object.id
-        is_edit = False
+        edit_form_id = None
 
         self.dns_host_service = DnsHostService()
         try:
@@ -1130,7 +1130,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if self.dns_record:
-                    is_edit = True
+                    edit_form_id = self.dns_record.id
                     self._handle_edit(request, x_zone_id, form_record_data)
 
                 # CREATE
@@ -1159,8 +1159,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "domain": self.object,
                 "form": response_form,
                 "is_first_record": is_first_record,
-                "update_cells": is_edit and self.dns_record,
-                "is_edit": is_edit,
+                "update_cells": edit_form_id is not None and self.dns_record,
+                "edit_form_id": edit_form_id,
             },
             headers=headers,
             status=200,
