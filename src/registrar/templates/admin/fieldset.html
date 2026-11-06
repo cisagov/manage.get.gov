@@ -41,7 +41,7 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
                                 {{ field.field }}{{ field.label_tag }}
                                 {% endblock field_checkbox%}
                             {% else %}
-                                {{ field.label_tag }}
+                                {% block field_label %}{{ field.label_tag }}{% endblock field_label %}
                                 {% if field.is_readonly %}
                                     {# .gov override #}
                                     {% block field_readonly %}

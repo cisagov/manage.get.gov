@@ -929,8 +929,14 @@ class DomainRequestAdminForm(forms.ModelForm):
     class Meta:
         model = models.DomainRequest
         fields = "__all__"
-        # We will build a single selector for the tribe, so don't auto build fields for the following model fields:
-        exclude = ("state_tribe", "federal_tribe", "tribe_name")
+        # We will build a single selector for the tribe, and calculate the recognition status, so don't auto build fields for the following model fields:
+        exclude = (
+            "state_tribe",
+            "federal_tribe",
+            "tribe_name",
+            "federally_recognized_tribe",
+            "state_recognized_tribe",
+        )
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
@@ -960,6 +966,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         domain_request = kwargs.get("instance")
         if "tribe" in self.fields:
             self._initialize_tribe_field(domain_request)
+        self._initialize_tribe_recognition(domain_request)
 
         if domain_request and domain_request.pk:
             current_state = domain_request.status
@@ -1007,6 +1014,36 @@ class DomainRequestAdminForm(forms.ModelForm):
                 self.initial["tribe"] = f"federal:{domain_request.federal_tribe_id}"
             elif domain_request.state_tribe_id:
                 self.initial["tribe"] = f"state:{domain_request.state_tribe_id}"
+
+    def _initialize_tribe_recognition(self, domain_request):
+        """Prep the "Federally recognized/State recognized and "Yes" based on the selection"""
+        self._initialize_tribe_to_fed_or_state(domain_request)
+        self.tribe_recognition_label = "Federally recognized tribe"
+        self.tribe_recognition_value = ""
+
+        if self.selected_tribe_type == "state":
+            self.tribe_recognition_label = "State recognized tribe"
+
+        if self.selected_tribe_type:
+            self.tribe_recognition_value = "Yes"
+        # Currently only "Federally recognized" and "State recognized" with "Yes" or blank
+
+    def _initialize_tribe_to_fed_or_state(self, domain_request):
+        """Set the selected tribe to federal or state"""
+        self.selected_tribe_kind = None
+        if "tribe" in self.fields:
+            selection = self["tribe"].value()
+            if selection:
+                # First part is tribe type, second is key
+                tribe_type = selection.split(":", 1)[0]
+                if tribe_type in ("federal", "state"):
+                    self.selected_tribe_kind = tribe_type
+        elif domain_request:
+            if domain_request.state_tribe_id:
+                self.selected_tribe_kind = "state"
+            elif domain_request.federal_tribe_id:
+                self.selected_tribe_kind = "federal"
+            # Avoid tribe_name legacy field
 
     def get_custom_field_transitions(self, instance, field):
         """Custom implementation of get_available_FIELD_transitions
@@ -1091,13 +1128,33 @@ class DomainRequestAdminForm(forms.ModelForm):
             except model.DoesNotExist:
                 self.add_error("tribe", "The selected tribe doesn't exist. Please select another tribe.")
                 return
-        # Assign the found tribe to the correct field, and clear the other link
+        self._set_tribe(tribe, tribe_type, cleaned_data)
+
+    def _set_tribe(self, tribe, tribe_type, cleaned_data):
+        """Keep the Domain Request tribe links, organization name, and recognition flags consistent."""
+        previous_tribe = self.instance.federal_tribe_id or self.instance.state_tribe_id
+        # If state, otherwise federal
         if tribe_type == "state":
             self.instance.state_tribe = tribe
             self.instance.federal_tribe = None
         else:
             self.instance.state_tribe = None
             self.instance.federal_tribe = tribe
+
+        # Don't handle previous free text tribe entries (just selected tribes)
+        if tribe or previous_tribe:
+            if tribe:
+                selected_tribe_name = str(tribe)
+                self.instance.organization_name = selected_tribe_name
+                self.instance.federally_recognized_tribe = tribe_type == "federal"
+                self.instance.state_recognized_tribe = tribe_type == "state"
+            else:
+                self.instance.organization_name = ""
+                self.instance.federally_recognized_tribe = None
+                self.instance.state_recognized_tribe = None
+
+            if "organization_name" in self.fields:
+                cleaned_data["organization_name"] = self.instance.organization_name
 
     def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
         """
@@ -4025,8 +4082,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "federal_type",
                     "federal_agency",
                     "tribe",
-                    "federally_recognized_tribe",
-                    "state_recognized_tribe",
+                    "tribe_recognition",
                     "about_your_organization",
                 ],
             },
@@ -4107,6 +4163,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "current_websites",
         "alternative_domains",
         "status_history",
+        "tribe_recognition",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -4241,6 +4298,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return obj.tribe_display_name
         else:
             return ""
+
+    @admin.display(description="Tribe recognition", empty_value="")
+    def tribe_recognition(self, obj):
+        """The template displays whether it is state or federally recognized."""
+        return ""
 
     def _has_version_conflict(self, request, obj):
         """
@@ -4473,6 +4535,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
+        organization_type = request.POST.get("organization_type")
+        # Set the organization type for federal/state tribes if it exists
+        if organization_type is None and obj:
+            organization_type = obj.organization_type
+        if organization_type == DomainRequest.OrganizationChoices.TRIBAL:
+            readonly_fields.append("organization_name")
 
         # Check if the requester is restricted
         if obj and obj.requester.status == models.User.RESTRICTED:
