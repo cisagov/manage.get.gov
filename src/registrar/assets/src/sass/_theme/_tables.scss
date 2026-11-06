@@ -224,6 +224,14 @@ th {
     td:nth-child(5){
       width:15%;
     }
-
+   
+    @media (mobile-lg) {
+      th{
+        width:100%;
+      }
+      td{
+        width:100%;
+      }
+    }
   }
  
