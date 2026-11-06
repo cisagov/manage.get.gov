@@ -1012,8 +1012,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def _delete_response(self, request, *, failed=False):
         """
         Response for a delete request (empty body, no row markup).
-        
-        On success, htmx swaps the row out. 
+
+        On success, htmx swaps the row out.
         On failure, leave the DOM untouched.
         """
         if failed:
