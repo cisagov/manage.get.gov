@@ -860,7 +860,7 @@ export function initDNSRecordPreview() {
 }
 
 export function initDeleteDnsRecord() {
-    const table = document.querySelector("dnsrecords-table");
+    const table = document.querySelector(".dnsrecords-table");
 
     table?.addEventListener("click", (e) => {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
@@ -875,7 +875,7 @@ export function initDeleteDnsRecord() {
         const modalDeleteButton = document.getElementById("confirm-delete-record-button")
 
         const handleDelete = (e) => {
-            const table = document.querySelector("dnsrecords-table");
+            const table = document.querySelector(".dnsrecords-table");
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
             console.log("in handle, ready to close modal")
