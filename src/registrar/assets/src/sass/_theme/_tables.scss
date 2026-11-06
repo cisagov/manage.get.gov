@@ -226,10 +226,10 @@ th {
     }
    
     @media (mobile-lg) {
-      th{
+      th:nth-child(n){
         width:100%;
       }
-      td{
+      td:nth-child(n){
         width:100%;
       }
     }
