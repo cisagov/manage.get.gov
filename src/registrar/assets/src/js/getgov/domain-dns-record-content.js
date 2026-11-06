@@ -518,7 +518,13 @@ export function initDNSRecordTabOrder() {
         }
     }
 
+    function isModalOpen(){
+        const modal = document.querySelector(".usa-modal-wrapper.is-visible");
+        return modal;
+    }
+
     table.addEventListener('click', (e) => {
+        if(isModalOpen()) return;
         const trigger = e.target.closest('[data-action="edit"], [data-action="form-cancel"]');
         if (!trigger) return;
         const recordId = trigger.dataset.recordId;
