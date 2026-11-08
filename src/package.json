@@ -15,7 +15,7 @@
     "sass": "^1.107.1"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.10",
+    "@babel/core": "^8.1.0",
     "@babel/preset-env": "^8.0.7",
     "@uswds/compile": "1.2.1",
     "babel-loader": "^10.1.1",
