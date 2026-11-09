@@ -6,7 +6,6 @@ from registrar import models
 from registrar.utility.constants import BranchChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from bs4 import BeautifulSoup
@@ -14,6 +13,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
     DomainInvitationAdmin,
+    DnsRecordAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -40,6 +40,7 @@ from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DnsRecord,
     DraftDomain,
     User,
     DomainInvitation,
@@ -73,6 +74,7 @@ from .common import (
     GenericTestHelper,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.enums import DNSRecordTypes
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
@@ -80,6 +82,7 @@ from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
 from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
+from waffle.testutils import override_flag
 
 import logging
 
@@ -2882,7 +2885,6 @@ class TestDomainInformationAdmin(TestCase):
                 "portfolio_zipcode",
                 "portfolio_urbanization",
                 "other_contacts",
-                "is_election_board",
                 "federal_agency",
                 "requester",
                 "type_of_work",
@@ -5383,3 +5385,28 @@ class TestAdminLogin(TestCase):
         self.client.force_login(user)
         response = self.client.get("/admin/login/")
         self.assertContains(response, user.get_username(), status_code=200)
+
+
+class TestDnsRecordAdmin(TestCase):
+    """DNS Records in /admin are read-only"""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = DnsRecordAdmin(model=DnsRecord, admin_site=AdminSite())
+        self.request = RequestFactory().get("/admin/registrar/dnsrecord/")
+        self.mx_record = DnsRecord(type=DNSRecordTypes.MX, name="example.gov", priority=10)
+        self.a_record = DnsRecord(type=DNSRecordTypes.A, name="www")
+
+    def test_all_displayed_fields_are_read_only_success(self):
+        for record in (self.mx_record, self.a_record):
+            fields = self.admin.get_fields(self.request, record)
+            readonly = self.admin.get_readonly_fields(self.request, record)
+            self.assertEqual(set(fields) - set(readonly), set())
+
+    def test_mx_record_displays_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.mx_record)
+        self.assertIn("priority", fields)
+
+    def test_a_record_does_not_display_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.a_record)
+        self.assertNotIn("priority", fields)

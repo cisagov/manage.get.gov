@@ -126,13 +126,14 @@ def create_portfolio_permission_or_invitation(
                 additional_permissions=additional_permissions,
             )
             # Temporary support for legacy email invitation flows.
-            _save_legacy_portfolio_invitation(
-                email=email,
-                portfolio=portfolio,
-                user=requested_user,
-                roles=roles,
-                additional_permissions=additional_permissions,
-            )
+            if flag_is_active_for_user(requestor, "legacy_invitations"):
+                _save_legacy_portfolio_invitation(
+                    email=email,
+                    portfolio=portfolio,
+                    user=requested_user,
+                    roles=roles,
+                    additional_permissions=additional_permissions,
+                )
             send_invitation_email = _must_send_portfolio_permission_email(requested_user, send_email)
             portfolio_admin_notifications_sent = True
             if send_invitation_email:
@@ -351,12 +352,14 @@ def create_domain_role_or_invitation(
                 user=requested_user,
                 role=role,
             )
+
             # Temporary support for legacy invitations
-            _save_legacy_domain_invitation(
-                email=email,
-                domain=domain,
-                user=requested_user,
-            )
+            if flag_is_active_for_user(requestor, "legacy_invitations"):
+                _save_legacy_domain_invitation(
+                    email=email,
+                    domain=domain,
+                    user=requested_user,
+                )
             if send_invitation_email:
                 _set_domain_invitation_details(domain_role, requestor)
 

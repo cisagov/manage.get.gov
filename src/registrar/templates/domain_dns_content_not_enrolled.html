@@ -1,0 +1,44 @@
+{% load static field_helpers %}
+<h1>DNS</h1>
+
+{% if domain.is_using_external_hosting and is_domain_manager %}
+    {% include "includes/banner-external-dns-hosting.html" with banner_external_hosting_class="margin-top-205" %}
+{% endif %}
+
+<p>The Domain Name System (DNS) is the internet service that translates your domain name into an IP address. Before your .gov domain can be used, you'll need to connect it to a DNS hosting service and provide us with your name server information.</p>
+
+<p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
+
+<ul class="padding-left-0 usa-list--unstyled">
+    {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+    <li>
+      {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
+      <h2 class="h3 text-primary margin-top-2">
+        <a href="{{ url }}"
+        class="heading-link display-inline-flex flex-align-center"
+        >
+          Name servers
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+          </svg>
+        </a>
+      </h2>
+      <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS nameservers.</p>
+    </li>
+
+    <li>
+      {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
+      <h2 class="h3 text-primary margin-top-2">
+        <a href="{{ url }}"
+          class="heading-link display-inline-flex flex-align-center"
+        >
+          DNSSEC
+          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+          </svg>
+        </a>
+      </h2>
+      <p class="margin-top-0 margin-bottom-0">Enable digital signatures to DNS records.</p>
+    </li>
+    {% endif %}
+</ul>

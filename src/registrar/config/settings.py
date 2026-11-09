@@ -113,7 +113,6 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
-DNS_HOSTING_PROD_ALLOWLIST = ["dnsops.gov", "example.gov", "igorville.gov"]
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
@@ -896,6 +895,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-tjh.app.cloud.gov",
     "getgov-cp.app.cloud.gov",
     "getgov-amt.app.cloud.gov",
     "getgov-sm.app.cloud.gov",

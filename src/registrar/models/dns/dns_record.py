@@ -65,7 +65,7 @@ class DnsRecord(TimeStampedModel):
         validators=[MinValueValidator(0), MaxValueValidator(65535)],
     )
 
-    comment = models.CharField(blank=True, null=True, max_length=500)
+    comment = models.CharField(blank=True, null=True, max_length=100)
 
     @property
     def ttl_display(self) -> str:
@@ -73,11 +73,10 @@ class DnsRecord(TimeStampedModel):
 
     def _validate_ttl(self, errors):
         """Validate TTL is within allowed range."""
-        # TTL must be between 60 and 86400.
-        # If we add proxy field to records in the future, we can also allow TTL=1 as below:
-        # if self.ttl == 1: return self.proxy
+        # TTL must be between 60 and 86400. A value of "1" from our vendor is
+        # automatically cleaned to be 300 before it reaches this conditional.
         if self.ttl < 60 or self.ttl > 86400:
-            errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
+            errors["ttl"] = ["TTL must be between 60 and 86400."]
 
     def _clean_content(self, record_type):
         """Clean content based on record type."""
@@ -137,11 +136,16 @@ class DnsRecord(TimeStampedModel):
         Names are always lowercased. Content is only lowercased for CNAME
         records, where the content is itself a hostname. Other record types
         (such as TXT) keep their content as-is.
+
+        Additionally, set TTL to the default value of 300 (our vendor has an auto
+        value of 1).
         """
         if self.name:
             self.name = self.name.lower()
         if self.content and self.type == DNSRecordTypes.CNAME:
             self.content = self.content.lower()
+        if self.ttl == 1:
+            self.ttl = 300
 
     def full_clean(self, *args, **kwargs):
         # Lowercase before validation runs so every check compares values the same way.
@@ -401,7 +405,7 @@ class DnsRecord(TimeStampedModel):
         """Create and save a DnsRecord and its join row from vendor API response data."""
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
-        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # Our vendor lowercases names on save; mirror that here so all call sites
         # (including any that read the vendor payload directly) see a consistent value.
         if record_data.get("name"):
             record_data["name"] = record_data["name"].lower()
@@ -440,8 +444,10 @@ class DnsRecord(TimeStampedModel):
     def update_from_vendor_data(cls, x_zone_id: str, x_record_id: str, vendor_record_data: dict) -> None:
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
-        excluded_fields = ["id", "type", "created_on"]
-        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # Only these fields are copied from our vendor's response. "type" is
+        # intentionally absent (immutable once created).
+        allowed_fields = ["name", "content", "ttl", "priority", "comment"]
+        # Our vendor lowercases names on save; mirror that here so all call sites
         # (including any that read the vendor payload directly) see a consistent value.
         if record_data.get("name"):
             record_data["name"] = record_data["name"].lower()
@@ -454,7 +460,7 @@ class DnsRecord(TimeStampedModel):
                 dns_record = cls.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
 
                 for record_field, record_value in record_data.items():
-                    if record_field not in excluded_fields:
+                    if record_field in allowed_fields:
                         setattr(dns_record, record_field, record_value)
                 dns_record.save()
         except Exception:
@@ -462,15 +468,18 @@ class DnsRecord(TimeStampedModel):
             raise
 
     @classmethod
-    def delete_by_x_record_id(cls, x_record_id: str):
+    def delete_by_record(cls, dns_record: DnsRecord):
         """Delete an existing DnsRecord and its associated VendorRecord and DnsRecordVendorDnsRecord."""
         try:
             with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                dns_record = cls.get_by_x_record_id(x_record_id)
+                x_record_id = dns_record.get_active_x_record_id()
+                vendor_dns_record = dns_record.vendor_dns_record.get(x_record_id=x_record_id)
 
+                # Delete a fresh copy of the dns record, model delete clears the pk on the instance,
+                # rollback does not restore the instance
+                fresh_dns_record = cls.objects.get(id=dns_record.id, dns_zone_id=dns_record.dns_zone_id)
                 # DnsRecordVendorDnsRecord object is deleted on cascade
-                dns_record.delete()  # type: ignore
+                fresh_dns_record.delete()  # type: ignore
                 vendor_dns_record.delete()  # type: ignore
         except Exception:
             logger.exception("Failed to delete record objects in database.")

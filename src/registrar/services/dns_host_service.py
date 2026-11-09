@@ -1,10 +1,12 @@
+from collections import Counter
 import logging
 import random
+from typing import List, Optional
 
 from django.conf import settings
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import EnrollmentNotAllowedError
 from registrar.services.dns_http_client import build_dns_client
 from registrar.logging_context import set_dns_log_context
 from registrar.models import (
@@ -19,7 +21,7 @@ from registrar.models import (
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
-from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.services.utility.dns_helper import get_dns_zone_name_from_account_name, make_dns_account_name
 from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
@@ -201,6 +203,11 @@ class DnsHostService:
         """
         self.update_account_dns_settings(x_account_id)
 
+    def get_all_accounts(self) -> List[dict]:
+        """Calls the vendor service's list accounts method"""
+        per_page_max = 50
+        return self.dns_vendor_service.get_tenant_accounts(per_page_max)
+
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
         zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
@@ -253,16 +260,12 @@ class DnsHostService:
 
         return DnsRecord.get_by_x_record_id(x_record_id) if x_record_id else None
 
-    def update_dns_record(self, x_zone_id: str, record_id: int, form_record_data: dict) -> DnsRecord:
-        """Look up the record by pk and update it via the vendor service.
+    def update_dns_record(self, x_zone_id: str, dns_record: DnsRecord, form_record_data: dict) -> DnsRecord:
+        """Update the DNSRecord via the vendor service.
 
         Returns the updated DnsRecord.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        try:
-            dns_record = DnsRecord.objects.get(pk=record_id)
-        except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record to update.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
@@ -290,26 +293,26 @@ class DnsHostService:
             raise
         return vendor_record_data
 
-    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
-        """Look up the record by pk and delete it via the vendor service.
+    def delete_dns_record(self, x_zone_id: str, dns_record: DnsRecord) -> str:
+        """Delete the DnsRecord via the vendor service.
 
         Returns the deleted DnsRecord's vendor id.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        try:
-            dns_record = DnsRecord.objects.get(pk=record_id)
-        except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record in registrar db to delete.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
 
         with transaction.atomic():
-            DnsRecord.delete_by_x_record_id(x_record_id=x_record_id)
+            DnsRecord.delete_by_record(dns_record=dns_record)
             self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
 
         return x_record_id
+
+    def get_records_for_zone(self, x_zone_id) -> List[dict]:
+        """Calls the vendor service's list zone records method"""
+        return self.dns_vendor_service.get_zone_records(x_zone_id)
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         return self.dns_vendor_service.get_account_by_name(account_name)
@@ -328,7 +331,7 @@ class DnsHostService:
         return dns_account.get_active_x_account_id()
 
     def _find_existing_zone_in_cf(self, zone_name, x_account_id) -> dict | None:
-
+        """Finds zone within an account by zone (domain) name"""
         all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
         zones = all_zones_data["result"]
         zone_data = self._find_zone_json_by_name(zones, zone_name)
@@ -481,11 +484,6 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
-        if settings.IS_PRODUCTION and domain.name not in settings.DNS_HOSTING_PROD_ALLOWLIST:
-            raise EnrollmentNotAllowedError(
-                "This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist"
-            )
-
         domain_name = domain.name
         with set_dns_log_context(domain_name):
             if domain.is_enrolled_in_dns_hosting:
@@ -511,7 +509,8 @@ class DnsHostService:
 
                     # Mark domain as enrolled
                     domain.is_enrolled_in_dns_hosting = True
-                    domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+                    domain.ready()
+                    domain.save()
 
             except Exception:
                 logger.exception(
@@ -524,3 +523,65 @@ class DnsHostService:
                 "Successfully enrolled %s in DNS hosting",
                 domain_name,
             )
+
+    def compare_vendor_and_db_accounts(self):
+        # get all the CF accounts and convert data to tuples (name, id). Used for sync status report.
+        vendor_accounts = self.get_all_accounts()
+        vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
+
+        duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
+
+        # Get all the db DNS accounts (name and x_account_id)
+        # Only get db accounts for the current active vendor
+        db_accounts_data = list(
+            DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
+                "dns_account__name", "vendor_dns_account__x_account_id"
+            )
+        )
+
+        # Compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only
+        # since the db account name must be unique, so can't be duplicated.
+        vendor_only = set(vendor_accounts_data) - set(db_accounts_data)
+        db_only = set(db_accounts_data) - set(vendor_accounts_data)
+
+        synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
+        vendor_accounts_with_zone = set()
+
+        # which vendor-only accounts have corresponding zone
+        for name, account_id in sorted(vendor_only):
+            # Check if a vendor zone exists for vendor_only accounts.
+            # Because the account and zone creation are inside of a transaction,
+            # failures would result in rolling back db account/zone, but not the cf account/zone
+            try:
+                vendor_zone_data = self._get_existing_zone_data(name, account_id)
+            except ValueError:
+                continue
+            if vendor_zone_data:
+                vendor_accounts_with_zone.add((name, account_id))
+
+        # Return each as a sorted list
+        return {
+            "duplicate_account_names": sorted(duplicate_account_names),
+            "vendor_only": sorted(vendor_only),
+            "db_only": sorted(db_only),
+            "vendor_accounts_with_zone_no_db": sorted(vendor_accounts_with_zone),
+            "synced_accounts": sorted(synced_accounts),
+        }
+
+    def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
+        """Returns a list of names of vendor accounts that are duplicated"""
+        vendor_account_names = [a["account_pubname"] for a in vendor_accounts]
+        name_counts = Counter(vendor_account_names)
+        duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
+        return duplicate_account_names
+
+    def _get_existing_zone_data(self, name, account_id) -> Optional[tuple]:
+        # get vendor zone data (name, id)
+        try:
+            domain_name = get_dns_zone_name_from_account_name(name)
+        except ValueError:
+            logger.error(f"Cannot extract domain name from the account name {name}")
+        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
+        vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
+
+        return vendor_zone_data

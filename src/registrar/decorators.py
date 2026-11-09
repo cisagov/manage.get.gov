@@ -228,6 +228,7 @@ def _is_domain_manager(user, **kwargs):
         bool: True if the user is a domain manager, False otherwise.
     """
     domain_id = kwargs.get("domain_pk")
+
     if domain_id:
         return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
     user_domain_role_id = kwargs.get("user_domain_role_pk")

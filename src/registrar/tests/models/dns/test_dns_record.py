@@ -457,8 +457,8 @@ class DnsRecordTest(TestCase):
             record.clean()
         self.assertIn("name", ctx.exception.message_dict)
 
-    def test_delete_by_x_record_id_success(self):
-        """delete_by_x_record_id deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
+    def test_delete_by_record_success(self):
+        """delete_by_record deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
         x_record_id = "1234"
         vendor_dns_record = VendorDnsRecord.objects.create(
             x_record_id=x_record_id,
@@ -480,7 +480,7 @@ class DnsRecordTest(TestCase):
             is_active=True,
         )
 
-        DnsRecord.delete_by_x_record_id(x_record_id)
+        DnsRecord.delete_by_record(record)
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
@@ -536,3 +536,9 @@ class DnsRecordTest(TestCase):
         # self.dns_record is blank per setUp, so it is ordered first
         # Of the two A records, magic is before www, so...
         self.assertEqual(ordered, [self.dns_record, a_record, a_root, aaaa, mx, txt])
+
+    def test_ttl_of_one_is_saved_as_300(self):
+        """Cloudflare's auto TTL (1) is stored in our DB as 300."""
+        record = DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=1, content="192.0.2.1")
+        record.refresh_from_db()
+        self.assertEqual(record.ttl, 300)

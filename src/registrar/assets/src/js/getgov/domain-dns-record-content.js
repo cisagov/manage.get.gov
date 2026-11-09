@@ -1,5 +1,4 @@
 import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
-import { showElement } from "./helpers";
 
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
@@ -113,7 +112,7 @@ const getFocusId = (req, target)=>{
         }
 
         if(req.fromConfirmButton && target){
-            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
+            return target == 0 ? addRecordbtn : editButtonId(target)
         }
 
         if(target == 0){
@@ -214,12 +213,12 @@ const teardownForm = (switcher) => {
         const hadError = !!form?.querySelector(".usa-error-message");
         clearRecordForm(form);
         if(hadError){
-            refreshForm(refs.form, form.getAttribute("hx-post"));
+            didHtmxSwapHappen = true;
             const target = switcher.target;
             document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
-                didHtmxSwapHappen = true;
                 switcher.switchForm(target);
-         })  
+         }, { once: true})  
+          refreshForm(refs.form, form.getAttribute("hx-post"));
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
@@ -299,7 +298,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    const deleteButton = document.getElementById("confirm-delete-record-button");
+
     if(!container || !confirmButton) return;
     
     const editFormSwitcher = new EditFormSwitcher(container);
@@ -369,7 +368,6 @@ export function initDNSRecordCancelModal(){
 
 
             switcher.pending.fromConfirmButton = true;
-
             const focusId = getFocusId(switcher.pending, switcher.target);
         
             teardownForm(
@@ -432,13 +430,15 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
+            // Pauses the swap until unsaved changes are handled from the user, then programmatically updates the type.
+            e.stopPropagation()
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
             recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
-    })
+    }, true)
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
             editFormSwitcher.setTarget(0);
@@ -518,7 +518,13 @@ export function initDNSRecordTabOrder() {
         }
     }
 
+    function isModalOpen(){
+        const modal = document.querySelector(".usa-modal-wrapper.is-visible");
+        return modal;
+    }
+
     table.addEventListener('click', (e) => {
+        if(isModalOpen()) return;
         const trigger = e.target.closest('[data-action="edit"], [data-action="form-cancel"]');
         if (!trigger) return;
         const recordId = trigger.dataset.recordId;
@@ -760,6 +766,20 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
     }
 }
 
+// TXT content can be up to 4080 characters. Only this many characters of it are
+// shown in the text preview (and so read by screen readers); 
+// the full value stays in the input.
+const TXT_PREVIEW_CONTENT_MAX = 200;
+
+// Shortens text to `max` characters and adds an ellipsis if anything was cut. 
+function truncatePreviewContent(text, max) {
+    if (text.length <= max) {
+        return text
+    }
+    let truncated = text.substring(0, max).replace(/\.+$/, "");
+    return truncated + "…";
+}
+
 /*
 Recomputes the live preview sentence for one DNS record form.
 "@" is the root domain, so there's a conditional for that (via data-domain-name)
@@ -804,12 +824,29 @@ function updateDNSRecordPreview(scope, config) {
     if (!displayName) {
         displayName = "[name]"
     }
-    const values = {
-        name: displayName,
-        content: contentField?.value.trim() || `[${contentPlaceholder}]`,
+
+    let displayContent = contentField?.value.trim();
+    let hideClosingPeriod = false;
+
+    if (displayContent && typeField.value == "TXT") {
+        if (displayContent.endsWith(".") || displayContent.length > TXT_PREVIEW_CONTENT_MAX) {
+            hideClosingPeriod = true;
+        }
+
+        displayContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
     }
 
-    renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
+    const values = {
+        name: displayName,
+        content: displayContent || `[${contentPlaceholder}]`,
+    }
+
+    let previewTemplate = info.previewTemplate;
+    if (hideClosingPeriod) {
+        previewTemplate = previewTemplate.replace(/\.$/, "")
+    }
+
+    renderDNSRecordPreviewText(previewText, previewTemplate, values);
 }
 /* 
 Wires up the live preview on every DNS record form (for both add and edit row).

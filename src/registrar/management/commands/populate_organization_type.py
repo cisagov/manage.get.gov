@@ -117,14 +117,6 @@ class Command(BaseCommand):
         for request in domain_requests:
             try:
                 if request.generic_org_type is not None:
-                    domain_name = None
-                    if request.requested_domain is not None and request.requested_domain.name is not None:
-                        domain_name = request.requested_domain.name
-
-                    request_is_approved = request.status == DomainRequest.DomainRequestStatus.APPROVED
-                    if request_is_approved and domain_name is not None and not request.is_election_board:
-                        request.is_election_board = domain_name in self.domains_with_election_boards_set
-
                     self.sync_organization_type(DomainRequest, request)
                     self.request_to_update.append(request)
                     logger.info(f"Updating {request} => {request.organization_type}")
@@ -138,7 +130,7 @@ class Command(BaseCommand):
 
         # Do a bulk update on the organization_type field
         ScriptDataHelper.bulk_update_fields(
-            DomainRequest, self.request_to_update, ["organization_type", "is_election_board", "generic_org_type"]
+            DomainRequest, self.request_to_update, ["organization_type", "generic_org_type"]
         )
 
         # Log what happened
@@ -162,7 +154,6 @@ class Command(BaseCommand):
     def update_domain_informations(self, domain_informations):
         """
         Updates the organization_type for a list of DomainInformation objects
-        and updates is_election_board if the domain is in the provided csv.
         Results are then logged.
 
         This function updates the following variables:
@@ -173,11 +164,6 @@ class Command(BaseCommand):
         for info in domain_informations:
             try:
                 if info.generic_org_type is not None:
-                    domain_name = info.domain.name
-
-                    if not info.is_election_board:
-                        info.is_election_board = domain_name in self.domains_with_election_boards_set
-
                     self.sync_organization_type(DomainInformation, info)
 
                     self.di_to_update.append(info)
@@ -192,7 +178,7 @@ class Command(BaseCommand):
 
         # Do a bulk update on the organization_type field
         ScriptDataHelper.bulk_update_fields(
-            DomainInformation, self.di_to_update, ["organization_type", "is_election_board", "generic_org_type"]
+            DomainInformation, self.di_to_update, ["organization_type", "generic_org_type"]
         )
 
         # Log what happened
@@ -210,29 +196,11 @@ class Command(BaseCommand):
 
     def sync_organization_type(self, sender, instance):
         """
-        Updates the organization_type (without saving) to match
-        the is_election_board and generic_organization_type fields.
+        Update organization_type and generic_org_type synchronized (without saving).
         """
-
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
-
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
-
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_election_to_org_generic()
-
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_board" and "generic_organization_type"
         org_type_helper = CreateOrUpdateOrganizationTypeHelper(
             sender=sender,
             instance=instance,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
         )
 
         org_type_helper.create_or_update_organization_type(force_update=True)
