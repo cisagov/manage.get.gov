@@ -11,16 +11,17 @@
   "license": "ISC",
   "dependencies": {
     "@uswds/uswds": "3.8.1",
-    "pa11y-ci": "^4.1.1",
-    "sass": "^1.54.8"
+    "pa11y-ci": "^5.0.0",
+    "sass": "^1.107.1"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.2",
+    "@babel/core": "^8.0.10",
+    "@babel/preset-env": "^8.0.7",
     "@uswds/compile": "1.2.1",
     "babel-loader": "^10.1.1",
-    "sass-loader": "^12.6.0",
-    "webpack": "^5.105.0",
+    "sass-loader": "^17.1.0",
+    "terser-webpack-plugin": "^5.6.1",
+    "webpack": "^5.112.2",
     "webpack-stream": "^7.0.0"
   },
   "overrides": {
