@@ -323,8 +323,8 @@ class TribalGovernmentForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         # is_embd_tribal flag OFF: legacy flow, free text
-        # Also droppingt he dropdown data so it stays out of
-        # cleaned_data so it wont overwrrite the FKs
+        # Also dropping the dropdown data so it stays out of
+        # cleaned_data so it wont overwrite the FKs
         if not self.tribe_dropdown_enabled:
             del self.fields["federal_tribe"]
             del self.fields["state_tribe"]
@@ -370,7 +370,7 @@ class TribalGovernmentForm(RegistrarForm):
         # If Federal AND State are checked, we show Federal Tribes
         # If someone picks a tribe and then switches which kind of tribe
         # they are, the now hidden dropdown still keeps what was "picked"
-        # Only one tribe can be saved, so we drop the prev "picK" otherwise the save will fail
+        # Only one tribe can be saved, so we drop the prev "pick" otherwise the save will fail
         if self.cleaned_data.get("federally_recognized_tribe"):
             self.cleaned_data["state_tribe"] = None
             if not self.cleaned_data.get("federal_tribe"):
