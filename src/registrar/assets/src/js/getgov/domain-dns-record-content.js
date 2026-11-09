@@ -244,7 +244,7 @@ const onCancel = (switcher) => {
 
 
 const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
-    const table = document.querySelector(".dnsrecords-table");
+    const table = document.querySelector("#dnsrecords-table");
     if(!table) return;
 
     const alpineData = switcher.getAlpineData();
@@ -315,7 +315,7 @@ export function initDNSRecordCancelModal(){
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
-    document.querySelector(".dnsrecords-table")?.addEventListener("click", (e) => {
+    document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
         editFormSwitcher.setPending(
@@ -452,7 +452,7 @@ export function initDNSRecordCancelModal(){
 //   Edit → form fields → Form Delete → Row Delete → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
-    const table = document.querySelector(".dnsrecords-table");
+    const table = document.querySelector("#dnsrecords-table");
     if (!table) return;
 
     const getOpenRecordId = () => {
@@ -860,7 +860,7 @@ export function initDNSRecordPreview() {
 }
 
 export function initDeleteDnsRecord() {
-    const table = document.querySelector(".dnsrecords-table");
+    const table = document.querySelector("#dnsrecords-table");
 
     table?.addEventListener("click", (e) => {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
@@ -875,7 +875,7 @@ export function initDeleteDnsRecord() {
         const modalDeleteButton = document.getElementById("confirm-delete-record-button")
 
         const handleDelete = (e) => {
-            const table = document.querySelector(".dnsrecords-table");
+            const table = document.querySelector("#dnsrecords-table");
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
             console.log("in handle, ready to close modal")
