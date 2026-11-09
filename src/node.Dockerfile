@@ -3,7 +3,7 @@ WORKDIR /app
 
 USER root
 
-COPY zscaler-root.pem /usr/local/share/ca-certificates/zscaler-root.crt
+COPY zscaler-root.pem* /usr/local/share/ca-certificates/zscaler-root.crt
 
 RUN update-ca-certificates
 

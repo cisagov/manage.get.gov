@@ -6,7 +6,7 @@ FROM --platform=linux/amd64 docker.io/cimg/node:current-browsers
 
 USER root
 
-COPY zscaler-root.pem /usr/local/share/ca-certificates/zscaler-root.crt
+COPY zscaler-root.pem* /usr/local/share/ca-certificates/zscaler-root.crt
 
 RUN update-ca-certificates
 
