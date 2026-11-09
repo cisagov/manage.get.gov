@@ -225,5 +225,11 @@ th {
       width:15%;
     }
    
+    @include at-media (mobile-lg) {
+      th:nth-child(n),
+      td:nth-child(n){
+        width:100% !important;
+      }
+    }
   }
  
