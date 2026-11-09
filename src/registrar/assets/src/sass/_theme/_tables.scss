@@ -225,10 +225,8 @@ th {
       width:15%;
     }
    
-    @media (mobile-lg) {
-      th:nth-child(n){
-        width:100%;
-      }
+    @include at-media (mobile-lg) {
+      th:nth-child(n),
       td:nth-child(n){
         width:100%;
       }
