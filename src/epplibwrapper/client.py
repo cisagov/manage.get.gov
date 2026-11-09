@@ -1,6 +1,7 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+import ssl
 from time import sleep
 import os
 from django.conf import settings
@@ -85,10 +86,20 @@ class EPPLibWrapper:
             self._connect(client=client)
         except TransportError as err:
             message = "_create_connection failed to execute due to a connection error."
-            logger.error(f"EPP Error {_worker_tag()} {message} Error: {err}", exc_info=True)
+            # TrasportErrors happen frequently, log them as info not error to avoid bloating
+            # error logs
+            logger.info(f"EPP Error {_worker_tag()} {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
+            # if this error hits then the EPP credentials are A) not set, B) are invalid or C) are expired
             raise err
+        except (ConnectionError, TimeoutError, ssl.SSLEOFError) as err:
+            # ssl.SSLEOFError is a socket error, usually the registry cutting off the connection abruptly
+            # socket and other connection errors can happen frequently
+            # don't log them as error as it bloats error logs
+            message = "_create_connection failed to open a socket to the registry."
+            logger.info(f"EPP {_worker_tag()} {message} Error: {err}")
+            raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except Exception as err:
             message = "_create_connection failed to execute due to an unknown error."
             logger.error(f"EPP Error {_worker_tag()} {message} Error: {err}", exc_info=True)
@@ -162,7 +173,7 @@ class EPPLibWrapper:
 
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"EPP Error {_worker_tag()} EPP connection lost. {message} Error: {err}")
+            logger.info(f"EPP Error {_worker_tag()} EPP connection lost. {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
 
         except LoginError as err:
