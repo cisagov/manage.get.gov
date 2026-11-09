@@ -300,7 +300,7 @@ class DnsHostService:
         Returns the deleted DnsRecord's vendor id.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        raise DnsHostingError(code=DnsHostingErrorCodes.UPSTREAM_ERROR)
+        # raise DnsHostingError(code=DnsHostingErrorCodes.UPSTREAM_ERROR)
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
