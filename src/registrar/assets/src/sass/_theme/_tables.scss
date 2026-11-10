@@ -191,10 +191,10 @@ th {
   
 
   
-    @include at-media (tablet) {
-    td:nth-child(1).no-padding-right{
-      padding-right: 0;
-    }
+    @include at-media-min('tablet'){
+      td:nth-child(1).no-padding-right{
+        padding-right: 0;
+      }
 
     
     th:nth-child(2),
