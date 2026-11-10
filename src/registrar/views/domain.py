@@ -1096,8 +1096,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_first_record = False
         response_form = None
         headers = None
-        # set domain pk in the session for the permissions checks(alert messages)
-        request.session["domain_pk"] = self.object.id
         edit_form_id = None
 
         self.dns_host_service = DnsHostService()
@@ -1140,7 +1138,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         if delete_record:
             # This silently passes content="" (an empty string) as the HTML body,
-            # the same as returning an empty HTML file.
+            # the same as returning an empty HTML file for the row swap.
             return HttpResponse(
                 headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
             )
