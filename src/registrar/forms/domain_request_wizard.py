@@ -43,6 +43,8 @@ from registrar.validations import (
 
 logger = logging.getLogger(__name__)
 
+# Stands for Greek capital letter delta
+# which marks that a Tribe alr has a Portfolio
 DELTA = "\u0394"
 
 

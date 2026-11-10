@@ -36,6 +36,10 @@ from registrar.tests.common import MockEppLib, create_user
 from django.contrib.auth import get_user_model
 from waffle.testutils import override_flag
 
+# Stands for Greek capital letter delta
+# which marks that a Tribe alr has a Portfolio
+DELTA = "\u0394"
+
 
 class TestFormValidation(MockEppLib):
     def setUp(self):
@@ -877,7 +881,7 @@ class TestTribalGovernmentForm(TestCase):
         form = TribalGovernmentForm(domain_request=self.domain_request)
         labels = [label for value, label in form.fields["federal_tribe"].choices]
 
-        self.assertIn("∆ Mmmmm Nation", labels)
+        self.assertIn(f"{DELTA} Mmmmm Nation", labels)
         self.assertNotIn("Mmmmm Nation", labels)
 
     @override_flag("is_embd_tribal", active=True)
@@ -887,7 +891,7 @@ class TestTribalGovernmentForm(TestCase):
         labels = [label for value, label in form.fields["federal_tribe"].choices]
 
         self.assertIn("Mmmmm Nation", labels)
-        self.assertNotIn("∆ Mmmmm Nation", labels)
+        self.assertNotIn("{DELTA} Mmmmm Nation", labels)
 
     @override_flag("is_embd_tribal", active=True)
     @less_console_noise_decorator
