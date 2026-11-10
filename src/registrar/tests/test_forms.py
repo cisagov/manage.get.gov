@@ -822,7 +822,7 @@ class TestTribalGovernmentForm(TestCase):
         )
         self.domain_request = DomainRequest.objects.create(
             requester=self.requester,
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
         self.federal_tribe = FederalTribe.objects.create(tribe_full_name="Mmmmm Nation")
         self.state_tribe = StateTribe.objects.create(tribe_name="Mmmmm Tribe of Awesomeness")
