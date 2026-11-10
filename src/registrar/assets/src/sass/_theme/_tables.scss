@@ -184,18 +184,14 @@ th {
       overflow-wrap: break-word;
       white-space: normal;
     }
-
-    th:nth-child(1),
-    td:nth-child(1){
-      width:15%;
-      padding-right:1em;
-
-      .dns-comment-button{
-        column-gap: 0;
-      }
-      
-    }
     
+    td:nth-child(n),th:nth-child(n){
+      width:100%;
+    }
+  
+
+  
+    @include at-media (tablet) {
     td:nth-child(1).no-padding-right{
       padding-right: 0;
     }
@@ -224,12 +220,17 @@ th {
     td:nth-child(5){
       width:15%;
     }
-   
-    @include at-media (mobile-lg) {
-      th:nth-child(n),
-      td:nth-child(n){
-        width:100% !important;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1){
+      width:15%;
+      padding-right:1em;
+
+      .dns-comment-button{
+        column-gap: 0;
       }
+      
     }
   }
  
