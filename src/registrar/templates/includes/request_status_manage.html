@@ -130,7 +130,7 @@
             {% if portfolio %}
                 {% include "includes/portfolio_request_review_steps.html" with is_editable=False domain_request=DomainRequest %}
             {% else %}
-                {% with org_type=DomainRequest.get_generic_org_type_display %}
+                {% with org_type=DomainRequest.get_organization_type_display %}
                 {% include "includes/summary_item.html" with title='Type of organization' value=org_type %}
                 {% endwith %}
 

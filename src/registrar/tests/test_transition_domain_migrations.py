@@ -402,7 +402,7 @@ class TestOrganizationMigration(TestCase):
             ).get()
             expected_domain_information = DomainInformation(
                 requester=expected_requester,
-                generic_org_type="federal",
+                organization_type="federal",
                 federal_agency=self.federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",
@@ -457,7 +457,7 @@ class TestOrganizationMigration(TestCase):
             ).get()
             expected_domain_information = DomainInformation(
                 requester=expected_requester,
-                generic_org_type="federal",
+                organization_type="federal",
                 federal_agency=self.federal_agency,
                 federal_type="executive",
                 organization_name="Fanoodle",

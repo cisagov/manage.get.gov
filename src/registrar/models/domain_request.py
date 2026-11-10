@@ -8,7 +8,6 @@ from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
@@ -325,16 +324,6 @@ class DomainRequest(TimeStampedModel):
         verbose_name="analyst",
     )
 
-    # ##### data fields from the initial form #####
-    generic_org_type = models.CharField(
-        max_length=255,
-        # use the short names in Django admin
-        choices=OrganizationChoices.choices,
-        null=True,
-        blank=True,
-    )
-
-    # TODO - Ticket #1911: stub this data from DomainRequest
     organization_type = models.CharField(
         max_length=255,
         choices=OrganizationChoices.choices,
@@ -632,18 +621,6 @@ class DomainRequest(TimeStampedModel):
         excluded_statuses = [cls.DomainRequestStatus.INELIGIBLE, cls.DomainRequestStatus.IN_REVIEW]
         return [status for status in cls.DomainRequestStatus if status not in excluded_statuses]
 
-    def sync_organization_type(self):
-        """
-        Keeps organization_type and generic_org_type synchronized (without saving).
-        """
-        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
-            sender=self.__class__,
-            instance=self,
-        )
-
-        # Actually updates the organization_type field
-        org_type_helper.create_or_update_organization_type()
-
     def _cache_status_and_status_reasons(self):
         """Maintains a cache of properties so we can avoid a DB call"""
         self._cached_action_needed_reason = self.action_needed_reason
@@ -655,8 +632,8 @@ class DomainRequest(TimeStampedModel):
         self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
-        # Cache the original generic_org_type to detect changes on save
-        self._cached_generic_org_type = self.generic_org_type
+        # Cache the original organization_type to detect changes on save
+        self._cached_organization_type = self.organization_type
 
     def clean(self):
         """
@@ -672,7 +649,7 @@ class DomainRequest(TimeStampedModel):
         super().clean()
         # A legacy domain request cannot have a federal_type
         if (
-            self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+            self.organization_type == DomainRequest.OrganizationChoices.FEDERAL
             and not self.portfolio
             and self.federal_type is not None
         ):
@@ -723,14 +700,14 @@ class DomainRequest(TimeStampedModel):
         """Clears fields that are no longer relevant based on current data.
         This helps ensure that stale data isn't kept around.
 
-        When generic_org_type changes, certain conditional fields become irrelevant:
+        When organization_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
         -  tribe_name, state_tribe, federal_tribe, federally_recognized_tribe,
         state_recognized_tribe: Only for Tribal orgs
         - about_your_organization: Only for Special District or Interstate orgs
         """
-        old_org_type = getattr(self, "_cached_generic_org_type", None)
-        new_org_type = self.generic_org_type
+        old_org_type = getattr(self, "_cached_organization_type", None)
+        new_org_type = self.organization_type
 
         if old_org_type and new_org_type != old_org_type:
             if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
@@ -766,7 +743,6 @@ class DomainRequest(TimeStampedModel):
             ):
                 raise ValidationError("A newer version of this form exists. Please try again.")
 
-        self.sync_organization_type()
         self.sync_yes_no_form_fields()
         self.clear_irrelevant_fields()
 
@@ -1462,17 +1438,17 @@ class DomainRequest(TimeStampedModel):
 
     def show_organization_federal(self) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice == DomainRequest.OrganizationChoices.FEDERAL
 
     def show_tribal_government(self) -> bool:
         """Show this step if the answer to the first question was "tribal"."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice == DomainRequest.OrganizationChoices.TRIBAL
 
     def show_about_your_organization(self) -> bool:
         """Show this step if this is a special district or interstate."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice in [
             DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
             DomainRequest.OrganizationChoices.INTERSTATE,
@@ -1506,12 +1482,12 @@ class DomainRequest(TimeStampedModel):
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
-        generic_org_type can be both null and blank,
+        organization_type can be both null and blank,
         """
-        if not self.generic_org_type:
-            # generic_org_type is either blank or None, can't answer
+        if not self.organization_type:
+            # organization_type is either blank or None, can't answer
             return None
-        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+        if self.organization_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
 
@@ -1553,10 +1529,10 @@ class DomainRequest(TimeStampedModel):
         return self.organization_name
 
     @property
-    def converted_generic_org_type(self):
+    def converted_organization_type(self):
         if self.portfolio:
             return self.portfolio.organization_type
-        return self.generic_org_type
+        return self.organization_type
 
     @property
     def converted_federal_agency(self):
@@ -1616,10 +1592,10 @@ class DomainRequest(TimeStampedModel):
 
     # ----- Portfolio Properties (display values)-----
     @property
-    def converted_generic_org_type_display(self):
+    def converted_organization_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
-        return self.get_generic_org_type_display()
+        return self.get_organization_type_display()
 
     @property
     def converted_federal_type_display(self):

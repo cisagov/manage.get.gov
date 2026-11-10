@@ -107,16 +107,13 @@ class DomainRequestWizard(TemplateView):
     # region: Unlocking steps
     # The conditions by which each step is "unlocked" or "locked"
     REGULAR_UNLOCKING_STEPS = {
-        Step.ORGANIZATION_TYPE: lambda self: self.domain_request.generic_org_type is not None,
+        Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
+        Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.TRIBAL_GOVERNMENT: lambda self: (
             self.domain_request.tribe_name is not None
             or self.domain_request.federal_tribe_id is not None
             or self.domain_request.state_tribe_id is not None
         ),
-        Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
-        Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
-        Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
-        Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (
             self.domain_request.current_websites.exists() or self.domain_request.senior_official is not None
         ),
@@ -232,9 +229,9 @@ class DomainRequestWizard(TemplateView):
                 requester=self.request.user,
                 portfolio_id=portfolio_id,
             )
-            if portfolio_id and not self._domain_request.generic_org_type:
+            if portfolio_id and not self._domain_request.organization_type:
                 portfolio = Portfolio.objects.get(pk=portfolio_id)
-                self._domain_request.generic_org_type = portfolio.organization_type
+                self._domain_request.organization_type = portfolio.organization_type
                 self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(requester=self.request.user)
@@ -337,8 +334,8 @@ class DomainRequestWizard(TemplateView):
         # Redirect federal users away from steps they shouldn't access
         if (
             not self.is_portfolio
-            and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
-            and current_url not in ["generic_org_type", "organization_federal"]
+            and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+            and current_url not in ["organization_type", "organization_federal"]
         ):
             return self.goto("organization_federal")
 
@@ -485,7 +482,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
                 "is_federal_blocked": (
                     not self.is_portfolio
-                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
                 ),
             }
         else:  # form is not complete
@@ -499,7 +496,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
                 "is_federal_blocked": (
                     not self.is_portfolio
-                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
                 ),
             }
         context["domain_request_id"] = self.domain_request.id
@@ -748,7 +745,7 @@ class SeniorOfficial(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["generic_org_type"] = self.domain_request.generic_org_type
+        context["organization_type"] = self.domain_request.organization_type
         context["federal_type"] = self.domain_request.federal_type
         return context
 
@@ -769,7 +766,7 @@ class DotgovDomain(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["generic_org_type"] = self.domain_request.generic_org_type
+        context["organization_type"] = self.domain_request.organization_type
         context["federal_type"] = self.domain_request.federal_type
         context["requires_feb_questions"] = self.requires_feb_questions()
         return context

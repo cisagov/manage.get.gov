@@ -268,7 +268,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
 
 
 class OrganizationTypeForm(RegistrarForm):
-    generic_org_type = forms.ChoiceField(
+    organization_type = forms.ChoiceField(
         # use the long names in the domain request form
         choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,

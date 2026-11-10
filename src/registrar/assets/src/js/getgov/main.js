@@ -75,11 +75,14 @@ initOrganizationsNavDropdown();
 // Init the dynamic DNS content labels and fields and ensure HTMX re-runs after POST
 initDynamicDNSRecordFormFields();
 commentCharacterEventListener()
+
+// Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
+initDNSRecordCancelModal()
+
+
 initDNSRecordTabOrder()
 initDNSRecordAlertFocus()
 initDNSRecordPreview()
-// Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
-initDNSRecordCancelModal()
 
 // Init the state/federal tribe dropdown
 initializeTribalGovernmentToggle();
