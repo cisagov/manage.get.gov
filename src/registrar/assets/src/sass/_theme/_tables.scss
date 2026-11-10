@@ -191,7 +191,7 @@ th {
   
 
   
-    @include at-media-min('tablet'){
+  @include at-media-min('tablet'){
       td:nth-child(1).no-padding-right{
         padding-right: 0;
       }
@@ -220,7 +220,6 @@ th {
     td:nth-child(5){
       width:15%;
     }
-    }
 
     th:nth-child(1),
     td:nth-child(1){
@@ -233,4 +232,5 @@ th {
       
     }
   }
+}
  
