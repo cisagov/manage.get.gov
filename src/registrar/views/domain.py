@@ -1013,7 +1013,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         Response for a delete request (empty body, no row markup).
 
         On success, htmx swaps the row out.
-        On failure, leave the DOM untouche and just refresh the messages.
+        On failure, leave the DOM untouched and just refresh the messages.
         """
         if error:
             return HttpResponse(
