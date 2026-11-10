@@ -1,3 +1,4 @@
+import { initAdminTribeSelection } from './tribe-select-admin.js';
 import { initModals } from './modals.js';
 import { initCopyToClipboard } from './copy-to-clipboard.js';
 import { initFilterHorizontalWidget } from './filter-horizontal.js';
@@ -32,6 +33,7 @@ initAriaInjectionsForSelect2Dropdowns();
 initButtonLinks();
 
 // Domain request
+initAdminTribeSelection();
 initIneligibleModal();
 initAssignToMe();
 initActionNeededEmail();

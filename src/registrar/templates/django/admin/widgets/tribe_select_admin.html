@@ -1,0 +1,9 @@
+<div class="tribe-select-admin-widget related-widget-wrapper">
+    {% include "django/forms/widgets/select.html" %}
+    {% for related_widget in related_widgets %}
+        <div class="tribe-related-widget{% if not related_widget.selected %} display-none{% endif %}"
+             data-tribe-type="{{ related_widget.tribe_type }}">
+            {{ related_widget.html }}
+        </div>
+    {% endfor %}
+</div>

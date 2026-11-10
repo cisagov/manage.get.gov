@@ -1543,6 +1543,15 @@ class DomainRequest(TimeStampedModel):
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    @property
+    def tribe_display_name(self):
+        """Return the linked tribe's name, falling back to the legacy free-text name."""
+        if self.federal_tribe_id:
+            return self.federal_tribe.tribe_full_name
+        if self.state_tribe_id:
+            return self.state_tribe.tribe_name
+        return self.tribe_name
+
     # NOTE: This will be used in 5502
     # @property
     # def tribe_display_name(self):
