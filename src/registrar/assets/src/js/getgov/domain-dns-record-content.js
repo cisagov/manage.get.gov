@@ -860,7 +860,7 @@ export function initDNSRecordPreview() {
 }
 
 export function initDeleteDnsRecord() {
-    const table = document.getElementByID("dnsrecords-table");
+    const table = document.getElementById("dnsrecords-table");
 
     table?.addEventListener("click", (e) => {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
