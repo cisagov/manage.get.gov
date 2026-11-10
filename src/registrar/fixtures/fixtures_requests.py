@@ -37,7 +37,7 @@ class DomainRequestFixture:
     # {
     #     "status": "started",
     #     "organization_name": "Example - Just started",
-    #     "generic_org_type": "federal",
+    #     "organization_type": "federal",
     #     "federal_agency": None,
     #     "federal_type": None,
     #     "address_line1": None,
@@ -122,7 +122,9 @@ class DomainRequestFixture:
         request.status = request_dict["status"] if "status" in request_dict else "started"
 
         # TODO for a future ticket: Allow for more than just "federal" here
-        request.generic_org_type = request_dict["generic_org_type"] if "generic_org_type" in request_dict else "federal"
+        request.organization_type = (
+            request_dict["organization_type"] if "organization_type" in request_dict else "federal"
+        )
         if request.status != "started":
             # Generate fake data for first_submitted_date and last_submitted_date
             # First generate a random date set to be later than 2020 (or something)
