@@ -6,9 +6,7 @@
             </span>
 
          {% if dns_record.comment %}
-            <span class="margin-left-auto">
             {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
-                </span>
         {% endif %}
         </div>
 

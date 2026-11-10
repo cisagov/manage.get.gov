@@ -188,6 +188,18 @@ th {
     td:nth-child(n),th:nth-child(n){
       width:100%;
     }
+
+    th:nth-child(1),
+    td:nth-child(1){
+      padding-right:1em;
+
+      .dns-comment-button{
+        column-gap: 0;
+        float:right;
+        width: auto;
+      }
+      
+    }
   
 
   
@@ -223,13 +235,7 @@ th {
 
     th:nth-child(1),
     td:nth-child(1){
-      width:15%;
-      padding-right:1em;
-
-      .dns-comment-button{
-        column-gap: 0;
-      }
-      
+      width:15%;    
     }
   }
 }
