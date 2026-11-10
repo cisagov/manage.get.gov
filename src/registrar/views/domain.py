@@ -1118,31 +1118,27 @@ class DomainDNSRecordsView(DomainFormBaseView):
             # DELETE
             if delete_record:
                 self._handle_delete(request, x_zone_id, self.dns_record)
+                return TemplateResponse(request, "empty_response.html", {"dns_record": None}, headers=success_header, status=200)
+            # EDIT
+            elif self.dns_record:
+                form_record_data = self._build_dns_record_form_data(form)
+                edit_form_id = self.dns_record.id
+                self._handle_edit(request, x_zone_id, form_record_data)
+
+            # CREATE
             else:
                 form_record_data = self._build_dns_record_form_data(form)
-                # EDIT
-                if self.dns_record:
-                    edit_form_id = self.dns_record.id
-                    self._handle_edit(request, x_zone_id, form_record_data)
-
-                # CREATE
-                else:
-                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
+                is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
             if self.dns_record:
                 response_form = form  # retain form data when experiencing external DNS service error
                 self._attach_form(dns_record=self.dns_record, form=form)
-            print(f"💕 {edit_form_id, e.upstream_status}")
             return self._error_response(request, form=response_form, status=200, is_delete=delete_record, edit_form_id=edit_form_id)
         except GenericError:
             return self._error_response(request, status=400)
         finally:
             self.dns_host_service.client.close()
-
-        # Success delete
-        if delete_record:
-            return TemplateResponse(request, "empty_response.html", {"dns_record": None}, headers=success_header, status=200)
 
         # Success edit, add
         return TemplateResponse(
