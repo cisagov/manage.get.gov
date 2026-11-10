@@ -43,6 +43,8 @@ from registrar.validations import (
 
 logger = logging.getLogger(__name__)
 
+DELTA = "\u0394"
+
 
 class RequestingEntityForm(RegistrarForm):
     """The requesting entity form contains a dropdown for suborganizations,
@@ -341,7 +343,7 @@ class TribalGovernmentForm(RegistrarForm):
             for option in model.get_dropdown_options():
                 name = option["name"]
                 if option["has_existing_portfolio"]:
-                    name = f"∆ {name}"
+                    name = f"{DELTA} {name}"
                 choices.append((option["id"], name))
 
             self.fields[field_name].queryset = model.objects.all()
