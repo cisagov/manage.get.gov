@@ -1008,22 +1008,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=status,
         )
 
-    def _delete_response(self, *, error: DnsHostingError | None = None):
-        """
-        Response for a delete request (empty body, no row markup).
-
-        On success, htmx swaps the row out.
-        On failure, leave the DOM untouched and just refresh the messages.
-        """
-        if error:
-            return HttpResponse(
-                status=error.upstream_status,
-                headers={"HX-Reswap": "none", "HX-trigger": json.dumps({"messagesRefresh": ""})}
-            )
-        return HttpResponse(
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
-        )
-
     def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
@@ -1141,7 +1125,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except DnsHostingError as e:
             messages.error(request, e.message)
             if delete_record:
-                return self._delete_response(error=e)
+                return HttpResponse(
+                    status=e.upstream_status,
+                    headers={"HX-Reswap": "none", "HX-trigger": json.dumps({"messagesRefresh": ""})},
+                )
             response_form = form  # retain form data when experiencing external DNS service error
             if self.dns_record:
                 self._attach_form(dns_record=self.dns_record, form=form)
@@ -1152,7 +1139,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_host_service.client.close()
 
         if delete_record:
-            return self._delete_response()
+            # This silently passes content="" (an empty string) as the HTML body,
+            # the same as returning an empty HTML file.
+            return HttpResponse(
+                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            )
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
