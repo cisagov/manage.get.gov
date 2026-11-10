@@ -5,12 +5,11 @@
                 {{dns_record.type}}
             </span>
 
-
+        {% if dns_record.comment %}
             <span class="margin-left-auto">
-         {% if dns_record.comment %}
             {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
-        {% endif %}
             </span>
+        {% endif %}
         </div>
 
     </td>
