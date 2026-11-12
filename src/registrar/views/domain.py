@@ -1140,7 +1140,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             # This silently passes content="" (an empty string) as the HTML body,
             # the same as returning an empty HTML file for the row swap.
             return HttpResponse(
-                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+                status=200,
             )
         return TemplateResponse(
             request,
