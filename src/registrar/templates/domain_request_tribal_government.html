@@ -1,11 +1,45 @@
 {% extends 'domain_request_form.html' %}
-{% load field_helpers %}
+{% load field_helpers waffle_tags %}
 
 {% block form_instructions %}
   <p>To help us determine your eligibility for a .gov domain, we need to know more about your tribal government.</p>
 {% endblock %}
 
+
 {% block form_fields %}
+  {% flag "is_embd_tribal" %}
+ 
+  <fieldset class="usa-fieldset">
+    <legend class="usa-legend">
+      <h2 class="margin-bottom-0">Is your organization a federally-recognized tribe or a state-recognized tribe?</h2>
+    </legend>
+    <p>Check all that apply. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+    {% input_with_errors forms.0.federally_recognized_tribe %}
+    {% input_with_errors forms.0.state_recognized_tribe %}
+  </fieldset>
+
+  <div id="tribe-select-wrapper" class="display-none">
+    <legend class="usa-legend">
+      <h2>Which tribe do you represent?</h2>
+    </legend>
+    <p><i>Organizations marked with a delta symbol (<span class="text-base" aria-hidden="true">&#x394;</span><span class="usa-sr-only">greek letter delta</span>) don't accept requests through this form.</i></p>
+
+    <p class="margin-bottom-05">Select your tribe <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+
+    <div id="federal-tribe-field" class="display-none">
+      {% with add_label_class="usa-sr-only" %}
+        {% input_with_errors forms.0.federal_tribe %}
+      {% endwith %}
+    </div>
+
+    <div id="state-tribe-field" class="display-none">
+      {% with add_label_class="usa-sr-only"%}
+        {% input_with_errors forms.0.state_tribe %}
+      {% endwith %}
+    </div>
+  </div>
+
+{% else %}
 
   <h2>What is the name of the tribe you represent?</h2>
   <p>Please include the full name of your tribe as recognized by the <a rel="noopener noreferrer" class="usa-link usa-link--external" href="https://www.federalregister.gov/documents/2024/01/08/2024-00109/indian-entities-recognized-by-and-eligible-to-receive-services-from-the-united-states-bureau-of" target="_blank">Bureau of Indian Affairs</a>.</p>
@@ -22,4 +56,6 @@
     {% input_with_errors forms.0.federally_recognized_tribe %}
     {% input_with_errors forms.0.state_recognized_tribe %}
   </fieldset>
+
+  {% endflag %}
 {% endblock %}
