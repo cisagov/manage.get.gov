@@ -11,12 +11,14 @@ import json
 from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, HASH_SESSION_KEY
 from django.contrib.sessions.backends.db import SessionStore
 from django.core.management.base import BaseCommand
-from registrar.models import User, UserGroup
+from registrar.models import User, Portfolio, UserPortfolioPermission, FederalAgency
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
 # Recognizable values so anyone looking at the database can tell at a glance
 # what created these rows. Don't use real-looking names here.
 TEST_USERNAME = "playwright-test-user"
 TEST_EMAIL = "playwright@test.local"
+TEST_PORTFOLIO = "PLAYWRIGHT TEST"
 
 
 class Command(BaseCommand):
@@ -39,8 +41,7 @@ class Command(BaseCommand):
         )
 
     def _ensure_user(self):
-        # All four name/title/phone fields are required so the
-        # CheckUserProfileMiddleware doesn't redirect us to /user-profile.
+        # Creates the test user/portfolio seed
         defaults = {
             "email": TEST_EMAIL,
             "first_name": "Playwright",
@@ -52,9 +53,19 @@ class Command(BaseCommand):
             username=TEST_USERNAME,
             defaults=defaults,
         )
-        group = UserGroup.objects.get(name="full_access_group")
-
-        group.user_set.add(user)
+        
+        federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
+        # Add a portfolio
+        portfolio = Portfolio.objects.create(
+            requester=user,
+            organization_name=TEST_PORTFOLIO,
+            federal_agency=federal_agency,
+        )
+        UserPortfolioPermission.objects.create(
+            user=user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
         # If someone in the past created the user with missing fields, top them up.
         if not created:
             updates = {k: v for k, v in defaults.items() if getattr(user, k, None) != v}

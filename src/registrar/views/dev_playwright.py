@@ -19,10 +19,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from registrar.management.commands.seed_playwright_session import (
-    TEST_USERNAME,
+    TEST_USERNAME, TEST_PORTFOLIO
 )
 from registrar.models import (
-    User,
+    User, Portfolio, UserPortfolioPermission
 )
 
 
@@ -57,19 +57,31 @@ def playwright_seed(request):
 @require_POST
 @transaction.atomic
 def playwright_purge(request):
-    """Delete the user/domain/DNS rows + sessions seeded by playwright_seed.
+    """Delete the test data + sessions seeded by playwright_seed.
 
     Safe to re-run — silent no-op if any of the rows are already gone.
     """
     if settings.IS_PRODUCTION:
         raise Http404
-
     user = User.objects.filter(username=TEST_USERNAME).first()
+    
+    portfolio = Portfolio.objects.filter(organization_name=TEST_PORTFOLIO).first()
+    if portfolio:
+        print(portfolio)
+        user_portfolio_permission = UserPortfolioPermission.objects.filter(user=user, portfolio=portfolio).first()
+        if user_portfolio_permission:
+            print(user_portfolio_permission)
+            user_portfolio_permission.delete()
+        portfolio.delete()
+
+  
     if user:
         # Sessions don't FK to User; scan and decode to find this user's.
         for session in Session.objects.all():
             if session.get_decoded().get("_auth_user_id") == str(user.pk):
                 session.delete()
         user.delete()
+
+    
 
     return HttpResponse("ok\n", content_type="text/plain")

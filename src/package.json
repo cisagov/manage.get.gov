@@ -12,8 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@uswds/uswds": "3.8.1",
-    "pa11y-ci": "^4.1.0",
-    "sass": "^1.54.8"
+    "pa11y-ci": "^5.0.0",
+    "sass": "^1.107.1"
   },
   "devDependencies": {
     "@babel/core": "^8.0.10",

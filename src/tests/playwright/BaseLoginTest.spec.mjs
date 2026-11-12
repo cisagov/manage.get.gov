@@ -11,17 +11,12 @@ use: {
 
 // Helpers ─────────────────────────────────────────────────────────────────
 const submitBtn = (page) =>
-    page.locator(`button[name="button"]`);
+    page.getByRole('button', {name: 'Search by domain name'});
 
 test.describe('Base Login Test', () => {
-    test.beforeEach(async ({ page }) => {
-        
-        
-        await page.goto(PAGE_PATH)
-        await expect(submitBtn(page)).toBeVisible();
-    });
-
+    //Base Test for session seed and authentication
     test('Base Login Test', async ({ page }) => {
         await page.goto(PAGE_PATH)
+        await expect(submitBtn(page)).toBeVisible()
     });
 });
