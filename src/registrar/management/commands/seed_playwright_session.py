@@ -12,7 +12,7 @@ from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, HASH_SESSION_K
 from django.contrib.sessions.backends.db import SessionStore
 from django.core.management.base import BaseCommand
 from registrar.models import User, Portfolio, UserPortfolioPermission, FederalAgency
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 # Recognizable values so anyone looking at the database can tell at a glance
 # what created these rows. Don't use real-looking names here.
@@ -53,7 +53,7 @@ class Command(BaseCommand):
             username=TEST_USERNAME,
             defaults=defaults,
         )
-        
+
         federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
         # Add a portfolio
         portfolio = Portfolio.objects.create(
@@ -62,9 +62,7 @@ class Command(BaseCommand):
             federal_agency=federal_agency,
         )
         UserPortfolioPermission.objects.create(
-            user=user,
-            portfolio=portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         # If someone in the past created the user with missing fields, top them up.
         if not created:
