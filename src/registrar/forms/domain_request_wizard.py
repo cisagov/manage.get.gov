@@ -43,6 +43,10 @@ from registrar.validations import (
 
 logger = logging.getLogger(__name__)
 
+# Stands for Greek capital letter delta
+# which marks that a Tribe alr has a Portfolio
+DELTA = "\u0394"
+
 
 class RequestingEntityForm(RegistrarForm):
     """The requesting entity form contains a dropdown for suborganizations,
@@ -264,7 +268,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
 
 
 class OrganizationTypeForm(RegistrarForm):
-    generic_org_type = forms.ChoiceField(
+    organization_type = forms.ChoiceField(
         # use the long names in the domain request form
         choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
@@ -323,8 +327,13 @@ class TribalGovernmentForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         # is_embd_tribal flag OFF: legacy flow, free text
+<<<<<<< HEAD
         # Also droppingt he dropdown data so it stays out of
         # cleaned_data so it wont overwrrite the FKs
+=======
+        # Also dropping the dropdown data so it stays out of
+        # cleaned_data so it wont overwrite the FKs
+>>>>>>> origin/main
         if not self.tribe_dropdown_enabled:
             del self.fields["federal_tribe"]
             del self.fields["state_tribe"]
@@ -341,7 +350,11 @@ class TribalGovernmentForm(RegistrarForm):
             for option in model.get_dropdown_options():
                 name = option["name"]
                 if option["has_existing_portfolio"]:
+<<<<<<< HEAD
                     name = f"∆ {name}"
+=======
+                    name = f"{DELTA} {name}"
+>>>>>>> origin/main
                 choices.append((option["id"], name))
 
             self.fields[field_name].queryset = model.objects.all()
@@ -368,10 +381,15 @@ class TribalGovernmentForm(RegistrarForm):
             return
 
         # If Federal AND State are checked, we show Federal Tribes
+        # If someone picks a tribe and then switches which kind of tribe
+        # they are, the now hidden dropdown still keeps what was "picked"
+        # Only one tribe can be saved, so we drop the prev "pick" otherwise the save will fail
         if self.cleaned_data.get("federally_recognized_tribe"):
+            self.cleaned_data["state_tribe"] = None
             if not self.cleaned_data.get("federal_tribe"):
                 self.add_error("federal_tribe", "Select the tribe you represent")
         elif self.cleaned_data.get("state_recognized_tribe"):
+            self.cleaned_data["federal_tribe"] = None
             if not self.cleaned_data.get("state_tribe"):
                 self.add_error("state_tribe", "Select the tribe you represent")
 

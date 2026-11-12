@@ -112,7 +112,7 @@ URL_PERMISSIONS = {
     "get_domain_requests_json": [ALL],
     "get_portfolio_members_json": [IS_PORTFOLIO_MEMBER],
     "get_member_domains_json": [IS_PORTFOLIO_MEMBER],
-    "get-messages": [IS_DOMAIN_MANAGER, IS_STAFF],
+    "get-messages": [ALL],
     # User profile
     "finish-user-profile-setup": [ALL],
     "user-profile": [ALL],
@@ -121,7 +121,7 @@ URL_PERMISSIONS = {
     # Domain request wizard
     "start": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "finished": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
-    "generic_org_type": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
+    "organization_type": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "tribal_government": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "organization_federal": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "organization_contact": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],

@@ -324,7 +324,7 @@ class Command(BaseCommand):
         updated = False
 
         fields_to_update = [
-            "generic_org_type",
+            "organization_type",
             "federal_type",
             "federal_agency",
             "organization_name",
@@ -423,7 +423,7 @@ class Command(BaseCommand):
         }
 
         if valid_org_type:
-            new_domain_info_data["generic_org_type"] = org_type[0]
+            new_domain_info_data["organization_type"] = org_type[0]
         elif debug_on:
             logger.debug(f"No org type found on {domain.name}")
 

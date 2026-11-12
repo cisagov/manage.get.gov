@@ -790,14 +790,14 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         domain_info = self.get_domain_info_from_domain()
         invalid_fields = [DomainRequest.OrganizationChoices.FEDERAL, DomainRequest.OrganizationChoices.TRIBAL]
-        is_federal_or_tribal = domain_info and (domain_info.generic_org_type in invalid_fields)
+        is_federal_or_tribal = domain_info and (domain_info.organization_type in invalid_fields)
         form_kwargs["disable_fields"] = is_federal_or_tribal
         return form_kwargs
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["generic_org_type"] = self.object.domain_info.generic_org_type
+        context["organization_type"] = self.object.domain_info.organization_type
         return context
 
     def get_success_url(self):
@@ -1103,8 +1103,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_first_record = False
         response_form = None
         headers = None
-        # set domain pk in the session for the permissions checks(alert messages)
-        request.session["domain_pk"] = self.object.id
         is_edit = False
 
         self.dns_host_service = DnsHostService()
