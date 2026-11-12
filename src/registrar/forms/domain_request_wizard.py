@@ -327,13 +327,8 @@ class TribalGovernmentForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         # is_embd_tribal flag OFF: legacy flow, free text
-<<<<<<< HEAD
-        # Also droppingt he dropdown data so it stays out of
-        # cleaned_data so it wont overwrrite the FKs
-=======
         # Also dropping the dropdown data so it stays out of
         # cleaned_data so it wont overwrite the FKs
->>>>>>> origin/main
         if not self.tribe_dropdown_enabled:
             del self.fields["federal_tribe"]
             del self.fields["state_tribe"]
@@ -350,11 +345,7 @@ class TribalGovernmentForm(RegistrarForm):
             for option in model.get_dropdown_options():
                 name = option["name"]
                 if option["has_existing_portfolio"]:
-<<<<<<< HEAD
-                    name = f"∆ {name}"
-=======
                     name = f"{DELTA} {name}"
->>>>>>> origin/main
                 choices.append((option["id"], name))
 
             self.fields[field_name].queryset = model.objects.all()
