@@ -466,7 +466,7 @@ class AuditedAdminMockData:
             purpose (str - optional): Sets a domains purpose
         Returns:
             Dictionary: {
-                generic_org_type: str,
+                organization_type: str,
                 federal_type: str,
                 purpose: str,
                 organization_name: str = "{} organization".format(item_name),
@@ -483,7 +483,7 @@ class AuditedAdminMockData:
         """  # noqa
         requester = self.dummy_user(item_name, "requester")
         common_args = dict(
-            generic_org_type=org_type,
+            organization_type=org_type,
             federal_type=federal_type,
             purpose=purpose,
             organization_name="{} organization".format(item_name),
@@ -713,7 +713,7 @@ class MockDb(TestCase):
         cls.domain_information_1, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_1,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_1,
             federal_type="executive",
             portfolio=cls.portfolio_1,
@@ -721,68 +721,68 @@ class MockDb(TestCase):
         cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_2,
-            generic_org_type="interstate",
+            organization_type="interstate",
             portfolio=cls.portfolio_1,
         )
         cls.domain_information_3, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_3,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_4, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_4,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_5, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_5,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_6, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_6,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_7, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_7,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_8, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_8,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_9, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_9,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_10, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_10,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_2,
         )
         cls.domain_information_11, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_11,
-            generic_org_type="federal",
+            organization_type="federal",
             federal_agency=cls.federal_agency_1,
             federal_type="executive",
         )
         cls.domain_information_12, _ = DomainInformation.objects.get_or_create(
             requester=cls.user,
             domain=cls.domain_12,
-            generic_org_type="interstate",
+            organization_type="interstate",
         )
 
         _, created = UserDomainRole.objects.get_or_create(
@@ -933,7 +933,7 @@ class MockDb(TestCase):
             cls.domain_request_4 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.STARTED,
                 name="city4.gov",
-                generic_org_type="city",
+                organization_type="city",
             )
             cls.domain_request_5 = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.APPROVED,
@@ -1170,8 +1170,7 @@ def completed_domain_request(  # noqa
     user=False,
     name="city.gov",
     investigator=None,
-    generic_org_type="federal",
-    organization_type=None,
+    organization_type="federal",
     federal_agency=None,
     federal_type=None,
     action_needed_reason=None,
@@ -1211,7 +1210,7 @@ def completed_domain_request(  # noqa
         )
 
     domain_request_kwargs = dict(
-        generic_org_type=generic_org_type,
+        organization_type=organization_type,
         federal_type="executive",
         purpose="Purpose of the site",
         is_policy_acknowledged=True,

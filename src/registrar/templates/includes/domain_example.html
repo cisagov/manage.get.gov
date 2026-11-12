@@ -1,35 +1,35 @@
 {% load static field_helpers %}
 {% load static form_helpers url_helpers %}
 
-{% if generic_org_type == 'state_or_territory' %}
+{% if organization_type == 'state_or_territory' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for U.S. states and territories</h2>
   </legend>
-{% elif generic_org_type == 'federal' %}
+{% elif organization_type == 'federal' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for federal agencies</h2>
   </legend>
-{% elif generic_org_type == 'special_district' %}
+{% elif organization_type == 'special_district' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for special districts</h2>
   </legend>
-{% elif generic_org_type == 'school_district' %}
+{% elif organization_type == 'school_district' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for school districts</h2>
   </legend>
-{% elif generic_org_type == 'tribal' %}
+{% elif organization_type == 'tribal' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for tribal governments</h2>
   </legend>
-{% elif generic_org_type == 'interstate' %}
+{% elif organization_type == 'interstate' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for interstate organizations</h2>
   </legend>
-{% elif generic_org_type == 'county' %}
+{% elif organization_type == 'county' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for counties</h2>
   </legend>
-{% elif generic_org_type == 'city' %}
+{% elif organization_type == 'city' %}
   <legend>
     <h2 class="margin-bottom-0">Naming requirements for cities</h2>
   </legend>
@@ -44,13 +44,13 @@
   and its <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url '/domains/executive-branch-guidance/' %}">implementation guidance</a>.
   </p>
 
-{% elif generic_org_type == 'interstate' %}
+{% elif organization_type == 'interstate' %}
   <p>
   Names that uniquely apply to your organization are likely to be approved over names that could also apply to others. 
   Requests for your organization’s initials alone may not be approved.
   </p>
 
-{% elif generic_org_type == 'state_or_territory' %}
+{% elif organization_type == 'state_or_territory' %}
   <p>State .gov domains must include the two-letter state abbreviation or clearly spell out the state name.</p> 
   <div class="grid-row">
 
@@ -123,7 +123,7 @@
     </div>
   </div>
   <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
-{% elif generic_org_type == 'tribal' %}
+{% elif organization_type == 'tribal' %}
 <p>Tribal domains may include the suffix -nsn, for native sovereign nation.</p>
 <div class="grid-row">
 
@@ -178,7 +178,7 @@
 
 <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
-{% elif generic_org_type == 'county' %}
+{% elif organization_type == 'county' %}
   <p>Most county .gov domains must include the two-letter state abbreviation or the full state name. County names that aren’t shared by any other city, county, parish, town, borough, village or equivalent in the U.S. (at the time a domain is granted) don’t have to refer to their state in their domain name. Counties can include “county” in their domain to distinguish it from other places with similar names.</p> 
       
   <p>We use the <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html">Census Bureau’s National Places Gazetteer Files</a> to determine if county names are unique.</p>
@@ -254,7 +254,7 @@
     </div>
   </div>
   <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
-{% elif generic_org_type == 'city' %}
+{% elif organization_type == 'city' %}
   <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name.</p>
   <p>Cities that meet one of the criteria below don’t have to refer to their state in their domain name.
     <ul class="usa-list">
@@ -335,7 +335,7 @@
   </div>
   <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
-{% elif generic_org_type == 'special_district' %}
+{% elif organization_type == 'special_district' %}
   <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name.</p>
   <div class="grid-row">
 
@@ -390,7 +390,7 @@
   <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
   <p>Requests for your organization's initials alone may not be approved.</p>
 
-{% elif generic_org_type == 'school_district' %}
+{% elif organization_type == 'school_district' %}
   <p>School districts that aren’t part of a local government are eligible for .gov domains. However, consider the following when deciding whether .gov is a good fit for your school district:</p>
   <ul>
     <li>While school district employees work in the public sector, most of their external interactions (e.g., teacher-to-parent/student, or administration-to-vendor) are different in nature from typical government interactions.</li>

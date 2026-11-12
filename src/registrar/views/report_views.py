@@ -122,7 +122,7 @@ class AnalyticsView(View):
         )
 
         query_fed_domains_no_port = Q(portfolio__isnull=True) & Q(
-            generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
+            organization_type=models.DomainRequest.OrganizationChoices.FEDERAL
         )
 
         query_fed_domains_port = Q(portfolio__organization_type=models.DomainRequest.OrganizationChoices.FEDERAL)
