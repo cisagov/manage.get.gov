@@ -8,7 +8,7 @@ from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_Vendo
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_http_client import build_dns_client
-from registrar.logging_context import set_dns_log_context
+from registrar.logging_context import set_dns_log_context, get_user_log_context
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -300,7 +300,11 @@ class DnsHostService:
         Returns the deleted DnsRecord's vendor id.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        raise DnsHostingError(code=DnsHostingErrorCodes.UPSTREAM_ERROR)
+        raise DnsHostingError(
+            code=DnsHostingErrorCodes.UPSTREAM_ERROR,
+            upstream_status=500,
+            context={"request_id": get_user_log_context().get("request_id")},
+        )
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
