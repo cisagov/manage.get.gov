@@ -1124,7 +1124,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             messages.error(request, e.message)
             if delete_record:
                 return HttpResponse(
-                    status=e.upstream_status,
+                    # TODO: Refactor this code to status=e.upstream_status. It is 200 on purpose
+                    # because the session isn't saved on 5xx, so the error banner would be lost.
+                    status=200,
                     headers={"HX-Reswap": "none", "HX-trigger": json.dumps({"messagesRefresh": ""})},
                 )
             response_form = form  # retain form data when experiencing external DNS service error

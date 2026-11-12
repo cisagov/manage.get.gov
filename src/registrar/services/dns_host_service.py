@@ -302,7 +302,7 @@ class DnsHostService:
         """
         raise DnsHostingError(
             code=DnsHostingErrorCodes.UPSTREAM_ERROR,
-            upstream_status=500,
+            upstream_status=200,
             context={"request_id": get_user_log_context().get("request_id")},
         )
         x_record_id = dns_record.get_active_x_record_id()
