@@ -86,12 +86,32 @@ function setupAdminTribeSelection(form, tribeDropdown) {
         updateRelatedTribeWidgets(tribeType, tribeId);
     }
 
+    function updateOrganizationType() {
+        // This checks if we moved away from a Tribal type and need to clear
+        // The auto populated organization name
+        if (organizationTypeDropdown.value !== 'tribal') {
+            if (tribeDropdown.value) {
+                // A tribe was selected so clear the organization name which
+                // would have been populated with the tribe's info
+                if (organizationInput) {
+                    organizationInput.value = '';
+                } else if (organizationDisplay) {
+                    organizationDisplay.textContent = '';
+                }
+                originalOrganizationName = '';
+            }
+            tribeDropdown.value = '';
+        }
+        // Reset hidden dropdowns and Federally/State recognized row
+        updateTribeFields();
+    }
+
     // Populate the fields for saved selections and forms returned with validation errors.
     updateTribeFields();
 
     tribeDropdown.addEventListener('change', updateTribeFields);
     if (organizationTypeDropdown) {
-        organizationTypeDropdown.addEventListener('change', updateTribeFields);
+        organizationTypeDropdown.addEventListener('change', updateOrganizationType);
     }
 
     for (const container of relatedWidgets) {
