@@ -171,9 +171,14 @@ th {
   }
 }
 
-// Styling for dns records table
+// Styling for dns records table, mobile first approach
 #dnsrecords-table {
     table-layout: fixed;
+
+    .usa-button{
+      width:100% !important;
+      margin-right: 0;
+    } 
 
     .no-padding{
        padding: 0;
@@ -184,20 +189,29 @@ th {
       overflow-wrap: break-word;
       white-space: normal;
     }
+    
+    td:nth-child(n),th:nth-child(n){
+      width:100%;
+    }
 
     th:nth-child(1),
     td:nth-child(1){
-      width:15%;
       padding-right:1em;
 
       .dns-comment-button{
         column-gap: 0;
+        float:right;
+        width: auto;
       }
       
     }
+  
+
+  @media (min-width: 480px){
+
     
     td:nth-child(1).no-padding-right{
-      padding-right: 0;
+        padding-right: 0;
     }
 
     
@@ -216,13 +230,21 @@ th {
 
 
     th:nth-child(4),
-    td:nth-child(4){
-      width:15%;
-    }
-    
+    td:nth-child(4),
     th:nth-child(5),
-    td:nth-child(5){
-      width:15%;
+    td:nth-child(5),
+    th:nth-child(1),
+    td:nth-child(1){
+      width:15%;    
+    }
+     
+  }
+
+  @media (min-width:768px){
+    .usa-button{
+      margin-right: 12px;
     }
   }
+
+}
  
