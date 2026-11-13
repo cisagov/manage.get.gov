@@ -176,7 +176,7 @@ th {
     table-layout: fixed;
 
     .usa-button{
-      width:100%;
+      width:100% !important;
       margin-right: 0;
     } 
 
@@ -245,5 +245,6 @@ th {
       margin-right: 12px;
     }
   }
+
 }
  
