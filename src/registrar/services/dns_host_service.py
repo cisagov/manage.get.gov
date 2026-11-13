@@ -23,7 +23,6 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import get_dns_zone_name_from_account_name, make_dns_account_name
 from epplibwrapper.errors import RegistryError
-from registrar.utility.errors import DnsHostingErrorCodes, DnsHostingError
 
 logger = logging.getLogger(__name__)
 
