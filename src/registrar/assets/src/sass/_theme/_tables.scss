@@ -202,12 +202,9 @@ th {
     }
   
 
-
-  @media(min-width:480) and (max-width:639){
-      .usa-button{
+    .usa-button{
         width:100%;
-      } 
-  }
+    } 
 
 
    @media (min-width: 480px){
@@ -237,6 +234,10 @@ th {
     th:nth-child(1),
     td:nth-child(1){
       width:15%;    
+    }
+
+    .usa-button{
+      margin-right: 0;
     }
   }
 }
