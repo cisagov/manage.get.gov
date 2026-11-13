@@ -207,11 +207,8 @@ th {
     }
   
 
-   @media (min-width: 480px){
-    
-    .usa-button{
-      margin-right: units(.75);
-    }
+  @media (min-width: 480px){
+
     
     td:nth-child(1).no-padding-right{
         padding-right: 0;
@@ -240,9 +237,13 @@ th {
     td:nth-child(1){
       width:15%;    
     }
+     
+  }
 
-
-  
+  @media (min-width:768px){
+    .usa-button{
+      margin-right: 12px;
+    }
   }
 }
  
