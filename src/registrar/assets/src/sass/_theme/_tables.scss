@@ -171,9 +171,14 @@ th {
   }
 }
 
-// Styling for dns records table
+// Styling for dns records table, mobile first approach
 #dnsrecords-table {
     table-layout: fixed;
+
+    .usa-button{
+      width:100%;
+      margin-right: 0;
+    } 
 
     .no-padding{
        padding: 0;
@@ -202,16 +207,15 @@ th {
     }
   
 
-    .usa-button{
-      width:100%;
-      margin-right: 0;
-    } 
-
-
    @media (min-width: 480px){
-      td:nth-child(1).no-padding-right{
+    
+    .usa-button{
+      margin-right: units(.75);
+    }
+    
+    td:nth-child(1).no-padding-right{
         padding-right: 0;
-      }
+    }
 
     
     th:nth-child(2),
@@ -237,9 +241,7 @@ th {
       width:15%;    
     }
 
-    .usa-button{
-      margin-right: units(.75);
-    }
+
   
   }
 }
