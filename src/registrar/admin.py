@@ -1042,10 +1042,10 @@ class DomainRequestAdminForm(forms.ModelForm):
                 if tribe_type in ("federal", "state"):
                     self.selected_tribe_type = tribe_type
         elif domain_request:
-            if domain_request.state_tribe_id:
-                self.selected_tribe_type = "state"
-            elif domain_request.federal_tribe_id:
+            if domain_request.federal_tribe_id:
                 self.selected_tribe_type = "federal"
+            elif domain_request.state_tribe_id:
+                self.selected_tribe_type = "state"
             # Avoid tribe_name legacy field
 
     def get_custom_field_transitions(self, instance, field):

@@ -34,6 +34,8 @@ function setupAdminTribeSelection(form, tribeDropdown) {
                 hideElement(container);
             }
             if (relatedDropdown.value !== relatedTribeId) {
+                // _get_related_choices() in widgets.py provides all choices for this tribe type.
+                // relatedDropdown.value selects an existing option from the list.
                 relatedDropdown.value = relatedTribeId;
                 // Django listens for this event to update the pencil and view links.
                 django.jQuery(relatedDropdown).trigger('change');

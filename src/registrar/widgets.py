@@ -29,6 +29,8 @@ class AdminTribeSelect(forms.Select):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context["related_widgets"] = []
+        # Render a hidden dropdown for each tribe (Federal / State) model to use Django's pencil/view controls.
+        # tribe-select-admin.js keeps the hidden dropdowns in sync with the user selected combined dropdown.
         for tribe_type, related_widget in self.related_widgets.items():
             choices, selected_pk = self._get_related_choices(context["widget"]["optgroups"], tribe_type)
             related_widget.choices = choices
@@ -44,6 +46,21 @@ class AdminTribeSelect(forms.Select):
         return context
 
     def _get_related_choices(self, optgroups, tribe_type):
+        """Return all choices for one hidden dropdown and its currently selected record ID.
+
+        The visible selector combines federal and state records using values such as
+        "federal:12" and "state:34". We have corresponding single-model hidden Django dropdowns
+        for State and Federal that allow the Django eye/pencil to work (they expect single model
+        dropdowns).
+
+        So here we build either all the federal or all the state options, keeping every choice of
+        that type, not just the selected one.  When an analyst changes the selection in the combined
+        dropdown, updateRelatedTribeWidgets() in tribe-select-admin.js selects the matching existing
+        option here to update the pencil/view links.
+
+        We must have all options so if the analyst changes their selection, the hidden dropdowns can
+        be updated to support the pencil/eye.
+        """
         choices = [("", "---------")]
         selected_pk = None
         for _group_label, options, _group_index in optgroups:
