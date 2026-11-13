@@ -202,7 +202,14 @@ th {
     }
   
 
-  
+
+  @media(min-width:480) and (max-width:639){
+      .usa-button{
+        width:100%;
+      } 
+  }
+
+
    @media (min-width: 480px){
       td:nth-child(1).no-padding-right{
         padding-right: 0;
