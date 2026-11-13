@@ -261,3 +261,28 @@ a.text-secondary:hover {
 .dns-edit-button {
   column-gap: 0.25rem;
 }
+
+// Forms submit button spinner when processing requests
+.usa-button[data-processing-request]::before {
+  content: "";
+  display: inline-flex;
+  width: 0.954rem;
+  height: 0.954rem;
+  margin-inline-end: units(0.5);
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: button-spinnner 1s linear  infinite;
+}
+
+@keyframes button-spinnner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usa-button[data-processing-request]::before {
+    animation: none;
+  }
+}

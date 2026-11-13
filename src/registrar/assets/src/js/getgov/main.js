@@ -22,6 +22,7 @@ import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
 import { initDynamicDNSRecordFormFields, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus, initDNSRecordCancelModal, initDeleteDnsRecord, initDNSRecordPreview } from './domain-dns-record-content.js';
 import { initializeTribalGovernmentToggle } from './tribal-govt-form.js';
+import { initFormBusyButtons } from './form-busy-button.js';
 
 initDomainValidators();
 
@@ -95,3 +96,5 @@ document.addEventListener('htmx:afterSettle', (evt) => {
 
 // Init modals
 initDeleteDnsRecord();
+
+initFormBusyButtons();
