@@ -257,7 +257,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         can_do_action = (
             "analyst_action" in session
             and "analyst_action_location" in session
-            and session["analyst_action_location"] == pk
+            and str(session["analyst_action_location"]) == str(pk)
         )
 
         if not can_do_action:
@@ -275,9 +275,9 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             None,
         ]
 
-        requested_domain = None
-        if DomainInformation.objects.filter(id=pk).exists():
-            requested_domain = DomainInformation.objects.get(id=pk)
+        requested_domain = DomainInformation.objects.filter(
+            domain_id=pk
+        ).first()
 
         # if no domain information or domain request exist, the user
         # should be able to manage the domain; however, if domain information
@@ -516,12 +516,9 @@ class DomainView(DomainBaseView):
         return False
 
     def in_editable_state(self, pk):
-        """Override in_editable_state from DomainPermission
-        Allow detail page to be viewable"""
+        """Allow the detail page to load when the domain exists."""
 
-        requested_domain = None
-        if Domain.objects.filter(id=pk).exists():
-            requested_domain = Domain.objects.get(id=pk)
+        return Domain.objects.filter(id=pk).exists()
 
         # return true if the domain exists, this will allow the detail page to load
         if requested_domain:

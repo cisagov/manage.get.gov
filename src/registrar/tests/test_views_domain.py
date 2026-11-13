@@ -526,6 +526,54 @@ class TestDomainDetail(TestDomainOverview):
                 detail_page, "If you need to make updates, contact one of the listed domain managers."
             )
 
+
+    def test_analyst_access_checks_linked_domain_request_status(self):
+        """An analyst must not bypass a disallowed linked request status."""
+        from django.test import RequestFactory
+        from registrar.views.domain import DomainView
+        from registrar.tests.common import completed_domain_request
+
+        staff_user = create_user()
+
+        # Create a domain and its linked information record.
+        domain = Domain.objects.create(name="regression-check.gov")
+        domain_info = DomainInformation.objects.create(
+            requester=self.user,
+            domain=domain,
+        )
+
+        # Ensure the domain and information IDs are different.
+        self.assertNotEqual(domain.id, domain_info.id)
+
+        request_record = completed_domain_request(
+            user=self.user,
+            name="regression-request.gov",
+            status=DomainRequest.DomainRequestStatus.INELIGIBLE,
+        )
+
+        domain_info.domain_request = request_record
+        domain_info.save()
+
+        request = RequestFactory().get("/")
+        request.user = staff_user
+        request.session = {
+            "analyst_action": "edit",
+            "analyst_action_location": domain.id,
+        }
+
+        view = DomainView()
+        view.request = request
+
+        try:
+            self.assertFalse(
+                view.can_access_other_user_domains(domain.id)
+            )
+        finally:
+            DomainInformation.objects.filter(
+                pk=domain_info.pk
+            ).update(domain_request=None)
+
+
     @less_console_noise_decorator
     def test_domain_readonly_on_detail_page(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
