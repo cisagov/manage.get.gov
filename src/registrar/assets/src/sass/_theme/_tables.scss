@@ -203,7 +203,8 @@ th {
   
 
     .usa-button{
-        width:100%;
+      width:100%;
+      margin-right: 0;
     } 
 
 
@@ -237,8 +238,9 @@ th {
     }
 
     .usa-button{
-      margin-right: 0;
+      margin-right: units(.75);
     }
+  
   }
 }
  
