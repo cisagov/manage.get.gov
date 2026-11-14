@@ -87,28 +87,7 @@ Resolves #00
 
 ### As a designer reviewer, I have
 
-#### Verified that the changes match the design intention
-
-- [ ] Checked that the design translated visually
-- [ ] Checked behavior. Comment any found issues or broken flows.
-- [ ] Checked different states (empty, one, some, error)
-- [ ] Checked for landmarks, page heading structure, and links
-
-#### Validated user-facing changes as a designer
-
-- [ ] Checked keyboard navigability
-- [ ] Reviewed [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari), ANDI, or WAVE:
-  - [ ] Tested general usability
-  - [ ] Page header structure
-  - [ ] Landmarks
-  - [ ] Links and buttons
-- [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
-- [ ] Tested with multiple browsers (check off which ones were used)
-  - [ ] Chrome
-  - [ ] Microsoft Edge
-  - [ ] FireFox
-  - [ ] Safari
-- [ ] (Rarely needed) Tested as both an analyst and applicant user
+Gone through the [PR design review checklist](https://dhscisa.enterprise.slack.com/lists/T02QH7E1MHA/F0CAD7X18QN?view_id=View0CA8VAB2V9) on Slack and tested the relevant checklist items for this PR. Make sure to note down what you've checked somewhere (on GitHub, Slack, etc.). 
 
 ### References
 - [Code review best practices](../docs/dev-practices/code_review.md)
