@@ -1623,12 +1623,3 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.federal_agency.get_federal_type_display()
         return self.get_federal_type_display()
-
-    # Name to display for the request's tribe
-    @property
-    def tribe_display_name(self):
-        if self.federal_tribe_id:
-            return self.federal_tribe.tribe_full_name
-        if self.state_tribe_id:
-            return self.state_tribe.tribe_name
-        return self.tribe_name

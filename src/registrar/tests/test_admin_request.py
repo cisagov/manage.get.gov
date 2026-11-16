@@ -2758,7 +2758,7 @@ class TestTribalDomainRequestAdminForm(TestCase):
 
     @less_console_noise_decorator
     def test_select_federal_tribe(self):
-        domain_request = completed_domain_request(generic_org_type="tribal")
+        domain_request = completed_domain_request(organization_type="tribal")
         tribe = FederalTribe.objects.create(tribe_full_name="The Slim Tribe")
 
         # admin.py does this with the fieldset, we do it here manually
@@ -2788,7 +2788,7 @@ class TestTribalDomainRequestAdminForm(TestCase):
 
     @less_console_noise_decorator
     def test_select_state_tribe(self):
-        domain_request = completed_domain_request(generic_org_type="tribal")
+        domain_request = completed_domain_request(organization_type="tribal")
         tribe = StateTribe.objects.create(tribe_name="The Shady Tribe")
 
         # admin.py does this with the fieldset, we do it here manually
