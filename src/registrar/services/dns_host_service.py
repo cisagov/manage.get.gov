@@ -587,6 +587,7 @@ class DnsHostService:
             domain_name = get_dns_zone_name_from_account_name(name)
         except ValueError:
             logger.error(f"Cannot extract domain name from the account name {name}")
+            raise
         vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
