@@ -1,4 +1,4 @@
-FROM node:26.13.1@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373cbd10e0ac
+FROM http://docker.io/cimg/node:26.13.0-browsers@sha256:01b628bd45035abd1ae517587902db3a40553a458395b90f323867234a5f06b4
 WORKDIR /app
 
 USER root
