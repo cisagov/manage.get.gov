@@ -21,6 +21,7 @@ import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
 import { initDynamicDNSRecordFormFields, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus, initDNSRecordCancelModal, initDeleteDnsRecord, initDNSRecordPreview } from './domain-dns-record-content.js';
+import { initializeTribalGovernmentToggle } from './tribal-govt-form.js';
 
 initDomainValidators();
 
@@ -82,6 +83,9 @@ initDNSRecordCancelModal()
 initDNSRecordTabOrder()
 initDNSRecordAlertFocus()
 initDNSRecordPreview()
+
+// Init the state/federal tribe dropdown
+initializeTribalGovernmentToggle();
 
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();

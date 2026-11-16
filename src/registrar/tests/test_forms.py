@@ -26,6 +26,7 @@ from registrar.forms.portfolio import (
     PortfolioMemberForm,
     PortfolioNewMemberForm,
 )
+from registrar.models import DomainRequest, FederalTribe, StateTribe
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -33,6 +34,11 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.tests.common import MockEppLib, create_user
 from django.contrib.auth import get_user_model
+from waffle.testutils import override_flag
+
+# Stands for Greek capital letter delta
+# which marks that a Tribe alr has a Portfolio
+DELTA = "\u0394"
 
 
 class TestFormValidation(MockEppLib):
@@ -799,3 +805,207 @@ class TestBasePortfolioMemberForms(TestCase):
         }
         self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions", portfolio_invitation)
         self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions", portfolio_invitation)
+
+
+class TestTribalGovernmentForm(TestCase):
+    """
+    Tests for
+    * is_embd_tribal gating
+    * Tribe dropdown choices
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.requester = User.objects.create(
+            username="tribe-form@meoward.com",
+            email="tribe-form@meoward.com",
+        )
+        self.domain_request = DomainRequest.objects.create(
+            requester=self.requester,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        self.federal_tribe = FederalTribe.objects.create(tribe_full_name="Mmmmm Nation")
+        self.state_tribe = StateTribe.objects.create(tribe_name="Mmmmm Tribe of Awesomeness")
+
+    def tearDown(self):
+        # Portfolio MUST go first - the tribe FKs are PROTECT,
+        # so a tribe cannot be deleted while a portfolio still points at it
+        Portfolio.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        StateTribe.objects.all().delete()
+        FederalTribe.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
+    @override_flag("is_embd_tribal", active=False)
+    @less_console_noise_decorator
+    def test_flag_off_gives_the_free_text_field_only(self):
+        # Check for only free text field no dropdown
+        form = TribalGovernmentForm(domain_request=self.domain_request)
+
+        self.assertIn("tribe_name", form.fields)
+        self.assertNotIn("federal_tribe", form.fields)
+        self.assertNotIn("state_tribe", form.fields)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_flag_on_gives_the_dropdowns_only(self):
+        # Check for dropdown, no free text field
+        form = TribalGovernmentForm(domain_request=self.domain_request)
+
+        self.assertNotIn("tribe_name", form.fields)
+        self.assertIn("federal_tribe", form.fields)
+        self.assertIn("state_tribe", form.fields)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_choices_are_alphabetical(self):
+        FederalTribe.objects.create(tribe_full_name="Zzzzz Nation")
+        FederalTribe.objects.create(tribe_full_name="Aaaaa Nation")
+
+        form = TribalGovernmentForm(domain_request=self.domain_request)
+        labels = [label for value, label in form.fields["federal_tribe"].choices]
+
+        self.assertEqual(labels[0], "- Select -")
+        self.assertEqual(labels[1:], ["Aaaaa Nation", "Mmmmm Nation", "Zzzzz Nation"])
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribe_with_a_portfolio_has_delta(self):
+        Portfolio.objects.create(
+            requester=self.requester,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+            federal_tribe=self.federal_tribe,
+        )
+
+        form = TribalGovernmentForm(domain_request=self.domain_request)
+        labels = [label for value, label in form.fields["federal_tribe"].choices]
+
+        self.assertIn(f"{DELTA} Mmmmm Nation", labels)
+        self.assertNotIn("Mmmmm Nation", labels)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribe_without_a_portfolio_has_no_delta(self):
+        form = TribalGovernmentForm(domain_request=self.domain_request)
+        labels = [label for value, label in form.fields["federal_tribe"].choices]
+
+        self.assertIn("Mmmmm Nation", labels)
+        self.assertNotIn("{DELTA} Mmmmm Nation", labels)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_federally_recognized_requires_a_federal_tribe(self):
+        form = TribalGovernmentForm(
+            data={"federally_recognized_tribe": True},
+            domain_request=self.domain_request,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("federal_tribe", form.errors)
+        self.assertNotIn("state_tribe", form.errors)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_state_recognized_requires_a_state_tribe(self):
+        form = TribalGovernmentForm(
+            data={"state_recognized_tribe": True},
+            domain_request=self.domain_request,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("state_tribe", form.errors)
+        self.assertNotIn("federal_tribe", form.errors)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_federal_state_checked_gives_federal(self):
+        """If Federal and State recognized are checked, we display Federal Tribes"""
+        form = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "state_recognized_tribe": True,
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("federal_tribe", form.errors)
+        self.assertNotIn("state_tribe", form.errors)
+
+    @override_flag("is_embd_tribal", active=False)
+    @less_console_noise_decorator
+    def test_flag_off_displays_free_text(self):
+        """
+        * When flag is off - can't write to the tribe FKs
+        * If we turn flag on and off it never wipes a tribe that was picked
+        """
+        form = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "tribe_name": "Cherokee Nation",
+            },
+            domain_request=self.domain_request,
+        )
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["tribe_name"], "Cherokee Nation")
+        self.assertNotIn("federal_tribe", form.cleaned_data)
+        self.assertNotIn("state_tribe", form.cleaned_data)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_switching_recognition_type_drops_other_tribe(self):
+        """We want to clear prev value (ie is user switches from Federal to State)"""
+        form = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "federal_tribe": self.federal_tribe.pk,
+                # Below is "leftover" from when the
+                # user chose State recognized before (no True like above)
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["federal_tribe"], self.federal_tribe)
+        self.assertIsNone(form.cleaned_data["state_tribe"])
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_switching_recognition_type_saves_wo_hitting_the_constraint(self):
+        """
+        User chooses State recognized -> hits save -> then changes to Federal
+        recognized and hits save again. Confirms we don't hit IntegrityError
+        with saving two tribes
+        """
+        first = TribalGovernmentForm(
+            data={
+                "state_recognized_tribe": True,
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+        self.assertTrue(first.is_valid())
+        first.to_database(self.domain_request)
+
+        self.domain_request.refresh_from_db()
+        self.assertEqual(self.domain_request.state_tribe, self.state_tribe)
+
+        second = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "federal_tribe": self.federal_tribe.pk,
+                # The "leftover" that we want to remove
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+        self.assertTrue(second.is_valid())
+        second.to_database(self.domain_request)
+
+        self.domain_request.refresh_from_db()
+        self.assertEqual(self.domain_request.federal_tribe, self.federal_tribe)
+        self.assertIsNone(self.domain_request.state_tribe)

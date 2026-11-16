@@ -108,7 +108,11 @@ class DomainRequestWizard(TemplateView):
     # The conditions by which each step is "unlocked" or "locked"
     REGULAR_UNLOCKING_STEPS = {
         Step.ORGANIZATION_TYPE: lambda self: self.domain_request.organization_type is not None,
-        Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
+        Step.TRIBAL_GOVERNMENT: lambda self: (
+            self.domain_request.tribe_name is not None
+            or self.domain_request.federal_tribe_id is not None
+            or self.domain_request.state_tribe_id is not None
+        ),
         Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
         Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
