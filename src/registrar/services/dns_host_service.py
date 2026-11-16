@@ -525,7 +525,14 @@ class DnsHostService:
 
     def compare_vendor_and_db_accounts(self):
         # get all the CF accounts and convert data to tuples (name, id). Used for sync status report.
-        vendor_accounts = self.get_all_accounts()
+        all_vendor_accounts = self.get_all_accounts()
+
+        # Accounts with no name can't be matched to a DB account or domain, and break the sorting below
+        unnamed_account_tags = [a["account_tag"] for a in all_vendor_accounts if not a.get("account_pubname")]
+        if unnamed_account_tags:
+            logger.warning("Skipping %s Cloudflare account(s) with no name: %s", len(unnamed_account_tags), unnamed_account_tags)
+        
+        vendor_accounts = [a for a in all_vendor_accounts if a.get("account_pubname")]
         vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
 
         duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
