@@ -735,14 +735,14 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         self.client.force_login(self.superuser)
         completed_domain_request()
-        response = self.client.get("/admin/registrar/domainrequest/?converted_generic_orgs=federal")
+        response = self.client.get("/admin/registrar/domainrequest/?converted_org_types=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request including "add federal agency", "add federal tribe"
         self.assertContains(response, "Federal", count=8)
         # This may be a bit more robust
         self.assertContains(
             response,
-            '<a id="genericorganization-filter-federal"' ' href="?converted_generic_orgs=federal">' "Federal</a>",
+            '<a id="organizationtype-filter-federal"' ' href="?converted_org_types=federal">' "Federal</a>",
         )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
@@ -2061,7 +2061,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "suborganization_state_territory",
             "requester",
             "investigator",
-            "generic_org_type",
             "organization_type",
             "federally_recognized_tribe",
             "state_recognized_tribe",
@@ -2231,7 +2230,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "portfolio_city",
                 "portfolio_zipcode",
                 "portfolio_urbanization",
-                "organization_type",
                 "federal_type",
                 "federal_agency",
                 "tribe",
@@ -2524,7 +2522,7 @@ class TestDomainRequestAdmin(MockEppLib):
             expected_fields = (
                 DomainRequestAdmin.PortfolioFilter,
                 DomainRequestAdmin.StatusListFilter,
-                DomainRequestAdmin.GenericOrgFilter,
+                DomainRequestAdmin.OrgTypeFilter,
                 DomainRequestAdmin.FederalTypeFilter,
                 "rejection_reason",
                 DomainRequestAdmin.InvestigatorFilter,
@@ -2731,7 +2729,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Create a fake domain request. State will be NY (2).
         _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, organization_type="interstate"
         )
 
         self.client.force_login(self.staffuser)

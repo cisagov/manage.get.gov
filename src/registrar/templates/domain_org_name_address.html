@@ -25,12 +25,12 @@
 
   <p>The name of your organization will be publicly listed as the domain registrant.</p>
 
-  {% if domain.domain_info.generic_org_type == "federal" %}
+  {% if domain.domain_info.organization_type == "federal" %}
   <p>
     The federal agency for your organization can’t be updated here.
     To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
   </p>
-  {% elif domain.domain_info.generic_org_type == "tribal" %}
+  {% elif domain.domain_info.organization_type == "tribal" %}
   <p>
     Your organization name can’t be updated here.
     To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
@@ -42,7 +42,7 @@
   <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
     {% csrf_token %}
 
-    {% if domain.domain_info.generic_org_type == 'federal' %}
+    {% if domain.domain_info.organization_type == 'federal' %}
       <h4 class="margin-bottom-05">Federal Agency</h4>
       <p class="margin-top-0">
         {{ domain.domain_info.federal_agency }}

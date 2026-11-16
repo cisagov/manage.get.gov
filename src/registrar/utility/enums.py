@@ -82,7 +82,7 @@ class Step(StrEnum):
     """
 
     # Non-Portfolio
-    ORGANIZATION_TYPE = "generic_org_type"
+    ORGANIZATION_TYPE = "organization_type"
     TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
     ORGANIZATION_CONTACT = "organization_contact"

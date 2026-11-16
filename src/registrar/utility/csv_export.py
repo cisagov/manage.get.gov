@@ -936,15 +936,15 @@ class DomainExport(BaseExport):
         """Returns a list of Domain Requests that has been filtered by the given organization value."""
 
         annotated_queryset = domain_infos_to_filter.annotate(
-            converted_generic_org_type=Case(
-                # Recreate the logic of the converted_generic_org_type property
+            converted_organization_type=Case(
+                # Recreate the logic of the converted_organization_type property
                 # here in annotations
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
-                default=F("generic_org_type"),
+                default=F("organization_type"),
                 output_field=CharField(),
             )
         )
-        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
+        return annotated_queryset.filter(converted_organization_type=org_to_filter_by)
 
     @classmethod
     def get_sliced_domains(cls, filter_condition):
@@ -1785,25 +1785,15 @@ class DomainRequestExport(BaseExport):
     def get_filtered_domain_requests_by_org(domain_requests_to_filter, org_to_filter_by):
         """Returns a list of Domain Requests that has been filtered by the given organization value"""
         annotated_queryset = domain_requests_to_filter.annotate(
-            converted_generic_org_type=Case(
-                # Recreate the logic of the converted_generic_org_type property
+            converted_organization_type=Case(
+                # Recreate the logic of the converted_organization_type property
                 # here in annotations
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
-                default=F("generic_org_type"),
+                default=F("organization_type"),
                 output_field=CharField(),
             )
         )
-        return annotated_queryset.filter(converted_generic_org_type=org_to_filter_by)
-
-        # return domain_requests_to_filter.filter(
-        #     # Filter based on the generic org value returned by converted_generic_org_type
-        #     id__in=[
-        #         domainRequest.id
-        #         for domainRequest in domain_requests_to_filter
-        #         if domainRequest.converted_generic_org_type
-        #         and domainRequest.converted_generic_org_type == org_to_filter_by
-        #     ]
-        # )
+        return annotated_queryset.filter(converted_organization_type=org_to_filter_by)
 
     @classmethod
     def get_computed_fields(cls, delimiter=", ", **kwargs):
@@ -1815,11 +1805,11 @@ class DomainRequestExport(BaseExport):
         # model objects as we export data, trying to reinstate model objects in order to grab @property
         # values negatively impacts performance.  Therefore, we will follow best practice and use annotations
         return {
-            "converted_generic_org_type": Case(
+            "converted_organization_type": Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("generic_org_type"),
+                default=F("organization_type"),
                 output_field=CharField(),
             ),
             "converted_federal_agency": Case(
@@ -1988,7 +1978,7 @@ class DomainRequestExport(BaseExport):
         human_readable_federal_type = BranchChoices.get_branch_label(federal_type) if federal_type else None
 
         # Handle the org_type field
-        org_type = model.get("converted_generic_org_type")
+        org_type = model.get("converted_organization_type")
         human_readable_org_type = DomainRequest.OrganizationChoices.get_org_label(org_type) if org_type else None
 
         # Handle the status field. Defaults to the wrong format.
