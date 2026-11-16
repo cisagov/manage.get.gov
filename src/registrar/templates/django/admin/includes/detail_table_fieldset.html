@@ -1,6 +1,7 @@
 {% extends "admin/fieldset.html" %}
 {% load custom_filters %}
 {% load static url_helpers %}
+{% load waffle_tags %}
 
 {% comment %}
 This is using a custom implementation fieldset.html (see admin/fieldset.html)
@@ -28,13 +29,18 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% if field.field.name == "tribe_recognition" %}
         <div class="readonly">{{ adminform.form.tribe_recognition_value }}</div>
     {% elif field.field.name == "organization_name" and opts.model_name == "domainrequest" and original_object.organization_type == "tribal" %}
-        <div class="readonly">
-            {% if original_object.tribe_display_name %}
-                {{ original_object.tribe_display_name }}
-            {% else %}
-                {{ field.contents }}
-            {% endif %}
-        </div>
+        {% flag "is_embd_tribal" %}
+            <div class="readonly">
+                {% if original_object.tribe_display_name %}
+                    {{ original_object.tribe_display_name }}
+                {% else %}
+                    {{ field.contents }}
+                {% endif %}
+            </div>
+        {% else %}
+            {% comment %} Use the same rendering on line 193 (the previous fallthrough) {% endcomment %}
+            <div class="readonly">{{ field.contents }}</div>
+        {% endflag %}
     {% elif field.field.name == "status_history" %}
         {% if filtered_audit_log_entries %}
         <div class="readonly">
@@ -56,11 +62,11 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                     {% else %}
                                         Error
                                     {% endif %}
-                                    
+
                                     {% if entry.rejection_reason %}
                                         - {{ entry.rejection_reason|default:"Error" }}
                                     {% endif %}
-                                    
+
                                     {% if entry.action_needed_reason %}
                                         - {{ entry.action_needed_reason|default:"Error" }}
                                     {% endif %}
@@ -233,7 +239,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     </h2>
                     <div class="usa-prose">
                         <p>
-                            The requester already received an email for this status/reason: 
+                            The requester already received an email for this status/reason:
                         </p>
                         <ul>
                             <li class="font-body-sm">Status: <b>Action needed</b></li>
@@ -249,9 +255,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         <ul class="usa-button-group">
                             <li class="usa-button-group__item">
                                 <button
-                                type="submit" 
+                                type="submit"
                                 id="action-needed-reason__confirm-edit-email"
-                                class="usa-button" 
+                                class="usa-button"
                                 data-close-modal
                                 >
                                     Yes, continue editing
@@ -282,7 +288,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 </button>
             </div>
         </div>
-        
+
         {% if original_object.action_needed_reason_email %}
             <input id="last-sent-action-needed-email-content" class="display-none" value="{{original_object.action_needed_reason_email}}">
         {% else %}
@@ -321,7 +327,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     </h2>
                     <div class="usa-prose">
                         <p>
-                            The requester already received an email for this status/reason: 
+                            The requester already received an email for this status/reason:
                         </p>
                         <ul>
                             <li class="font-body-sm">Status: <b>Rejected</b></li>
@@ -337,9 +343,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         <ul class="usa-button-group">
                             <li class="usa-button-group__item">
                                 <button
-                                type="submit" 
+                                type="submit"
                                 id="rejection-reason__confirm-edit-email"
-                                class="usa-button" 
+                                class="usa-button"
                                 data-close-modal
                                 >
                                     Yes, continue editing
@@ -378,12 +384,12 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "requested_suborganization" %}
         {{ field.field }}
         <div class="requested-suborganization--clear-button">
-            <button 
+            <button
             id="clear-requested-suborganization"
-            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled" 
+            class="usa-button--dja usa-button usa-button__small-text usa-button--unstyled"
             type="button"
             >
-                <svg 
+                <svg
                 class="usa-icon"
                 >
                     <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#close"></use>
@@ -413,9 +419,9 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "portfolio_senior_official" %}
         <div class="flex-container">
         <label aria-label="Senior official contact details"></label>
-        {% comment %}fields_always_present=True will shortcut the contact_detail_list template when 
+        {% comment %}fields_always_present=True will shortcut the contact_detail_list template when
          1. Senior official field should be hidden on domain request because no portfoloio is selected, which is desirable
-         2. A portfolio is selected but there is no senior official on the portfolio, where the shortcut is not desirable 
+         2. A portfolio is selected but there is no senior official on the portfolio, where the shortcut is not desirable
          To solve 2, we use an else No additional contact information found on field.field.name == "portfolio_senior_official"
          and we hide the placeholders from detail_table_fieldset in JS{% endcomment %}
         {% include "django/admin/includes/contact_detail_list.html" with user=original_object.portfolio.senior_official no_title_top_padding=field.is_readonly fields_always_present=True %}
@@ -445,22 +451,22 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                                 <td class="padding-left-1 text-size-small">
                                     {% if contact.email %}
                                         <input aria-hidden="true" class="display-none" value="{{ contact.email }}" />
-                                        <button 
+                                        <button
                                         class="
-                                            usa-button--dja 
-                                            usa-button 
-                                            usa-button__small-text 
-                                            usa-button--unstyled 
-                                            padding-right-1 
+                                            usa-button--dja
+                                            usa-button
+                                            usa-button__small-text
+                                            usa-button--unstyled
+                                            padding-right-1
                                             padding-top-0
                                             padding-bottom-0
-                                            usa-button--icon 
-                                            copy-to-clipboard 
-                                            text-no-underline" 
+                                            usa-button--icon
+                                            copy-to-clipboard
+                                            text-no-underline"
                                         type="button"
                                         >
-                                            <svg 
-                                            class="usa-icon" 
+                                            <svg
+                                            class="usa-icon"
                                             >
                                                 <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                                             </svg>
@@ -491,10 +497,10 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
     {% elif field.field.name == "investigator" and not field.is_readonly %}
         <div class="flex-container">
             <label aria-label="Assign yourself as the investigator"></label>
-            <button id="investigator__assign_self" 
-            data-user-name="{{ request.user }}" 
-            data-user-id="{{ request.user.id }}" 
-            type="button" 
+            <button id="investigator__assign_self"
+            data-user-name="{{ request.user }}"
+            data-user-id="{{ request.user.id }}"
+            type="button"
             class="usa-button usa-button--unstyled usa-button--dja-link-color usa-button__small-text text-no-underline margin-top-2 margin-bottom-1 margin-left-1">
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
                     <use xlink:href="/public/img/sprite.svg#group_add"></use>

@@ -1,5 +1,5 @@
 from datetime import datetime
-from django.forms import ValidationError
+from django.forms import ValidationError, modelform_factory
 from django.utils import timezone
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.constants import BranchChoices
@@ -13,6 +13,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainRequestAdmin,
     DomainRequestAdminForm,
+    TribalDomainRequestAdminForm,
     MyUserAdmin,
     AuditedAdmin,
 )
@@ -30,6 +31,8 @@ from registrar.models import (
     Suborganization,
 )
 from registrar.models.host import Host
+from registrar.models.federal_tribe import FederalTribe
+from registrar.models.state_tribe import StateTribe
 from registrar.models.public_contact import PublicContact
 from .common import (
     MockSESClient,
@@ -2751,6 +2754,69 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check if response contains expected_html
         self.assertIn(expected_html, response_content)
+
+
+class TestTribalDomainRequestAdminForm(TestCase):
+
+    @less_console_noise_decorator
+    def test_select_federal_tribe(self):
+        domain_request = completed_domain_request(generic_org_type="tribal")
+        tribe = FederalTribe.objects.create(tribe_full_name="The Slim Tribe")
+
+        # admin.py does this with the fieldset, we do it here manually
+        form_class = modelform_factory(
+            DomainRequest,
+            form=TribalDomainRequestAdminForm,
+            fields=["organization_type", "tribe", "organization_name"],
+        )
+        form = form_class(
+            instance=domain_request,
+            data={
+                "organization_type": "tribal",
+                "tribe": f"federal:{tribe.pk}",
+                "organization_name": "Previous organization name",
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        domain_request.refresh_from_db()
+
+        self.assertEqual(domain_request.federal_tribe, tribe)
+        self.assertIsNone(domain_request.state_tribe)
+        self.assertEqual(domain_request.organization_name, "The Slim Tribe")
+        self.assertTrue(domain_request.federally_recognized_tribe)
+        self.assertFalse(domain_request.state_recognized_tribe)
+
+    @less_console_noise_decorator
+    def test_select_state_tribe(self):
+        domain_request = completed_domain_request(generic_org_type="tribal")
+        tribe = StateTribe.objects.create(tribe_name="The Shady Tribe")
+
+        # admin.py does this with the fieldset, we do it here manually
+        form_class = modelform_factory(
+            DomainRequest,
+            form=TribalDomainRequestAdminForm,
+            fields=["organization_type", "tribe", "organization_name"],
+        )
+        form = form_class(
+            instance=domain_request,
+            data={
+                "organization_type": "tribal",
+                "tribe": f"state:{tribe.pk}",
+                "organization_name": "Previous organization name",
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        domain_request.refresh_from_db()
+
+        self.assertEqual(domain_request.state_tribe, tribe)
+        self.assertIsNone(domain_request.federal_tribe)
+        self.assertEqual(domain_request.organization_name, "The Shady Tribe")
+        self.assertTrue(domain_request.state_recognized_tribe)
+        self.assertFalse(domain_request.federally_recognized_tribe)
 
 
 class TestDomainRequestAdminForm(TestCase):

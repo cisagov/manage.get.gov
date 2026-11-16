@@ -923,19 +923,13 @@ class DomainRequestAdminForm(forms.ModelForm):
     """Custom form to limit transitions to available transitions.
     This form utilizes the custom widget for its class's ManyToMany UIs."""
 
-    tribe = forms.ChoiceField(label="Tribe name", required=False, widget=AdminTribeSelect)
-
     class Meta:
         model = models.DomainRequest
         fields = "__all__"
-        # We will build a single selector for the tribe and calculate the recognition status,
-        # so don't auto build fields for the following model fields:
+        # Tribe selection is managed by the combined fed/state selection in TribalDomainRequestAdminForm
         exclude = (
             "state_tribe",
             "federal_tribe",
-            "tribe_name",
-            "federally_recognized_tribe",
-            "state_recognized_tribe",
         )
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
@@ -964,10 +958,6 @@ class DomainRequestAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         domain_request = kwargs.get("instance")
-        if "tribe" in self.fields:
-            self._initialize_tribe_field(domain_request)
-        self._initialize_tribe_recognition(domain_request)
-
         if domain_request and domain_request.pk:
             current_state = domain_request.status
 
@@ -991,6 +981,146 @@ class DomainRequestAdminForm(forms.ModelForm):
             # readonly and the status field will not have a widget
             if not domain_request.requester.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
+
+    def get_custom_field_transitions(self, instance, field):
+        """Custom implementation of get_available_FIELD_transitions
+        in the FSM. Allows us to still display fields filtered out by a condition."""
+        curr_state = field.get_state(instance)
+        transitions = field.transitions[instance.__class__]
+        is_feb_request = instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE
+
+        for name, transition in transitions.items():
+            meta = transition._django_fsm
+            if meta.has_transition(curr_state):
+                transition_data = meta.get_transition(curr_state)
+
+                # exclude in review - omb as a status for non feb requests
+                if not is_feb_request and transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
+                    continue
+
+                yield meta.get_transition(curr_state)
+
+    def clean(self):
+        """
+        Override of the default clean on the form.
+        This is so we can inject custom form-level error messages.
+        """
+        # clean is called from clean_forms, which is called from is_valid
+        # after clean_fields.  it is used to determine form level errors.
+        # is_valid is typically called from view during a post
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+        investigator = cleaned_data.get("investigator")
+        rejection_reason = cleaned_data.get("rejection_reason")
+        action_needed_reason = cleaned_data.get("action_needed_reason")
+
+        # Get the old status
+        initial_status = self.initial.get("status", None)
+
+        # We only care about investigator when in these statuses
+        checked_statuses = [
+            DomainRequest.DomainRequestStatus.APPROVED,
+            DomainRequest.DomainRequestStatus.IN_REVIEW,
+            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
+            DomainRequest.DomainRequestStatus.REJECTED,
+            DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB,
+        ]
+
+        # If a status change occured, check for validity
+        if status != initial_status and status in checked_statuses:
+            # Checks the "investigators" field for validity.
+            # That field must obey certain conditions when an domain request is approved.
+            # Will call "add_error" if any issues are found.
+            self._check_for_valid_investigator(investigator)
+
+        # If the status is rejected, a rejection reason must exist
+        if status == DomainRequest.DomainRequestStatus.REJECTED:
+            self._check_for_valid_rejection_reason(rejection_reason)
+        elif status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
+            self._check_for_valid_action_needed_reason(action_needed_reason)
+
+        return cleaned_data
+
+    def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
+        """
+        Checks if the rejection_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = False
+
+        # Check if a rejection reason exists. Rejection is not possible without one.
+        error_message = None
+        if rejection_reason is None or rejection_reason == "":
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("rejection_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_action_needed_reason(self, action_needed_reason) -> bool:
+        """
+        Checks if the action_needed_reason field is not none.
+        Adds form errors on failure.
+        """
+        is_valid = action_needed_reason is not None and action_needed_reason != ""
+        if not is_valid:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
+            self.add_error("action_needed_reason", error_message)
+
+        return is_valid
+
+    def _check_for_valid_investigator(self, investigator) -> bool:
+        """
+        Checks if the investigator field is not none, and is staff.
+        Adds form errors on failure.
+        """
+
+        is_valid = False
+
+        # Check if an investigator is assigned. No approval is possible without one.
+        error_message = None
+        if investigator is None:
+            # Lets grab the error message from a common location
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
+        elif not investigator.is_staff:
+            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
+        else:
+            is_valid = True
+
+        if error_message is not None:
+            self.add_error("investigator", error_message)
+
+        return is_valid
+
+
+class TribalDomainRequestAdminForm(DomainRequestAdminForm):
+    """Supports is_embd_tribal waffle flag.  Adds the combined fed/state tribe selection to the domain request"""
+
+    tribe = forms.ChoiceField(label="Tribe name", required=False, widget=AdminTribeSelect)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # For read-only display, Django verifies the fieldlist before calling __init__, so we have to declare tribe
+        # up top and then remove it here (Django will build the read-only text)
+        if self._meta.exclude and "tribe" in self._meta.exclude:
+            self.fields.pop("tribe", None)
+
+        domain_request = kwargs.get("instance")
+        if "tribe" in self.fields:
+            self._initialize_tribe_field(domain_request)
+        self._initialize_tribe_recognition(domain_request)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if "tribe" in self.fields and "tribe" in cleaned_data:
+            self._clean_tribe(cleaned_data)
+        return cleaned_data
 
     def _initialize_tribe_field(self, domain_request):
         """Build the tribe selector that combines federal and state choices"""
@@ -1048,79 +1178,17 @@ class DomainRequestAdminForm(forms.ModelForm):
                 self.selected_tribe_type = "state"
             # Avoid tribe_name legacy field
 
-    def get_custom_field_transitions(self, instance, field):
-        """Custom implementation of get_available_FIELD_transitions
-        in the FSM. Allows us to still display fields filtered out by a condition."""
-        curr_state = field.get_state(instance)
-        transitions = field.transitions[instance.__class__]
-        is_feb_request = instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE
-
-        for name, transition in transitions.items():
-            meta = transition._django_fsm
-            if meta.has_transition(curr_state):
-                transition_data = meta.get_transition(curr_state)
-
-                # exclude in review - omb as a status for non feb requests
-                if not is_feb_request and transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
-                    continue
-
-                yield meta.get_transition(curr_state)
-
-    def clean(self):
-        """
-        Override of the default clean on the form.
-        This is so we can inject custom form-level error messages.
-        """
-        # clean is called from clean_forms, which is called from is_valid
-        # after clean_fields.  it is used to determine form level errors.
-        # is_valid is typically called from view during a post
-        cleaned_data = super().clean()
-        if "tribe" in self.fields and "tribe" in cleaned_data:
-            self._clean_tribe(cleaned_data)
-        status = cleaned_data.get("status")
-        investigator = cleaned_data.get("investigator")
-        rejection_reason = cleaned_data.get("rejection_reason")
-        action_needed_reason = cleaned_data.get("action_needed_reason")
-
-        # Get the old status
-        initial_status = self.initial.get("status", None)
-
-        # We only care about investigator when in these statuses
-        checked_statuses = [
-            DomainRequest.DomainRequestStatus.APPROVED,
-            DomainRequest.DomainRequestStatus.IN_REVIEW,
-            DomainRequest.DomainRequestStatus.ACTION_NEEDED,
-            DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.DomainRequestStatus.INELIGIBLE,
-            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB,
-        ]
-
-        # If a status change occured, check for validity
-        if status != initial_status and status in checked_statuses:
-            # Checks the "investigators" field for validity.
-            # That field must obey certain conditions when an domain request is approved.
-            # Will call "add_error" if any issues are found.
-            self._check_for_valid_investigator(investigator)
-
-        # If the status is rejected, a rejection reason must exist
-        if status == DomainRequest.DomainRequestStatus.REJECTED:
-            self._check_for_valid_rejection_reason(rejection_reason)
-        elif status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
-            self._check_for_valid_action_needed_reason(action_needed_reason)
-
-        return cleaned_data
-
     def _clean_tribe(self, cleaned_data):
-        """We need to validate against one of the two tribe models (FederalTribe or StateTribe)"""
+        """Validation for FederalTribe or StateTribe"""
         organization_type = cleaned_data.get("organization_type", self.instance.organization_type)
-        # Only for tribal requests
+        # Only applies for tribal requests
         if organization_type != DomainRequest.OrganizationChoices.TRIBAL:
             return
         selection = cleaned_data["tribe"]
         tribe = None
         tribe_type = None
         if selection:
-            # Split around the first colon, into tribe type and key
+            # Split around the first colon, into tribe type and key ("federal:12 or state:34 for example")
             tribe_type, pk = selection.split(":", 1)
             if tribe_type == "state":
                 model = StateTribe
@@ -1158,61 +1226,6 @@ class DomainRequestAdminForm(forms.ModelForm):
 
             if "organization_name" in self.fields:
                 cleaned_data["organization_name"] = self.instance.organization_name
-
-    def _check_for_valid_rejection_reason(self, rejection_reason) -> bool:
-        """
-        Checks if the rejection_reason field is not none.
-        Adds form errors on failure.
-        """
-        is_valid = False
-
-        # Check if a rejection reason exists. Rejection is not possible without one.
-        error_message = None
-        if rejection_reason is None or rejection_reason == "":
-            # Lets grab the error message from a common location
-            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_REJECTION_REASON)
-        else:
-            is_valid = True
-
-        if error_message is not None:
-            self.add_error("rejection_reason", error_message)
-
-        return is_valid
-
-    def _check_for_valid_action_needed_reason(self, action_needed_reason) -> bool:
-        """
-        Checks if the action_needed_reason field is not none.
-        Adds form errors on failure.
-        """
-        is_valid = action_needed_reason is not None and action_needed_reason != ""
-        if not is_valid:
-            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_ACTION_NEEDED_REASON)
-            self.add_error("action_needed_reason", error_message)
-
-        return is_valid
-
-    def _check_for_valid_investigator(self, investigator) -> bool:
-        """
-        Checks if the investigator field is not none, and is staff.
-        Adds form errors on failure.
-        """
-
-        is_valid = False
-
-        # Check if an investigator is assigned. No approval is possible without one.
-        error_message = None
-        if investigator is None:
-            # Lets grab the error message from a common location
-            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.NO_INVESTIGATOR)
-        elif not investigator.is_staff:
-            error_message = FSMDomainRequestError.get_error_message(FSMErrorCodes.INVESTIGATOR_NOT_STAFF)
-        else:
-            is_valid = True
-
-        if error_message is not None:
-            self.add_error("investigator", error_message)
-
-        return is_valid
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -4086,6 +4099,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "federal_agency",
                     "tribe",
                     "tribe_recognition",
+                    "tribe_name",
+                    "federally_recognized_tribe",
+                    "state_recognized_tribe",
                     "about_your_organization",
                 ],
             },
@@ -4263,6 +4279,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         fieldsets = super().get_fieldsets(request, obj)
 
         excluded_fields = set()
+        # Choose old or new tribal selection method (free text or dropdown)
+        if flag_is_active(request, "is_embd_tribal"):
+            excluded_fields.update(["tribe_name", "federally_recognized_tribe", "state_recognized_tribe"])
+        else:
+            excluded_fields.update(["tribe", "tribe_recognition"])
         feb_fields = [
             "feb_naming_requirements_details",
             "feb_purpose_choice",
@@ -4542,7 +4563,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         # Set the organization type for federal/state tribes if it exists
         if organization_type is None and obj:
             organization_type = obj.organization_type
-        if organization_type == DomainRequest.OrganizationChoices.TRIBAL:
+        if flag_is_active(request, "is_embd_tribal") and organization_type == DomainRequest.OrganizationChoices.TRIBAL:
             readonly_fields.append("organization_name")
 
         # Check if the requester is restricted
@@ -4826,7 +4847,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return combined_queryset, use_distinct
 
     def get_form(self, request, obj=None, **kwargs):
-        """Pass the 'is_omb_analyst' attribute to the form."""
+        # Use the new form for tribal selection behavior
+        if flag_is_active(request, "is_embd_tribal"):
+            kwargs["form"] = TribalDomainRequestAdminForm
+
         form = super().get_form(request, obj, **kwargs)
 
         # Handle the fed/state tribal selection fields
