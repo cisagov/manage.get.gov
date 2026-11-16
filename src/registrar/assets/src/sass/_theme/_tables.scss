@@ -173,12 +173,7 @@ th {
 
 // Styling for dns records table, mobile first approach
 #dnsrecords-table {
-    table-layout: fixed;
-
-    .usa-button{
-      width:100% !important;
-      margin-right: 0;
-    } 
+    table-layout: fixed; 
 
     .no-padding{
        padding: 0;
