@@ -87,6 +87,10 @@ function setupAdminTribeSelection(form, tribeDropdown) {
     }
 
     function updateOrganizationType() {
+        if (organizationTypeDropdown.value === 'tribal') {
+            // When switching into Tribal type use blank, and then resolve the name if possible in updateTribeFields
+            originalOrganizationName = '';
+        }
         // This checks if we moved away from a Tribal type and need to clear
         // The auto populated organization name
         if (organizationTypeDropdown.value !== 'tribal') {

@@ -4557,12 +4557,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
-        organization_type = request.POST.get("organization_type")
-        # Set the organization type for federal/state tribes if it exists
-        if organization_type is None and obj:
-            organization_type = obj.organization_type
-        if flag_is_active(request, "is_embd_tribal") and organization_type == DomainRequest.OrganizationChoices.TRIBAL:
-            readonly_fields.append("organization_name")
 
         # Check if the requester is restricted
         if obj and obj.requester.status == models.User.RESTRICTED:
