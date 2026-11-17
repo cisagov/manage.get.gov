@@ -7,7 +7,7 @@ from httpx import Client, HTTPStatusError, RequestError
 from typing import Any
 
 from registrar.services.cloudflare_service import CloudflareService, _typed_dns_error
-from registrar.logging_context import set_dns_log_context, set_user_log_context, clear_user_log_context
+from registrar.logging_context import set_domain_log_context, set_user_log_context, clear_user_log_context
 from registrar.utility.errors import (
     APIError,
     DnsTransportError,
@@ -946,7 +946,7 @@ class TestCloudflareService(SimpleTestCase):
         mock_response = httpx.Response(400, headers={"cf-ray": "135"}, json={"errors": []})
         http_error = HTTPStatusError(request="something", response=mock_response, message="bad request")
 
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             exc = _typed_dns_error(http_error)
 
         # assert log lines
@@ -955,7 +955,7 @@ class TestCloudflareService(SimpleTestCase):
 
         # RequestError branch (no response, transport failure)
         request_error = RequestError(request="something", message="timeout")
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             exc = _typed_dns_error(request_error)
 
         # assert log lines
