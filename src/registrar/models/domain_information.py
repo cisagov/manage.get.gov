@@ -2,7 +2,6 @@ from __future__ import annotations
 from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.constants import BranchChoices
 
 from .domain_request import DomainRequest
@@ -25,8 +24,8 @@ class DomainInformation(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Cache the original generic_org_type to detect changes on save
-        self._original_generic_org_type = self.generic_org_type
+        # Cache the original organization_type to detect changes on save
+        self._original_organization_type = self.organization_type
 
     class Meta:
         """Contains meta information about this class"""
@@ -96,20 +95,12 @@ class DomainInformation(TimeStampedModel):
         unique=True,
     )
 
-    # ##### data fields from the initial form #####
-    generic_org_type = models.CharField(
+    organization_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoices.choices,  # type: ignore[misc]
+        choices=OrganizationChoices.choices,
         null=True,
         blank=True,
         help_text="Type of organization",
-    )
-
-    organization_type = models.CharField(
-        max_length=255,
-        choices=DomainRequest.OrganizationChoices.choices,
-        null=True,
-        blank=True,
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -362,33 +353,18 @@ class DomainInformation(TimeStampedModel):
         if self.has_anything_else_text is not None:
             self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
-    def sync_organization_type(self):
-        """
-        Keeps organization_type and generic_org_type synchronized (without saving).
-        """
-
-        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
-            sender=self.__class__,
-            instance=self,
-        )
-
-        # Actually updates the organization_type field
-        org_type_helper.create_or_update_organization_type()
-
-        return self
-
     def clear_irrelevant_fields(self):
         """Clears fields that are no longer relevant when the organization type changes.
 
-        When generic_org_type changes, certain conditional fields become irrelevant:
+        When organization_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
         - tribe_name, federally_recognized_tribe, state_recognized_tribe, state_tribe,
         federal_tribe: Only for Tribal orgs
         - about_your_organization: Only for Special District or Interstate orgs
         """
 
-        old_org_type = getattr(self, "_original_generic_org_type", None)
-        new_org_type = self.generic_org_type
+        old_org_type = getattr(self, "_original_organization_type", None)
+        new_org_type = self.organization_type
 
         # Only clear fields if the org type actually changed
         if old_org_type and new_org_type != old_org_type:
@@ -416,7 +392,6 @@ class DomainInformation(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_yes_no_form_fields()
-        self.sync_organization_type()
         self.clear_irrelevant_fields()
         super().save(*args, **kwargs)
 
@@ -532,10 +507,10 @@ class DomainInformation(TimeStampedModel):
         return self.organization_name
 
     @property
-    def converted_generic_org_type(self):
+    def converted_organization_type(self):
         if self.portfolio:
             return self.portfolio.organization_type
-        return self.generic_org_type
+        return self.organization_type
 
     @property
     def converted_federal_agency(self):
@@ -595,10 +570,10 @@ class DomainInformation(TimeStampedModel):
 
     # ----- Portfolio Properties (display values)-----
     @property
-    def converted_generic_org_type_display(self):
+    def converted_organization_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
-        return self.get_generic_org_type_display()
+        return self.get_organization_type_display()
 
     @property
     def converted_federal_type_display(self):

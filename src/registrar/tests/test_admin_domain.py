@@ -159,7 +159,6 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertNotContains(response, "id_domain_info-0-portfolio_city")
         self.assertNotContains(response, "id_domain_info-0-portfolio_zipcode")
         self.assertNotContains(response, "id_domain_info-0-portfolio_urbanization")
-        self.assertNotContains(response, "id_domain_info-0-organization_type")
         self.assertNotContains(response, "id_domain_info-0-federal_type")
         self.assertNotContains(response, "id_domain_info-0-federal_agency")
         self.assertNotContains(response, "id_domain_info-0-tribe_name")
@@ -253,7 +252,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         # Create a fake domain request. State will be NY (2).
         _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, organization_type="interstate"
         )
 
         _domain_request.approve()
@@ -528,7 +527,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
             expected_filters = [
                 DomainAdmin.DnsEnrolledFilter,
-                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.OrgTypeFilter,
                 DomainAdmin.FederalTypeFilter,
                 "state",
             ]
@@ -1097,7 +1096,7 @@ class TestDomainAdminWithClient(TestCase):
         # for our actual domain_request including "add federal agency", "add federal tribe"
         self.assertContains(response, "Federal", count=9)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
+        self.assertContains(response, '<td class="field-converted_organization_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -1119,7 +1118,7 @@ class TestDomainAdminWithClient(TestCase):
 
             expected_filters = [
                 DomainAdmin.DnsEnrolledFilter,
-                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.OrgTypeFilter,
                 DomainAdmin.FederalTypeFilter,
                 "state",
             ]

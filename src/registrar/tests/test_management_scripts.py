@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestPopulateVerificationType(MockEppLib):
-    """Tests for the populate_organization_type script"""
+    """Tests for the populate_verification_type script"""
 
     @less_console_noise_decorator
     def setUp(self):
@@ -64,7 +64,7 @@ class TestPopulateVerificationType(MockEppLib):
         # Get the domain requests
         self.domain_request_1 = completed_domain_request(
             name="lasers.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
@@ -115,10 +115,10 @@ class TestPopulateVerificationType(MockEppLib):
     @less_console_noise_decorator
     def run_populate_verification_type(self):
         """
-        This method executes the populate_organization_type command.
+        This method executes the populate_verification_type command.
 
         The 'call_command' function from Django's management framework is then used to
-        execute the populate_organization_type command with the specified arguments.
+        execute the populate_verification_type command with the specified arguments.
         """
         with patch(
             "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
@@ -148,184 +148,6 @@ class TestPopulateVerificationType(MockEppLib):
         self.assertEqual(self.verified_by_staff_user.verification_type, User.VerificationTypeChoices.VERIFIED_BY_STAFF)
         self.assertEqual(self.untouched_user.verification_type, User.VerificationTypeChoices.GRANDFATHERED)
         self.assertEqual(self.fixture_user.verification_type, User.VerificationTypeChoices.FIXTURE_USER)
-
-
-class TestPopulateOrganizationType(MockEppLib):
-    """Tests for the populate_organization_type script"""
-
-    @less_console_noise_decorator
-    def setUp(self):
-        """Creates a fake domain object"""
-        super().setUp()
-
-        # Get the domain requests
-        self.domain_request_1 = completed_domain_request(
-            name="lasers.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-        self.domain_request_2 = completed_domain_request(
-            name="readysetgo.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-        self.domain_request_3 = completed_domain_request(
-            name="manualtransmission.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-        self.domain_request_4 = completed_domain_request(
-            name="saladandfries.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-        )
-
-        # Approve all three requests
-        self.domain_request_1.approve()
-        self.domain_request_2.approve()
-        self.domain_request_3.approve()
-        self.domain_request_4.approve()
-
-        # Get the domains
-        self.domain_1 = Domain.objects.get(name="lasers.gov")
-        self.domain_2 = Domain.objects.get(name="readysetgo.gov")
-        self.domain_3 = Domain.objects.get(name="manualtransmission.gov")
-        self.domain_4 = Domain.objects.get(name="saladandfries.gov")
-
-        # Get the domain infos
-        self.domain_info_1 = DomainInformation.objects.get(domain=self.domain_1)
-        self.domain_info_2 = DomainInformation.objects.get(domain=self.domain_2)
-        self.domain_info_3 = DomainInformation.objects.get(domain=self.domain_3)
-        self.domain_info_4 = DomainInformation.objects.get(domain=self.domain_4)
-
-    def tearDown(self):
-        """Deletes all DB objects related to migrations"""
-        super().tearDown()
-
-        # Delete domains and related information
-        Domain.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        DomainRequest.objects.all().delete()
-        User.objects.all().delete()
-        Contact.objects.all().delete()
-        Website.objects.all().delete()
-
-    @less_console_noise_decorator
-    def run_populate_organization_type(self):
-        """
-        This method executes the populate_organization_type command.
-
-        The 'call_command' function from Django's management framework is then used to
-        execute the populate_organization_type command with the specified arguments.
-        """
-        with patch(
-            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
-            return_value=True,
-        ):
-            call_command("populate_organization_type", "registrar/tests/data/fake_election_domains.csv")
-
-    @less_console_noise_decorator
-    def assert_expected_org_values_on_request_and_info(
-        self,
-        domain_request: DomainRequest,
-        domain_info: DomainInformation,
-        expected_values: dict,
-    ):
-        """
-        This is a helper function that tests the following conditions:
-        1. DomainRequest and DomainInformation (on given objects) are equivalent
-        2. That generic_org_type and organization_type are equal to passed in values
-
-        Args:
-            domain_request (DomainRequest): The DomainRequest object to test
-
-            domain_info (DomainInformation): The DomainInformation object to test
-
-            expected_values (dict): Container for what we expect generic_org_type,
-            and organization_type to be on DomainRequest and DomainInformation.
-                Example:
-                expected_values = {
-                    "generic_org_type": DomainRequest.OrganizationChoices.CITY,
-                    "organization_type": DomainRequest.OrganizationChoices.CITY,
-                }
-        """
-
-        # Test domain request
-        with self.subTest(field="DomainRequest"):
-            self.assertEqual(domain_request.generic_org_type, expected_values["generic_org_type"])
-            self.assertEqual(domain_request.organization_type, expected_values["organization_type"])
-
-        # Test domain info
-        with self.subTest(field="DomainInformation"):
-            self.assertEqual(domain_info.generic_org_type, expected_values["generic_org_type"])
-            self.assertEqual(domain_info.organization_type, expected_values["organization_type"])
-
-    def do_nothing(self):
-        """Does nothing for mocking purposes"""
-        pass
-
-    @less_console_noise_decorator
-    def test_request_and_info_city_not_in_csv(self):
-        """
-        Tests what happens to a city domain that is not defined in the CSV.
-
-        Scenario: A domain request (of type city) is made that is not defined in the CSV file.
-            When a domain request is made for a city that is not listed in the CSV,
-            Then the `generic_org_type` and `organization_type` should both be `city`.
-
-        Expected Result: The `generic_org_type` attributes should be unchanged.
-        The `organization_type` field should now be `city`.
-        """
-
-        city_request = self.domain_request_2
-        city_info = self.domain_request_2
-
-        # Make sure that all data is correct before proceeding.
-        expected_values = {
-            "generic_org_type": DomainRequest.OrganizationChoices.CITY,
-            "organization_type": DomainRequest.OrganizationChoices.CITY,
-        }
-        self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
-
-        # Run the populate script
-        try:
-            self.run_populate_organization_type()
-        except Exception as e:
-            self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
-
-        # All values should be the same
-        self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
-
-    @less_console_noise_decorator
-    def test_request_and_info_federal(self):
-        """
-        Tests what happens to a federal domain after the script is run (should be unchanged).
-
-        Scenario: A domain request (of type federal) is processed after running the populate_organization_type script.
-            When a federal domain request is made,
-            Then the `generic_org_type` and `organization_type` fields should both be `federal`.
-
-        Expected Result: The `generic_org_type` attributes should be unchanged.
-        The `organization_type` field should now be `federal`.
-        """
-        federal_request = self.domain_request_1
-        federal_info = self.domain_info_1
-
-        # Make sure that all data is correct before proceeding.
-        expected_values = {
-            "generic_org_type": DomainRequest.OrganizationChoices.FEDERAL,
-            "organization_type": DomainRequest.OrganizationChoices.FEDERAL,
-        }
-        self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
-
-        # Run the populate script
-        try:
-            self.run_populate_organization_type()
-        except Exception as e:
-            self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
-
-        # All values should be the same
-        self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
 
 
 class TestPopulateFirstReady(TestCase):
@@ -1370,7 +1192,7 @@ class TestCreateFederalPortfolio(TestCase):
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             self.domain_request = completed_domain_request(
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.CITY,
+                organization_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
                 organization_name="Testorg",
@@ -1382,7 +1204,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.domain_request_2 = completed_domain_request(
                 name="icecreamforigorville.gov",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.CITY,
+                organization_type=DomainRequest.OrganizationChoices.CITY,
                 federal_agency=self.federal_agency,
                 user=self.user,
                 organization_name="Test Federal Agency",
@@ -1393,7 +1215,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.domain_request_3 = completed_domain_request(
                 name="exec_1.gov",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 federal_agency=self.executive_agency_1,
                 user=self.user,
                 organization_name="Executive Agency 1",
@@ -1404,7 +1226,7 @@ class TestCreateFederalPortfolio(TestCase):
             self.domain_request_4 = completed_domain_request(
                 name="exec_2.gov",
                 status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 federal_agency=self.executive_agency_2,
                 user=self.user,
                 organization_name="Executive Agency 2",
@@ -1439,7 +1261,7 @@ class TestCreateFederalPortfolio(TestCase):
         matching_request = completed_domain_request(
             name="matching.gov",
             status=DomainRequest.DomainRequestStatus.STARTED,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=federal_agency_2,
             user=self.user,
             portfolio=portfolio,
@@ -1449,7 +1271,7 @@ class TestCreateFederalPortfolio(TestCase):
         matching_request_in_wrong_status = completed_domain_request(
             name="kinda-matching.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.federal_agency,
             user=self.user,
         )
@@ -1483,7 +1305,7 @@ class TestCreateFederalPortfolio(TestCase):
         matching_agency_request = completed_domain_request(
             name="agency-match.gov",
             status=DomainRequest.DomainRequestStatus.STARTED,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=federal_agency_2,
             user=self.user,
         )
@@ -1492,7 +1314,7 @@ class TestCreateFederalPortfolio(TestCase):
         non_matching_request = completed_domain_request(
             name="no-match.gov",
             status=DomainRequest.DomainRequestStatus.STARTED,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.federal_agency,
             user=self.user,
         )
@@ -1591,7 +1413,7 @@ class TestCreateFederalPortfolio(TestCase):
         custom_suborg_request = completed_domain_request(
             name="custom_org.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.executive_agency_2,
             user=self.user,
             organization_name=" requested org name ",
@@ -1866,7 +1688,7 @@ class TestCreateFederalPortfolio(TestCase):
         domain_request_1 = completed_domain_request(
             name="domain1.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
             federal_agency=self.federal_agency,
             user=self.user,
             portfolio=self.portfolio,
@@ -1877,7 +1699,7 @@ class TestCreateFederalPortfolio(TestCase):
         domain_request_2 = completed_domain_request(
             name="domain2.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
             federal_agency=self.federal_agency,
             user=self.user,
             portfolio=self.portfolio,
@@ -1925,7 +1747,7 @@ class TestCreateFederalPortfolio(TestCase):
         domain_request = completed_domain_request(
             name="wackytaco.gov",
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.federal_agency,
             user=self.user,
             organization_name="would_create_suborg",
