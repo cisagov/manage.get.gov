@@ -261,3 +261,13 @@ a.text-secondary:hover {
 .dns-edit-button {
   column-gap: 0.25rem;
 }
+
+
+
+:is(#dnsrecords-form-container, #dns-records-table-container) .dns-space-between-buttons {
+   margin-top: units(1.5);
+
+    @media (min-width:640px){
+      margin-top:units(3)
+    }
+}
