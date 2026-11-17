@@ -36,4 +36,5 @@ updates:
   - package-ecosystem: "docker"
     directory: "/src"
     schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
