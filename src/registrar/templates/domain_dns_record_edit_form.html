@@ -41,11 +41,11 @@
                 </div>
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <div class="grid-row">
-                    <div class="grid-col-12 tablet:grid-col-auto">
+                    <div class="grid-col-12 tablet:grid-col-auto tablet:margin-right-105">
                         <button
                             type="button"
                             id="dnsrecord-edit-cancel-button-{{ dns_record.id }}"
-                            class="usa-button usa-button--outline mobile-lg:width-full js-dnsrecord-edit-cancel margin-right-105"
+                            class="usa-button usa-button--outline mobile-lg:width-full js-dnsrecord-edit-cancel"
                             data-record-id="{{ dns_record.id }}"
                         >
                             Cancel
