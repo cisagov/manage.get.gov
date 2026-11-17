@@ -19,15 +19,15 @@ Learn more about:
 - Eligibility for a .gov domain <https://get.gov/domains/eligibility>
 - What you can and can’t do with .gov domains <https://get.gov/domains/requirements/>
 
-If you have questions or comments, reply to this email.{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.REQUESTOR_NOT_ELIGIBLE %}
-Your domain request was rejected because we don’t believe you’re eligible to request a 
+If you have questions or comments, reply to this email.{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.REQUESTOR_NOT_AUTHORIZED %}
+Your domain request was rejected because we don’t believe you’re authorized to request a 
 .gov domain on behalf of {{ domain_request.organization_name }}. You must be a government employee, or be 
 working on behalf of a government organization, to request a .gov domain.
 
 
-DEMONSTRATE ELIGIBILITY
-If you can provide more information that demonstrates your eligibility, or you want to 
-discuss further, reply to this email.{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.ORG_HAS_DOMAIN %}
+SHOW YOU’RE AUTHORIZED
+If you can provide more information that shows you’re authorized to act for 
+{{ domain_request.organization_name }}, or you want to discuss further, reply to this email.{% elif reason == domain_request.RejectionReasons.DOMAIN_PURPOSE.ORG_HAS_DOMAIN %}
 Your domain request was rejected because {{ domain_request.organization_name }} has a .gov domain. Our 
 practice is to approve one domain per online service per government organization. We 
 evaluate additional requests on a case-by-case basis. You did not provide sufficient 
@@ -68,7 +68,7 @@ Learn more about:
 NEED ASSISTANCE?
 If you have questions about this domain request or need help choosing a new domain name, reply to this email.
 {% endif %}
-{% if reason != domain_request.RejectionReasons.REQUESTOR_NOT_ELIGIBLE and reason != domain_request.RejectionReasons.ORG_NOT_ELIGIBLE %}
+{% if reason != domain_request.RejectionReasons.REQUESTOR_NOT_AUTHORIZED and reason != domain_request.RejectionReasons.ORG_NOT_ELIGIBLE %}
 
 {% endif %}
 ----------------------------------------------------------------
