@@ -24,7 +24,7 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsHostingErrorCodes, DnsRateLimitError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
     create_dns_account,
@@ -531,26 +531,47 @@ class TestDnsHostService(TestCase):
             )
             self.assertEqual(entry.get("domain_name"), domain.name)
 
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    def test_get_all_zones_success(self, mock_get_all_zones):
+        mock_zones = [
+            {"id": "zone-1", "name": "stream.us", "account": {"id": "54345", "name": "Account for stream.us"}},
+            {"id": "zone-2", "name": "river.us", "account": {"id": "54346", "name": "Account for river.us"}},
+        ]
+        mock_get_all_zones.return_value = mock_zones
+
+        zones = self.service.get_all_zones()
+
+        self.assertEqual(zones, mock_zones)
+        mock_get_all_zones.assert_called_once_with(50)
+
+    def _cf_account(self, domain_name, x_account_id, account_name=None):
+        return {
+            "account_tag": x_account_id,
+            "account_pubname": account_name or make_dns_account_name(domain_name),
+            "account_type": "enterprise",
+            "created_on": "2026-06-09T18:25:46.427351Z",
+        }
+
+    def _cf_zone(self, domain_name, x_zone_id, x_account_id):
+        return {
+            "id": x_zone_id,
+            "name": domain_name,
+            "account": {"id": x_account_id, "name": make_dns_account_name(domain_name)},
+        }
+
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
-    def test_compare_vendor_and_db_accounts(self, mock_get_tenant_accounts, mock_get_account_zones):
+    def test_compare_vendor_and_db_accounts(
+        self, mock_get_tenant_accounts, mock_get_all_zones, mock_get_account_zones, mock_find_existing_zone_in_cf
+    ):
         # Create data with scenarios:
         # all good: vendor account, db account, vendor zone, db zone
         # has vendor account, has vendor zone, missing account and zone db
         # only vendor account, no vendor zone (no account/zone db)
         # multiple accounts with same name: one with  vendor/db zone, the other with only acccount, no db
         # has db account, no vendor account
-
-        def cf_account(domain_name, x_account_id):
-            return {
-                "account_tag": x_account_id,
-                "account_pubname": make_dns_account_name(domain_name),
-                "account_type": "enterprise",
-                "created_on": "2026-06-09T18:25:46.427351Z",
-            }
-
-        def cf_zone(domain_name, x_zone_id):
-            return {"id": x_zone_id, "name": domain_name}
 
         # --- DB data: account + zone, linked to the vendor ids ---
         for domain_name, x_account_id, x_zone_id in [
@@ -567,24 +588,22 @@ class TestDnsHostService(TestCase):
 
         # --- Vendor (Cloudflare) data ---
         mock_get_tenant_accounts.return_value = [
-            cf_account("easypeezy.gov", "5"),
-            cf_account("pieceofcake.gov", "6"),
-            cf_account("haunted.gov", "1"),
-            cf_account("haunted.gov", "2"),  # duplicate name, never made it to the db or zone creation
-            cf_account("vendoronly.gov", "3"),
-            cf_account("vendoronly2.gov", "7"),
+            self._cf_account("easypeezy.gov", "5"),
+            self._cf_account("pieceofcake.gov", "6"),
+            self._cf_account("haunted.gov", "1"),
+            self._cf_account("haunted.gov", "2"),  # duplicate name, never made it to the db or zone creation
+            self._cf_account("vendoronly.gov", "3"),
+            self._cf_account("vendoronly2.gov", "7"),
             # no-vendor.gov ("4") intentionally missing from cf
         ]
 
-        zones_by_x_account_id = {
-            "5": [cf_zone("easypeezy.gov", "zone-easypeezy")],
-            "6": [cf_zone("pieceofcake.gov", "zone-pieceofcake")],
-            "1": [cf_zone("haunted.gov", "zone-haunted-1")],
-            "2": [],
-            "3": [cf_zone("vendoronly.gov", "zone-vendoronly-1")],
-            "7": [],
-        }
-        mock_get_account_zones.side_effect = lambda x_account_id: {"result": zones_by_x_account_id[x_account_id]}
+        # Zones for every account, fetched in one listing. Account "2" and "7" have no zone.
+        mock_get_all_zones.return_value = [
+            self._cf_zone("easypeezy.gov", "zone-easypeezy", "5"),
+            self._cf_zone("pieceofcake.gov", "zone-pieceofcake", "6"),
+            self._cf_zone("haunted.gov", "zone-haunted-1", "1"),
+            self._cf_zone("vendoronly.gov", "zone-vendoronly-1", "3"),
+        ]
 
         expected_result = {
             "duplicate_account_names": ["Account for haunted.gov"],
@@ -607,6 +626,199 @@ class TestDnsHostService(TestCase):
         result = self.service.compare_vendor_and_db_accounts()
 
         self.assertEqual(result, expected_result)
+        # Zones are fetched once for all accounts, not once per vendor-only account
+        mock_get_all_zones.assert_called_once()
+        mock_get_account_zones.assert_not_called()
+        mock_find_existing_zone_in_cf.assert_not_called()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_matches_zone_by_account_id_and_name(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        """A zone only counts for a vendor-only account when both its account id and its name match."""
+        mock_get_tenant_accounts.return_value = [
+            self._cf_account("haunted.gov", "1"),
+            self._cf_account("haunted.gov", "2"),
+            self._cf_account("haunted.gov", "8"),
+            self._cf_account("lonely.gov", "9"),
+        ]
+        mock_get_all_zones.return_value = [
+            # Same domain name in different accounts: only account "8" is vendor-only with this zone
+            self._cf_zone("haunted.gov", "zone-haunted-1", "1"),
+            self._cf_zone("haunted.gov", "zone-haunted-8", "8"),
+            # Right account, wrong zone name
+            self._cf_zone("not-lonely.gov", "zone-not-lonely", "9"),
+            # Right zone name, account not in this tenant's vendor-only list
+            self._cf_zone("lonely.gov", "zone-lonely-other", "99"),
+        ]
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result["duplicate_account_names"], ["Account for haunted.gov"])
+        self.assertEqual(
+            result["vendor_only"],
+            [
+                ("Account for haunted.gov", "1"),
+                ("Account for haunted.gov", "2"),
+                ("Account for haunted.gov", "8"),
+                ("Account for lonely.gov", "9"),
+            ],
+        )
+        self.assertEqual(
+            result["vendor_accounts_with_zone_no_db"],
+            [("Account for haunted.gov", "1"), ("Account for haunted.gov", "8")],
+        )
+        self.assertEqual(result["db_only"], [])
+        self.assertEqual(result["synced_accounts"], [])
+        mock_get_all_zones.assert_called_once()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_skips_zone_lookup_without_vendor_only_accounts(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        create_initial_dns_setup(
+            domain=create_domain(domain_name="synced.gov"),
+            x_account_id="5",
+            x_zone_id="zone-synced",
+        )
+        mock_get_tenant_accounts.return_value = [self._cf_account("synced.gov", "5")]
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(
+            result,
+            {
+                "duplicate_account_names": [],
+                "vendor_only": [],
+                "db_only": [],
+                "vendor_accounts_with_zone_no_db": [],
+                "synced_accounts": [("Account for synced.gov", "5")],
+            },
+        )
+        mock_get_all_zones.assert_not_called()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_handles_invalid_account_names(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        """Account names that don't follow our naming convention are still reported as vendor only,
+        are never matched to a zone, and don't stop the rest of the report."""
+        mock_get_tenant_accounts.return_value = [
+            self._cf_account("", "10", account_name="Some other account"),
+            self._cf_account("valid.gov", "11"),
+        ]
+        mock_get_all_zones.return_value = [
+            self._cf_zone("valid.gov", "zone-valid", "11"),
+            {"id": "zone-other", "name": "Some other account", "account": {"id": "10"}},
+        ]
+
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+            result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result["vendor_only"], [("Account for valid.gov", "11"), ("Some other account", "10")])
+        self.assertEqual(result["vendor_accounts_with_zone_no_db"], [("Account for valid.gov", "11")])
+        self.assertTrue(json_log_entries(stream, containing="Cannot extract domain name"))
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_skips_zone_lookup_when_all_names_invalid(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        mock_get_tenant_accounts.return_value = [self._cf_account("", "10", account_name="Some other account")]
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result["vendor_only"], [("Some other account", "10")])
+        self.assertEqual(result["vendor_accounts_with_zone_no_db"], [])
+        mock_get_all_zones.assert_not_called()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_vendor_only_without_zones(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        mock_get_tenant_accounts.return_value = [
+            self._cf_account("first.gov", "1"),
+            self._cf_account("second.gov", "2"),
+        ]
+        mock_get_all_zones.return_value = []
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result["vendor_only"], [("Account for first.gov", "1"), ("Account for second.gov", "2")])
+        self.assertEqual(result["vendor_accounts_with_zone_no_db"], [])
+        mock_get_all_zones.assert_called_once()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_skips_zones_without_account_id(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        """Zones missing a usable account id or name are never matched and don't break the report."""
+        mock_get_tenant_accounts.return_value = [
+            self._cf_account("valid.gov", "11"),
+            self._cf_account("noaccount.gov", "12"),
+        ]
+        mock_get_all_zones.return_value = [
+            self._cf_zone("valid.gov", "zone-valid", "11"),
+            {"id": "zone-a", "name": "noaccount.gov"},
+            {"id": "zone-b", "name": "noaccount.gov", "account": None},
+            {"id": "zone-c", "name": "noaccount.gov", "account": "12"},
+            {"id": "zone-d", "name": "noaccount.gov", "account": {"name": "Account for noaccount.gov"}},
+            {"id": "zone-e", "account": {"id": "12"}},
+        ]
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result["vendor_only"], [("Account for noaccount.gov", "12"), ("Account for valid.gov", "11")])
+        self.assertEqual(result["vendor_accounts_with_zone_no_db"], [("Account for valid.gov", "11")])
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_all_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_raises_when_zone_lookup_fails(
+        self, mock_get_tenant_accounts, mock_get_all_zones
+    ):
+        """A failed zone listing raises instead of returning a report built on incomplete zone data."""
+        mock_get_tenant_accounts.return_value = [self._cf_account("vendoronly.gov", "3")]
+        mock_get_all_zones.side_effect = DnsRateLimitError(code=DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED)
+
+        with self.assertRaises(DnsRateLimitError):
+            self.service.compare_vendor_and_db_accounts()
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts_zone_request_count(self, mock_get_tenant_accounts):
+        """Zone requests depend on the number of zone pages, not the number of vendor-only accounts."""
+        vendor_only_count = 120
+        mock_get_tenant_accounts.return_value = [
+            self._cf_account(f"domain{i}.gov", str(i)) for i in range(vendor_only_count)
+        ]
+        # Every other vendor-only account has its zone
+        zones = [self._cf_zone(f"domain{i}.gov", f"zone-{i}", str(i)) for i in range(0, vendor_only_count, 2)]
+        per_page = 50
+        pages = [zones[i : i + per_page] for i in range(0, len(zones), per_page)]
+        responses = []
+        for page_zones in pages:
+            response = Mock()
+            response.json.return_value = {
+                "success": True,
+                "result": page_zones,
+                "result_info": {"count": len(page_zones), "per_page": per_page, "total_count": len(zones)},
+            }
+            responses.append(response)
+        self.service.client.get.side_effect = responses
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(len(result["vendor_only"]), vendor_only_count)
+        self.assertEqual(len(result["vendor_accounts_with_zone_no_db"]), len(zones))
+        # 60 zones -> 2 pages, instead of one request per vendor-only account (120)
+        self.assertEqual(self.service.client.get.call_count, 2)
+        for call in self.service.client.get.call_args_list:
+            self.assertEqual(call.args, ("/zones",))
+            self.assertNotIn("account.id", str(call.kwargs.get("params")))
 
 
 class TestDnsHostServiceDB(TestCase):

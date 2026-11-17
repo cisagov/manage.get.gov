@@ -308,6 +308,129 @@ class CloudflareService:
 
         return all_accounts
 
+    def get_all_zones(self, per_page: int = 50) -> List[dict]:
+        """Fetch all zones the tenant can access, page by page.
+
+        Cloudflare allows between 5 and 50 zones per page. Cloudflare also does not allow
+        listing zones across more than 500 accounts; that request fails and the typed error
+        is raised. Any failed page raises, so callers never get a partial list of zones.
+        """
+        if not 5 <= per_page <= 50:
+            raise ValueError(f"per_page must be between 5 and 50, got {per_page}")
+
+        all_zones: list[dict] = []
+        page = 1
+
+        while True:
+            appended_url = "/zones"
+            params = {"page": page, "per_page": per_page}
+
+            with self._dns_call(page=page):
+                logger.info(
+                    "Looking up zones by page: %s",
+                    page,
+                )
+                resp = self.client.get(appended_url, params=params)
+                resp.raise_for_status()
+
+            zones, result_info = self._parse_zones_page(resp, page, per_page)
+            total_count = result_info.get("total_count")
+            total_pages = result_info.get("total_pages")
+
+            if not zones:
+                # An empty page is only the end if Cloudflare didn't tell us to expect more zones
+                expected_more_zones = (total_count is not None and len(all_zones) < total_count) or (
+                    total_pages is not None and page < total_pages
+                )
+                if expected_more_zones:
+                    raise self._invalid_zones_response(page, "Got an empty page before all zones were returned")
+                break
+
+            all_zones.extend(zones)
+
+            # Check if there are more pages. Prefer Cloudflare's page count, then its zone count.
+            # If Cloudflare leaves out both, a page that isn't full is the last page.
+            if total_pages is not None:
+                is_last_page = page >= total_pages
+            elif total_count is not None:
+                is_last_page = total_count <= page * per_page
+            else:
+                is_last_page = len(zones) < per_page
+            if is_last_page:
+                # Totals can contradict each other (e.g. total_pages says done before total_count is reached)
+                if total_count is not None and len(all_zones) < total_count:
+                    raise self._invalid_zones_response(page, "Got fewer zones than the reported total count")
+                break
+
+            page += 1
+
+        return all_zones
+
+    def _parse_zones_page(self, resp, page: int, per_page: int) -> tuple[list[dict], dict]:
+        """Validate one page of the zones listing and return its zones and result_info.
+
+        Raises DnsUpstreamError instead of guessing when the response can't be trusted,
+        so a bad page never turns into a silently incomplete list of zones.
+        """
+        try:
+            zones_data = resp.json()
+        except ValueError:
+            raise self._invalid_zones_response(page, "Response body is not JSON")
+
+        if not isinstance(zones_data, dict):
+            raise self._invalid_zones_response(page, "Response body is not a JSON object")
+        if zones_data.get("success") is False:
+            raise self._invalid_zones_response(page, "Response was not successful")
+
+        zones = self._validate_zones_result(zones_data.get("result"), page, per_page)
+        result_info = self._validate_zones_result_info(zones_data.get("result_info"), page, per_page)
+        return zones, result_info
+
+    def _validate_zones_result(self, zones, page: int, per_page: int) -> list[dict]:
+        """Check that a page's result is a list of zone objects that fits in one page."""
+        if zones is None:
+            return []
+        if not isinstance(zones, list):
+            raise self._invalid_zones_response(page, "Response result is not a list")
+        if not all(isinstance(zone, dict) for zone in zones):
+            raise self._invalid_zones_response(page, "Response result has a zone that is not an object")
+        if len(zones) > per_page:
+            raise self._invalid_zones_response(page, "Response has more zones than the requested page size")
+        return zones
+
+    def _validate_zones_result_info(self, result_info, page: int, per_page: int) -> dict:
+        """Check that a page's result_info can be trusted for paging."""
+        if result_info is None:
+            return {}
+        if not isinstance(result_info, dict):
+            raise self._invalid_zones_response(page, "Response result_info is not an object")
+
+        for key in ("page", "per_page", "total_count", "total_pages"):
+            value = result_info.get(key)
+            if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
+                raise self._invalid_zones_response(page, f"Response result_info.{key} is not a whole number")
+
+        # Page math relies on Cloudflare returning the page and page size we asked for
+        if result_info.get("page") not in (None, page):
+            raise self._invalid_zones_response(page, "Response is for a different page than requested")
+        if result_info.get("per_page") not in (None, per_page):
+            raise self._invalid_zones_response(page, "Response page size is different than requested")
+        return result_info
+
+    def _invalid_zones_response(self, page: int, reason: str) -> DnsUpstreamError:
+        """Build and log the error for a zones listing response we can't trust."""
+        exc = DnsUpstreamError(
+            code=DnsHostingErrorCodes.UPSTREAM_ERROR,
+            upstream_status=200,
+            context={"page": page, "reason": reason},
+        )
+        logger.error(
+            "Dns provider returned an invalid zones response: %s",
+            reason,
+            extra={"page": page, "reason": reason, "error_code": exc.wire_code},
+        )
+        return exc
+
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
         appended_url = f"/zones/{x_zone_id}"

@@ -17,6 +17,7 @@ from registrar.utility.errors import (
     DnsRateLimitError,
     DnsAuthError,
     DnsHostingError,
+    DnsUpstreamError,
 )
 
 
@@ -664,6 +665,318 @@ class TestCloudflareService(SimpleTestCase):
         with self.assertRaises(DnsHostingError):
             self.service.get_tenant_accounts(per_page=2)
 
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def _make_zones(self, count, start=0):
+        return [
+            {
+                "id": f"zone-{i}",
+                "name": f"domain{i}.gov",
+                "account": {"id": f"acct-{i}", "name": f"Account for domain{i}.gov"},
+            }
+            for i in range(start, start + count)
+        ]
+
+    def _zones_page_responses(self, zones, per_page):
+        """Split zones into Cloudflare-style page responses with result_info."""
+        total_count = len(zones)
+        pages = [zones[i : i + per_page] for i in range(0, total_count, per_page)] or [[]]
+        return [
+            self._setUpSuccessMockResponse(
+                {
+                    "errors": [],
+                    "messages": [],
+                    "success": True,
+                    "result": page_zones,
+                    "result_info": {
+                        "count": len(page_zones),
+                        "page": page_number,
+                        "per_page": per_page,
+                        "total_count": total_count,
+                        "total_pages": len(pages),
+                    },
+                }
+            )
+            for page_number, page_zones in enumerate(pages, start=1)
+        ]
+
+    def test_get_all_zones_empty(self):
+        self.service.client.get.side_effect = self._zones_page_responses([], per_page=50)
+
+        result = self.service.get_all_zones()
+
+        self.assertEqual(result, [])
+        self.service.client.get.assert_called_once_with("/zones", params={"page": 1, "per_page": 50})
+
+    def test_get_all_zones_single_page(self):
+        zones = self._make_zones(3)
+        self.service.client.get.side_effect = self._zones_page_responses(zones, per_page=50)
+
+        result = self.service.get_all_zones()
+
+        self.assertEqual(result, zones)
+        self.service.client.get.assert_called_once_with("/zones", params={"page": 1, "per_page": 50})
+
+    def test_get_all_zones_multiple_pages(self):
+        zones = self._make_zones(12)
+        self.service.client.get.side_effect = self._zones_page_responses(zones, per_page=5)
+
+        result = self.service.get_all_zones(per_page=5)
+
+        self.assertEqual(result, zones)
+        self.assertEqual(
+            self.service.client.get.call_args_list,
+            [
+                mock.call("/zones", params={"page": 1, "per_page": 5}),
+                mock.call("/zones", params={"page": 2, "per_page": 5}),
+                mock.call("/zones", params={"page": 3, "per_page": 5}),
+            ],
+        )
+
+    def test_get_all_zones_pagination_boundaries(self):
+        """Exactly one full page should not request an extra page; one more zone should."""
+        cases = [(49, 1), (50, 1), (51, 2), (100, 2), (101, 3)]
+        for zone_count, expected_calls in cases:
+            with self.subTest(zone_count=zone_count):
+                self.service.client.get.reset_mock()
+                zones = self._make_zones(zone_count)
+                self.service.client.get.side_effect = self._zones_page_responses(zones, per_page=50)
+
+                result = self.service.get_all_zones()
+
+                self.assertEqual(len(result), zone_count)
+                self.assertEqual(result, zones)
+                self.assertEqual(self.service.client.get.call_count, expected_calls)
+
+    def test_get_all_zones_without_total_count(self):
+        """When result_info has no total_count, keep paging until a page is not full."""
+        first_page = self._make_zones(5)
+        second_page = self._make_zones(2, start=5)
+        self.service.client.get.side_effect = [
+            self._setUpSuccessMockResponse({"success": True, "result": first_page}),
+            self._setUpSuccessMockResponse({"success": True, "result": second_page}),
+        ]
+
+        result = self.service.get_all_zones(per_page=5)
+
+        self.assertEqual(result, first_page + second_page)
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_rejects_invalid_per_page(self):
+        for per_page in [0, 4, 51, 100]:
+            with self.subTest(per_page=per_page):
+                with self.assertRaises(ValueError):
+                    self.service.get_all_zones(per_page=per_page)
+        self.service.client.get.assert_not_called()
+
+    def test_get_all_zones_failure(self):
+        """Every typed error (including rate limiting and transport errors) is raised."""
+        for case in self._get_failure_cases():
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.side_effect = None
+                self.service.client.get.return_value = mock_response
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_all_zones()
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self._assert_shared_http_status_errors_details(exc, case)
+
+    def test_get_all_zones_failure_on_later_page(self):
+        """A failure on a later page raises instead of returning the zones fetched so far."""
+        zones = self._make_zones(60)
+        first_page = self._zones_page_responses(zones, per_page=50)[0]
+        rate_limit_case = next(c for c in self.failure_cases if c["status_code"] == 429)
+        failing_page = self._setUpFailureMockResponse(rate_limit_case["error"], 429)
+        self.service.client.get.side_effect = [first_page, failing_page]
+
+        with self.assertRaises(DnsRateLimitError) as context:
+            self.service.get_all_zones()
+
+        self.assertEqual(context.exception.context["page"], 2)
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_uses_total_pages(self):
+        """When Cloudflare sends total_pages, it decides the last page, even if the last page is full."""
+        first_page = self._make_zones(5)
+        second_page = self._make_zones(5, start=5)
+        self.service.client.get.side_effect = [
+            self._setUpSuccessMockResponse(
+                {"success": True, "result": first_page, "result_info": {"page": 1, "per_page": 5, "total_pages": 2}}
+            ),
+            self._setUpSuccessMockResponse(
+                {"success": True, "result": second_page, "result_info": {"page": 2, "per_page": 5, "total_pages": 2}}
+            ),
+        ]
+
+        result = self.service.get_all_zones(per_page=5)
+
+        self.assertEqual(result, first_page + second_page)
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_null_result_with_no_zones(self):
+        self.service.client.get.return_value = self._setUpSuccessMockResponse(
+            {"success": True, "result": None, "result_info": {"page": 1, "per_page": 50, "total_count": 0}}
+        )
+
+        self.assertEqual(self.service.get_all_zones(), [])
+        self.service.client.get.assert_called_once()
+
+    def test_get_all_zones_empty_page_without_totals_ends_listing(self):
+        """Without totals, an empty page after a full page just means there are no more zones."""
+        first_page = self._make_zones(5)
+        self.service.client.get.side_effect = [
+            self._setUpSuccessMockResponse({"success": True, "result": first_page}),
+            self._setUpSuccessMockResponse({"success": True, "result": []}),
+        ]
+
+        result = self.service.get_all_zones(per_page=5)
+
+        self.assertEqual(result, first_page)
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_empty_page_before_all_zones_returned(self):
+        """An empty page while Cloudflare's totals say more zones exist raises instead of returning a partial list."""
+        first_page = self._make_zones(5)
+        cases = [
+            ("total_count", {"total_count": 12}),
+            ("total_pages", {"total_pages": 3}),
+        ]
+        for name, totals in cases:
+            with self.subTest(name):
+                self.service.client.get.reset_mock()
+                self.service.client.get.side_effect = [
+                    self._setUpSuccessMockResponse({"success": True, "result": first_page, "result_info": totals}),
+                    self._setUpSuccessMockResponse({"success": True, "result": [], "result_info": totals}),
+                ]
+
+                with self.assertRaises(DnsUpstreamError) as context:
+                    self.service.get_all_zones(per_page=5)
+
+                self.assertEqual(context.exception.code, DnsHostingErrorCodes.UPSTREAM_ERROR)
+                self.assertEqual(context.exception.context["page"], 2)
+                self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_invalid_response(self):
+        """Responses that can't be trusted raise a typed upstream error instead of returning wrong data."""
+        zones = self._make_zones(5)
+        non_json_response = Mock()
+        non_json_response.raise_for_status.return_value = None
+        non_json_response.json.side_effect = ValueError("not json")
+
+        cases = [
+            ("body is not JSON", non_json_response),
+            ("body is a list", self._setUpSuccessMockResponse(zones)),
+            ("success is false", self._setUpSuccessMockResponse({"success": False, "result": zones})),
+            ("result is an object", self._setUpSuccessMockResponse({"success": True, "result": {"id": "zone-0"}})),
+            ("zone is not an object", self._setUpSuccessMockResponse({"success": True, "result": ["zone-0"]})),
+            (
+                "result_info is a list",
+                self._setUpSuccessMockResponse({"success": True, "result": zones, "result_info": []}),
+            ),
+            (
+                "total_count is a string",
+                self._setUpSuccessMockResponse(
+                    {"success": True, "result": zones, "result_info": {"total_count": "10"}}
+                ),
+            ),
+            (
+                "total_pages is a boolean",
+                self._setUpSuccessMockResponse(
+                    {"success": True, "result": zones, "result_info": {"total_pages": True}}
+                ),
+            ),
+            (
+                "total_count is negative",
+                self._setUpSuccessMockResponse({"success": True, "result": zones, "result_info": {"total_count": -1}}),
+            ),
+            (
+                "different page returned",
+                self._setUpSuccessMockResponse({"success": True, "result": zones, "result_info": {"page": 2}}),
+            ),
+            (
+                "page size capped by Cloudflare",
+                self._setUpSuccessMockResponse({"success": True, "result": zones, "result_info": {"per_page": 20}}),
+            ),
+            (
+                "more zones than page size",
+                self._setUpSuccessMockResponse({"success": True, "result": self._make_zones(51)}),
+            ),
+        ]
+        for name, response in cases:
+            with self.subTest(name):
+                self.service.client.get.reset_mock()
+                self.service.client.get.side_effect = None
+                self.service.client.get.return_value = response
+
+                with self.assertRaises(DnsUpstreamError) as context:
+                    self.service.get_all_zones()
+
+                exc = context.exception
+                self.assertEqual(exc.code, DnsHostingErrorCodes.UPSTREAM_ERROR)
+                self.assertEqual(exc.upstream_status, 200)
+                self.assertEqual(exc.context["page"], 1)
+                self.assertTrue(exc.context["reason"])
+                self.service.client.get.assert_called_once()
+
+    def test_get_all_zones_fewer_zones_than_total_count(self):
+        """Contradictory totals raise instead of returning fewer zones than Cloudflare reported."""
+        cases = [
+            # total_pages ends the listing before total_count is reached
+            ("total_pages before total_count", {"total_count": 100, "total_pages": 2}, [50, 10]),
+            # last page by total_count comes back short
+            ("short last page", {"total_count": 60}, [50, 5]),
+        ]
+        for name, totals, page_sizes in cases:
+            with self.subTest(name):
+                self.service.client.get.reset_mock()
+                responses, start = [], 0
+                for page_number, size in enumerate(page_sizes, start=1):
+                    zones = self._make_zones(size, start=start)
+                    start += size
+                    responses.append(
+                        self._setUpSuccessMockResponse(
+                            {
+                                "success": True,
+                                "result": zones,
+                                "result_info": {"page": page_number, "per_page": 50, **totals},
+                            }
+                        )
+                    )
+                self.service.client.get.side_effect = responses
+
+                with self.assertRaises(DnsUpstreamError) as context:
+                    self.service.get_all_zones()
+
+                self.assertEqual(context.exception.code, DnsHostingErrorCodes.UPSTREAM_ERROR)
+                self.assertEqual(context.exception.context["page"], 2)
+                self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_all_zones_consistent_totals_succeed(self):
+        """Matching total_count and total_pages still return every zone."""
+        for zone_count in [0, 1, 50, 51, 100, 101]:
+            with self.subTest(zone_count=zone_count):
+                self.service.client.get.reset_mock()
+                zones = self._make_zones(zone_count)
+                self.service.client.get.side_effect = self._zones_page_responses(zones, per_page=50)
+
+                self.assertEqual(self.service.get_all_zones(), zones)
+
+    def test_get_all_zones_invalid_later_page_raises(self):
+        """A bad later page raises instead of returning the zones fetched so far."""
+        first_page = self._zones_page_responses(self._make_zones(60), per_page=50)[0]
+        self.service.client.get.side_effect = [
+            first_page,
+            self._setUpSuccessMockResponse({"success": True, "result": {"unexpected": "shape"}}),
+        ]
+
+        with self.assertRaises(DnsUpstreamError) as context:
+            self.service.get_all_zones()
+
+        self.assertEqual(context.exception.context["page"], 2)
         self.assertEqual(self.service.client.get.call_count, 2)
 
     def test_get_account_zones_success(self):
