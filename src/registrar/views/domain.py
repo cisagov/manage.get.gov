@@ -50,7 +50,7 @@ from registrar.utility.errors import (
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.utility.db_helpers import get_portfolio_from_session
+from registrar.utility.db_helpers import get_portfolio_from_session, lock_domain_row_for_update
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     handle_invitation_exceptions,
@@ -1248,7 +1248,6 @@ class DomainNameserversView(DomainFormBaseView):
         # return self.form_invalid(formset)
 
         self.request.session["nameservers_form_domain"] = self.object.id
-        initial_state = self.object.state
 
         # Set the nameservers from the formset
         nameservers = []
@@ -1271,7 +1270,10 @@ class DomainNameserversView(DomainFormBaseView):
                 # no server information in this field, skip it
                 pass
         try:
-            self.object.nameservers = nameservers
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
+                initial_state = self.object.state
+                self.object.nameservers = nameservers
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
@@ -1463,7 +1465,9 @@ class DomainDsDataView(DomainFormBaseView):
                 # not been interacted with; in that case, want to ignore
                 pass
         try:
-            self.object.dnssecdata = dnssecdata
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
+                self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             if err.is_connection_error():
                 messages.error(
