@@ -9,12 +9,12 @@
             {% endwith %}
         </div>
         <div class="grid-row grid-gap-3 flex-align-end">
-            <div class="grid-col-9">
+            <div class="grid-col-12 tablet:grid-col-9">
                 {% with add_group_class="usa-form-group--unstyled-error" %}
                     {% input_with_errors form.priority %}
                 {% endwith %}
             </div>
-            <div class="grid-col-3">
+            <div class="grid-col-12 tablet:grid-col-3">
                 {% with add_group_class="usa-form-group--unstyled-error" %}
                     {% input_with_errors form.ttl %}
                 {% endwith %}
