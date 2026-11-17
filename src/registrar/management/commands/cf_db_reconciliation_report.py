@@ -20,16 +20,15 @@ from registrar.services.utility.dns_helper import get_dns_zone_name_from_account
 logger = logging.getLogger(__name__)
 
 # Mismatch types
-DUPLICATE_NAME = "duplicate_name"
 VENDOR_ONLY = "vendor_only"
 VENDOR_ONLY_WITH_ZONE = "vendor_only_with_zone"
 DB_ONLY = "db_only"
 
-MISMATCH_TYPES = (DUPLICATE_NAME, VENDOR_ONLY, VENDOR_ONLY_WITH_ZONE, DB_ONLY)
+MISMATCH_TYPES = (VENDOR_ONLY, VENDOR_ONLY_WITH_ZONE, DB_ONLY)
 
 ACCOUNT = "account"
 
-COLUMNS = ("domain", "object_type", "name", "cf_id", "db_id", "mismatch_type", "domain_in_db")
+COLUMNS = ("domain", "object_type", "name", "cf_id", "db_id", "mismatch_type", "duplicate_name", "domain_in_db")
 
 
 class Command(BaseCommand):
@@ -47,7 +46,7 @@ class Command(BaseCommand):
         counts = Counter(row["mismatch_type"] for row in rows)
 
         logger.info(
-            "CF/DB reconcilitation report for %s: %s mismatches (%s); %s synced accounts",
+            "CF/DB reconciliation report for %s: %s mismatches (%s); %s synced accounts",
             settings.BASE_URL,
             len(rows),
             ", ".join(f"{t}={counts.get(t, 0)}" for t in MISMATCH_TYPES),
@@ -62,18 +61,27 @@ class Command(BaseCommand):
             )
         )
         with_zone = set(comparison["vendor_accounts_with_zone_no_db"])
+        duplicate_names = set(comparison["duplicate_account_names"])
 
         rows = []
-        for name in comparison["duplicate_account_names"]:
-            rows.append(self._row(name, cf_id="", db_id=db_ids_by_name.get(name, ""), mismatch=DUPLICATE_NAME))
         for name, cf_id in comparison["vendor_only"]:
             mismatch = VENDOR_ONLY_WITH_ZONE if (name, cf_id) in with_zone else VENDOR_ONLY
-            rows.append(self._row(name, cf_id=cf_id, db_id=db_ids_by_name.get(name, ""), mismatch=mismatch))
+            rows.append(
+                self._row(
+                    name, 
+                    cf_id=cf_id, 
+                    db_id=db_ids_by_name.get(name, ""), 
+                    mismatch=mismatch,
+                    duplicate=name in duplicate_names,    
+                )
+            )
         for name, db_id in comparison["db_only"]:
-            rows.append(self._row(name, cf_id="", db_id=db_id, mismatch=DB_ONLY))
+            rows.append(
+                self._row(name, cf_id="", db_id=db_id, mismatch=DB_ONLY, duplicate=name in duplicate_names)
+            )
         return rows
 
-    def _row(self, account_name: str, cf_id: str, db_id: str, mismatch: str) -> dict:
+    def _row(self, account_name: str, cf_id: str, db_id: str, mismatch: str, duplicate: bool) -> dict:
         domain_name = self._domain_from_account_name(account_name)
         return {
             "domain": domain_name or "",
@@ -82,6 +90,7 @@ class Command(BaseCommand):
             "cf_id": cf_id,
             "db_id": db_id,
             "mismatch_type": mismatch,
+            "duplicate_name": "yes" if duplicate else "no",
             "domain_in_db": "yes" if domain_name and Domain.objects.filter(name=domain_name).exists else "no",
         }
 
