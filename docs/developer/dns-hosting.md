@@ -126,6 +126,9 @@ We use Alpine for simple operations like open/close of a form that don't require
 ## Additional Resources
 
 [Figma Designs](https://figma-gov.com/design/s2v7XTn7HTC9B0jtAJEbSX/.gov-registrar-Enterprise-Mode?node-id=4049-2982&p=f&t=Eg5EQPodeM5RYR8l-0)
+
 [DNS Records content doc](https://docs.google.com/document/d/1u-K1yQKb16H3AWj33mH2e1LJme6Ay9dNXMG8isiOXWk/edit?tab=t.mmn4g5qk3h9r#heading=h.tmnw472kv8mr)
+
 [System-generated alert message content](https://docs.google.com/spreadsheets/d/1hF7_n_zo3EpfbgqqqPUMtSMZXynMtRMsBMlcIqZ91ns/edit?usp=sharing)
+
 [Cloudflare (TBD)](TBD)
