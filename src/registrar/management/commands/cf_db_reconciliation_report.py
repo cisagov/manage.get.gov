@@ -1,8 +1,8 @@
 """
 Cloudflare/DB reconciliation report.
 
-Compares the CF tenant accounts against the DnsAccount rows in 
-this environment's database and prints one row per mismatch. 
+Compares the CF tenant accounts against the DnsAccount rows in
+this environment's database and prints one row per mismatch.
 """
 
 import logging
@@ -68,17 +68,15 @@ class Command(BaseCommand):
             mismatch = VENDOR_ONLY_WITH_ZONE if (name, cf_id) in with_zone else VENDOR_ONLY
             rows.append(
                 self._row(
-                    name, 
-                    cf_id=cf_id, 
-                    db_id=db_ids_by_name.get(name, ""), 
+                    name,
+                    cf_id=cf_id,
+                    db_id=db_ids_by_name.get(name, ""),
                     mismatch=mismatch,
-                    duplicate=name in duplicate_names,    
+                    duplicate=name in duplicate_names,
                 )
             )
         for name, db_id in comparison["db_only"]:
-            rows.append(
-                self._row(name, cf_id="", db_id=db_id, mismatch=DB_ONLY, duplicate=name in duplicate_names)
-            )
+            rows.append(self._row(name, cf_id="", db_id=db_id, mismatch=DB_ONLY, duplicate=name in duplicate_names))
         return rows
 
     def _row(self, account_name: str, cf_id: str, db_id: str, mismatch: str, duplicate: bool) -> dict:
@@ -91,7 +89,7 @@ class Command(BaseCommand):
             "db_id": db_id,
             "mismatch_type": mismatch,
             "duplicate_name": "yes" if duplicate else "no",
-            "domain_in_db": "yes" if domain_name and Domain.objects.filter(name=domain_name).exists else "no",
+            "domain_in_db": "yes" if domain_name and Domain.objects.filter(name=domain_name).exists() else "no",
         }
 
     @staticmethod
@@ -101,12 +99,58 @@ class Command(BaseCommand):
         except ValueError:
             return None
 
-    def print_report(self, rows:list[dict]) -> None:
+    def print_report(self, rows: list[dict]) -> None:
         if not rows:
             self.stdout.write("No mismatches")
             return
 
-        widths = {col: max(len(col), *(len(str(r[col])) for r in rows)) for col in COLUMNS}
-        self.stdout.write("  ".join(col.upper().ljust(widths[col]) for col in COLUMNS))
+        widths = self._get_column_widths(rows)
+
+        # The header line is the same for every group:
+        header_cells = []
+        for column in COLUMNS:
+            header = column.upper()
+            header_cells.append(header.ljust(widths[column]))
+        header_line = "  ".join(header_cells)
+
+        # Now group similar mismatches together and print
+        for mismatch_type in MISMATCH_TYPES:
+            group = []
+            for row in rows:
+                if row["mismatch_type"] == mismatch_type:
+                    group.append(row)
+
+            if not group:
+                continue
+
+            # Sorting should be stable, so rows with the same domain keep the order that
+            # comparison gave them
+            group.sort(key=lambda row: row["domain"])
+
+            self.stdout.write("")
+            self.stdout.write(f"{mismatch_type.upper()} ({len(group)})")
+            self.stdout.write(header_line)
+
+            for row in group:
+                self.stdout.write(self._format_line(row, widths))
+
+    def _get_column_widths(self, rows: list[dict]) -> dict:
+        widths = {}
+        for column in COLUMNS:
+            widths[column] = len(column)
+
         for row in rows:
-            self.stdout.write("  ".join(str(row[col]).ljust(widths[col]) for col in COLUMNS))
+            for column in COLUMNS:
+                value = str(row[column])
+                if len(value) > widths[column]:
+                    widths[column] = len(value)
+
+        return widths
+
+    def _format_line(self, values: dict, widths: dict) -> str:
+        cells = []
+        for column in COLUMNS:
+            value = str(values[column])
+            cells.append(value.ljust(widths[column]))
+
+        return "  ".join(cells)
