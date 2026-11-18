@@ -85,7 +85,7 @@ class UserDomainRole(TimeStampedModel):
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.lower()
-
+        self.expire_dt = timezone.localdate()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -104,4 +104,4 @@ class UserDomainRole(TimeStampedModel):
             raise ValidationError({"user": "User is required when status is not 'invited'."})
 
     def is_expired(self) -> bool:
-            return self.expire_dt < timezone.now()
+        return timezone.localdate() > self.expire_dt

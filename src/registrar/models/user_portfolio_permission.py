@@ -19,7 +19,7 @@ from registrar.models.utility.portfolio_helper import (
 )
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
-from datetime import date
+from django.utils import timezone
 
 
 class UserPortfolioPermission(TimeStampedModel):
@@ -130,7 +130,7 @@ class UserPortfolioPermission(TimeStampedModel):
     def save(self, *args, **kwargs):
         if self.email:
             self.email = self.email.lower()
-
+        self.expire_dt = timezone.localdate()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -351,4 +351,4 @@ class UserPortfolioPermission(TimeStampedModel):
             cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
 
     def is_expired(self) -> bool:
-        return self.expire_dt < date.today()
+        return timezone.localdate() > self.expire_dt
