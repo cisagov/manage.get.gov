@@ -22,7 +22,7 @@ MVP
   - CNAME (redirect domain)
   - PTR (reverse lookup IP address → domain name)
   - TXT
-- Features: All CRUD operations for DNS records, "Are you sure?" modals when data is not saved
+- Features: All CRUD operations for DNS records; "Are you sure?" modals when advancing and data is not saved
 
 ### Future
 
@@ -36,10 +36,10 @@ MVP
 
 ### Database
 
-There are three main entities needed to set up DNS: Accounts, Zones, and Records. The models are vendor neutral to minimize complexity if switching to a new vendor. Each entity has a table that holds neutral data, a vendor table (ex. VendorDnsAccount) that holds data specific to the vendor (like external vendor-originating ids), while a join table indicates which vendor is currently active (`is_active`).
+There are three main entities needed to set up DNS within the app: accounts, zones, and records. The models are vendor neutral to minimize complexity if switching to a new vendor. Each entity has a table that holds neutral data, a vendor table that holds data specific to the vendor (like external vendor-originating ids), while a join table indicates which vendor is currently active (`is_active`). For example, for accounts the three models/tables are `DnsAccount`, `DnsAccount_VendorDnsAccount`, and `VendorDnsAccount`.
 
 ### Secrets management
-[Link]
+See [Secrets doc](https://docs.google.com/document/d/1IZjcmzL6q7DKsNTHbt5L0QbmESePeftsBUYa1Zy9C0U/edit?tab=t.qo2cobtxbilu#heading=h.lq5cblj3tmqm)
 
 ### Services
 
@@ -51,12 +51,13 @@ DnsHostService calls operations of the vendor, such as CloudflareService. This a
 
 ### Enrolling a domain
 
-For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active.
+For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. The enrollment button only shows for domains in an organization in the `DNS needed` state.  In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active. DNS-enrolled domains show a status of "Active" (rather than "Ready" when not enrolled).
 
 ## Development
 
+From `/admin`, ensure the waffle flag `dns_hosting` is ON.
+
 ### Local (and Vendor API Mocking)
-- From `/admin`, ensure the waffle flag `dns_hosting` is ON.
 
  - In local development, we can mock the API calls using MockCloudflareService.
     We use the library `respx` for mocking `httpx` api calls and responses. Through an environment variable, we determine when to use a MockCloudflareService class which mocks the responses of the api calls.
@@ -80,7 +81,7 @@ For MVP, an analyst can go to the domain page in /admin and click a button to "e
      see [MockCloudflareService._mock_cf_error_response]() to see CF responses
 
 - Setting the `DNS_MOCK_EXTERNAL_APIS` to `False` will utilize the actual Cloudflare test tenant.
-To hit CF locally, you will need to set environment variables (see below) in the .env file, which can be retrieved from a sandbox's credentials.
+To hit CF locally, you will need to set environment variables (see Sandbox section below) in the .env file, which can be retrieved from a sandbox's credentials.
 
 ### Sandbox (and Test Tenant)
 By default, sandboxes utilize the Cloudflare .gov test tenant. (They _can_ use the MockCloudflareService if `DNS_MOCK_EXTERNAL_APIS=False`.)
@@ -100,7 +101,10 @@ See [Sandboxes and notes canvas](https://dhscisa.enterprise.slack.com/docs/T02QH
 
 ### Production (and Prod Tenant)
 The above variables are set specific to the .gov production tenant.
-Name servers use the domain `dns.gov`
+Name servers use the domain `dns.gov`.
+
+### Fixtures
+Locally (or more accurately when `DNS_MOCK_EXTERNAL_APIS=True`), when fixtures are loaded, about half of the domains created by the [domains fixture](../../src/registrar/fixtures/fixtures_domains.py) are enrolled in DNS Hosting. Five of those domains get at least one of each type of the in-scope records added. Fixtures do not enroll domains in DNS unless the api is mocked so that we don't create unnecessary clutter in the CF test tenant.
 
 ### Cloudflare
 Note that both the "test" tenant and the prod tenant are actual production environments on the Cloudflare side. So, a zone can't simultaneously be active in both the test tenant and the prod tenant.
@@ -112,7 +116,7 @@ See [Cloudflare Notes (TBD)](TBD) for additional information
 See [dns-error-handling.md](dns-error-handling.md)
 
 ### Validation
-Validations happen first on the form/model level. If a validation fails, the error is displayed in the form. If those validations pass, Cloudflare may catch something our application did not. In that case, CF will return an error, and we display a message based on the response from CF. This could be unforeseen errors, or errors that we intentionally left for CF to handle due to complexity. For example, TXT record content has a combined max number of characters across records. We opt not to evaluate on the form/model level, and allow CF to evaluate the record data against other domain records and return the error if invalid.
+Validations happen first on the form/model level. If a validation fails, the error is displayed in the form. If those validations pass, Cloudflare may catch something our application did not. In that case, CF will return an error, and we display a message based on the response from CF. This could be unforeseen errors, or errors that we intentionally left for CF to handle due to complexity. For example, a TXT record's content field has a combined max characters limit across records. In this case, we opt not to evaluate on the form/model level, and allow CF to evaluate the record data against other domain records and return the error if invalid.
 
 Regarding messaging, if the error is something the user can do something about, we leave the form open and let them know what the issue was, if known, and if it is not something they can do something about (ex. 500 error), we close the form and display a more generic "something went wrong message".
 
