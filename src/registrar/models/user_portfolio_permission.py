@@ -19,6 +19,7 @@ from registrar.models.utility.portfolio_helper import (
 )
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from datetime import date
 
 
 class UserPortfolioPermission(TimeStampedModel):
@@ -122,6 +123,8 @@ class UserPortfolioPermission(TimeStampedModel):
     revoked_at = models.DateTimeField(null=True, blank=True)
 
     revocation_reason = models.TextField(null=True, blank=True)
+
+    expire_dt = models.DateTimeField(null=True, blank=True)
 
     # End Invitation fields
     def save(self, *args, **kwargs):
@@ -346,3 +349,6 @@ class UserPortfolioPermission(TimeStampedModel):
 
         if user or email:
             cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
+
+    def is_expired(self) -> bool:
+        return self.expire_dt < date.today()

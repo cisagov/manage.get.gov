@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -77,6 +78,8 @@ class UserDomainRole(TimeStampedModel):
 
     revocation_reason = models.TextField(null=True, blank=True)
 
+    expire_dt = models.DateTimeField(null=True, blank=True)
+
     # End Invitation fields
 
     def save(self, *args, **kwargs):
@@ -99,3 +102,6 @@ class UserDomainRole(TimeStampedModel):
         super().clean()
         if self.status != self.Status.INVITED and self.user_id is None:
             raise ValidationError({"user": "User is required when status is not 'invited'."})
+
+    def is_expired(self) -> bool:
+            return self.expire_dt < timezone.now()
