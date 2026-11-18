@@ -1,9 +1,9 @@
-# Renames the "requestor_not_eligible" rejection reason to "requestor_not_authorized".
+# Renames the "requestor_not_eligible" rejection reason to "requester_not_authorized".
 
 from django.db import migrations, models
 
 OLD_VALUE = "requestor_not_eligible"
-NEW_VALUE = "requestor_not_authorized"
+NEW_VALUE = "requester_not_authorized"
 
 
 def forwards(apps, schema_editor):
@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 choices=[
                     ("domain_purpose", "Purpose requirements not met"),
-                    ("requestor_not_authorized", "Requestor not authorized to make request"),
+                    ("requester_not_authorized", "Requester not authorized to make request"),
                     ("org_has_domain", "Org already has a .gov domain"),
                     ("contacts_not_verified", "Org contacts couldn't be verified"),
                     ("org_not_eligible", "Org not eligible for a .gov domain"),

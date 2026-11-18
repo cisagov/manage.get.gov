@@ -200,7 +200,7 @@ class DomainRequest(TimeStampedModel):
 
     class RejectionReasons(models.TextChoices):
         DOMAIN_PURPOSE = "domain_purpose", "Purpose requirements not met"
-        REQUESTOR_NOT_AUTHORIZED = "requestor_not_authorized", "Requestor not authorized to make request"
+        REQUESTER_NOT_AUTHORIZED = "requester_not_authorized", "Requester not authorized to make request"
         ORG_HAS_DOMAIN = (
             "org_has_domain",
             "Org already has a .gov domain",
@@ -221,7 +221,7 @@ class DomainRequest(TimeStampedModel):
             # Audit log entries are never rewritten, so they can still hold values
             # that have since been renamed. Map those to their current member.
             # (Kept local: a dict attribute on a TextChoices class would become a member.)
-            legacy_values = {"requestor_not_eligible": cls.REQUESTOR_NOT_AUTHORIZED}
+            legacy_values = {"requestor_not_eligible": cls.REQUESTER_NOT_AUTHORIZED}
             rejection_reason = legacy_values.get(rejection_reason, rejection_reason)
             return cls(rejection_reason).label
 
