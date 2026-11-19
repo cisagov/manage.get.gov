@@ -320,11 +320,19 @@ class EPPConnectionPool:
         while self._connections_created < self.size and self._can_create():
             try:
                 self._put_back(PooledConnection(self._connection_factory()))
-            except Exception:
+            except Exception as err:
                 self._release_slot()
-                logger.error(
-                    "Replenish hit an error & failed to build a connection. Stats: %s", self.stats(), exc_info=True
-                )
+                if isinstance(err, RegistryError) and err.is_transport_error():
+                    # The registry closes sockets frequently; the next heartbeat retries, so no traceback needed
+                    logger.info(
+                        "Replenish failed to build a connection due to a connection error. Error: %s Stats: %s",
+                        err,
+                        self.stats(),
+                    )
+                else:
+                    logger.error(
+                        "Replenish hit an error & failed to build a connection. Stats: %s", self.stats(), exc_info=True
+                    )
                 # Exit the loop if we can't form a connection
                 # log in creds could be invalid
                 # or the registry system is down
@@ -383,12 +391,12 @@ class EPPConnectionPool:
         try:
             conn.client.send(Logout())
         except Exception:
-            logger.info("Error occurred while retiring connection. Pool stats: %s", self.stats(), exc_info=True)
+            logger.info("Error occurred while retiring connection. Pool stats: %s", self.stats())
             # ignore any errors during logout, we are discarding the connection anyway
 
         try:
             conn.client.close()
         except Exception:
-            logger.info("Error occurred while closing connection. Pool stats: %s", self.stats(), exc_info=True)
+            logger.info("Error occurred while closing connection. Pool stats: %s", self.stats())
 
         self._release_slot()
