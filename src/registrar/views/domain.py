@@ -5,7 +5,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -13,7 +13,6 @@ from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
-from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
 from registrar.decorators import (
@@ -1002,7 +1001,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": None,
                 "domain": self.object,
                 "form": form or DomainDNSRecordForm(),
-                "is_edit": False,
+                "edit_form_id": None,
                 "is_first_record": False,
             },
             headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
@@ -1045,7 +1044,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     "domain": self.object,
                     "form": DomainDNSRecordForm(),
                     "nameservers": None,
-                    "is_edit": True,
+                    "edit_form_id": self.dns_record.id,
                     "is_first_record": False,
                     "update_cells": False,
                 },
@@ -1054,13 +1053,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             )
 
         # Add record form
-        return TemplateResponse(
-            request,
-            "domain_dns_record_form_response.html",
-            {"dns_record": None, "domain": self.object, "form": form, "is_edit": False, "is_first_record": False},
-            headers={"HX-TRIGGER": "messagesRefresh"},
-            status=200,
-        )
+        return self._error_response(request, form=form)
 
     def _handle_create(self, request, x_zone_id, form_record_data):
         """Create a new DNS record and prepare the DB-backed row for rendering."""
@@ -1103,7 +1096,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_first_record = False
         response_form = None
         headers = None
-        is_edit = False
+        edit_form_id = None
 
         self.dns_host_service = DnsHostService()
         try:
@@ -1121,7 +1114,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if self.dns_record:
-                    is_edit = True
+                    edit_form_id = self.dns_record.id
                     self._handle_edit(request, x_zone_id, form_record_data)
 
                 # CREATE
@@ -1129,6 +1122,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
+            if delete_record:
+                return HttpResponse(
+                    # TODO: Refactor this code to status=e.upstream_status. It is 200 on purpose
+                    # because the session isn't saved on 5xx, so the error banner would be lost.
+                    status=200,
+                    headers={"HX-Reswap": "none", "HX-trigger": json.dumps({"messagesRefresh": ""})},
+                )
             response_form = form  # retain form data when experiencing external DNS service error
             if self.dns_record:
                 self._attach_form(dns_record=self.dns_record, form=form)
@@ -1139,10 +1139,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_host_service.client.close()
 
         if delete_record:
-            return TemplateResponse(
-                request,
-                "empty_response.html",
-                {"dns_record": None},
+            # This silently passes content="" (an empty string) as the HTML body,
+            # the same as returning an empty HTML file for the row swap.
+            return HttpResponse(
                 headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
                 status=200,
             )
@@ -1154,8 +1153,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "domain": self.object,
                 "form": response_form,
                 "is_first_record": is_first_record,
-                "update_cells": is_edit and self.dns_record,
-                "is_edit": is_edit,
+                "update_cells": edit_form_id is not None and self.dns_record,
+                "edit_form_id": edit_form_id,
             },
             headers=headers,
             status=200,

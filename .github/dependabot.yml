@@ -32,3 +32,8 @@ updates:
     directory: "/"
     patterns: ["*"]
     multi-ecosystem-group: "weekly-dependencies"
+
+  - package-ecosystem: "docker"
+    directory: "/src"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"

@@ -1519,6 +1519,15 @@ class DomainRequest(TimeStampedModel):
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    @property
+    def tribe_display_name(self):
+        """Return the linked tribe's name, falling back to the legacy free-text name."""
+        if self.federal_tribe_id:
+            return self.federal_tribe.tribe_full_name
+        if self.state_tribe_id:
+            return self.state_tribe.tribe_name
+        return self.tribe_name
+
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""
 
@@ -1602,12 +1611,3 @@ class DomainRequest(TimeStampedModel):
         if self.portfolio:
             return self.portfolio.federal_agency.get_federal_type_display()
         return self.get_federal_type_display()
-
-    # Name to display for the request's tribe
-    @property
-    def tribe_display_name(self):
-        if self.federal_tribe_id:
-            return self.federal_tribe.tribe_full_name
-        if self.state_tribe_id:
-            return self.state_tribe.tribe_name
-        return self.tribe_name
