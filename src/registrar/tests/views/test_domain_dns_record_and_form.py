@@ -1,15 +1,34 @@
+import html as html_module
+import re
 from unittest.mock import patch
 
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 
+from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
-from registrar.utility.errors import APIError
-from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
+from registrar.utility.errors import DnsHostingError
+from registrar.tests.helpers.dns_data_generator import (
+    create_initial_dns_setup,
+    create_dns_record,
+    delete_all_dns_data,
+    create_domain,
+)
+from registrar.validations import (
+    DNS_NAME_FORMAT_REQUIREMENT,
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
+    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
+)
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
+from ..common import create_user
 
 
 class TestWithDNSRecordPermissions(TestWithUser):
@@ -21,9 +40,64 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup(domain_manager=self.user)
 
         self.client.force_login(self.user)
+
+        self.RECORD_TEST_CASES = [
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "A",
+                "content": "192.0.2.10",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "AAAA",
+                "content": "2001:db8::1",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-cname",
+                "name": "test",  # CNAME record must use different name than A/AAAA records
+                "type": "CNAME",
+                "content": "www.example.com",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-ptr",
+                "name": "www",
+                "type": "PTR",
+                "content": "www.example.com",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-mx",
+                "name": "www",
+                "type": "MX",
+                "content": "mail.example.com",
+                "ttl": 300,
+                "priority": 5,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "TXT",
+                "content": "test record info",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+        ]
+
+    def _url(self):
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
 
     def tearDown(self):
         delete_all_dns_data()
@@ -31,42 +105,196 @@ class TestWithDNSRecordPermissions(TestWithUser):
 
 
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
-    RECORD_TEST_CASES = [
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "A",
-            "content": "192.0.2.10",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "AAAA",
-            "content": "2001:db8::1",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "TXT",
-            "content": "test record info",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-    ]
-
-    def _url(self):
-        return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_get_renders_page_success(self):
         page = self.client.get(self._url())
         # Assert we are on the correct page
-        self.assertContains(page, "<h2>Add record</h2>")
+        self.assertContains(page, "Add record</h3>")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_resets_record_type_alpine_state(self):
+        """Issue #4688: Add record kept the last picked type drawn after a submit
+        or when switched to from an edit form with errors. The wrapper x-effect
+        clears recordType when showFormId is null or 0, and x-model on the type
+        select keeps the dropdown in sync. This test keeps that wiring in place.
+        """
+        response = self.client.get(self._url())
+
+        # x-effect clears recordType when the form closes (null) or Add opens (0).
+        self.assertContains(
+            response,
+            'x-effect="showFormId === null || showFormId === 0 ? recordType = null : null"',
+        )
+        # Cancel now opens the confirmation modal
+        self.assertContains(response, "js-dnsrecord-add-cancel")
+        # Submit success closes the form the same way.
+        self.assertContains(
+            response,
+            '@record-submit-success.camel.window="showFormId = null"',
+        )
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_cancel_confirmation_modal_renders(self):
+        """Cancel on the Add record form opens an "are you sure" modal so the user
+        confirms before discarding unsaved entries. USWDS relocates the modal to the page
+        body and Alpine runs in CSP mode, so the flow is driven by USWDS data attributes
+        plus JS. Verify the template wires up the modal, its trigger, and the Cancel button.
+        """
+        response = self.client.get(self._url())
+
+        # The confirmation modal with its prompt
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "Are you sure you want to cancel your changes?")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
+        self.assertContains(response, "Yes, cancel")
+        self.assertContains(response, "Go back")
+        self.assertContains(response, 'id="open-cancel-add-dnsrecord-modal"')
+        self.assertContains(response, 'aria-controls="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "data-open-modal")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-heading"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-description"')
+
+        # Cancel button is JS-wired
+        self.assertContains(response, "js-dnsrecord-add-cancel")
+        self.assertContains(response, 'id="dnsrecord-add-cancel-button"')
+
+        # No data-force-action on the modal, so clicking the overlay closes it.
+        modal_open_tag = re.search(r'<div[^>]*id="toggle-cancel-add-dnsrecord"[^>]*>', response.content.decode())
+        self.assertIsNotNone(modal_open_tag)
+        self.assertNotIn("data-force-action", modal_open_tag.group(0))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_added_record_edit_form_has_cancel_wiring(self):
+        """A record added without a page refresh gets its Edit form inserted via
+        htmx. That new Edit form must carry the Cancel hooks from the JS and
+        the Edit button id the modal returns focus to on close."""
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            created = {}
+
+            def _create_and_return(*_args, **_kwargs):
+                created["record"] = create_dns_record(
+                    self.dns_zone,
+                    record_name="www",
+                    record_type="A",
+                    record_content="192.0.2.10",
+                    ttl=300,
+                    x_record_id="x-create-a",
+                )
+                return created["record"]
+
+            svc.create_dns_record.side_effect = _create_and_return
+
+            response = self.client.post(
+                self._url(),
+                {"type": "A", "name": "www", "ttl": 300, "comment": "", "content": "192.0.2.10"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        record_id = created["record"].id
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record_id}"')
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record_id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_messages_container_wired_for_alert_focus(self):
+        """Issue #4629: the alert focus listener relies on htmx swapping
+        the `#messages-container` div in response to the `messagesRefresh`
+        event. Keep that wiring on the page so screen-reader focus can move
+        to the first error alert after an invalid submission."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="messages-container"')
+        self.assertContains(response, 'hx-trigger="messagesRefresh from:body"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_add_post_triggers_messages_refresh(self):
+        """Issue #4629: an invalid DNS record submission must return the
+        `messagesRefresh` HX-TRIGGER so the alert container reloads. The
+        JS focus handler listens for the resulting `htmx:afterSettle` on
+        the messages container, so without this trigger focus would never
+        move to the alert."""
+        with patch("registrar.views.domain.DnsHostService"):
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_edit_post_triggers_messages_refresh(self):
+        """Issue #4629: invalid edit submissions must also fire
+        `messagesRefresh` so the alert at the top of the page reloads and
+        the JS focus handler can pull focus to it."""
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=DNSRecordTypes.A,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_messages_renders_alert_as_focusable(self):
+        """Issue #4629: rendered alerts must carry `tabindex="-1"` so the JS
+        handler can move focus to them without putting them in the natural
+        tab order. The `role="alert"` keeps screen readers announcing the
+        message."""
+        with patch("registrar.views.domain.DnsHostService"):
+            self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        messages_response = self.client.get(reverse("get-messages"))
+        self.assertEqual(messages_response.status_code, 200)
+        self.assertContains(messages_response, "usa-alert")
+        self.assertContains(messages_response, 'role="alert"')
+        self.assertContains(messages_response, 'tabindex="-1"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -75,30 +303,46 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             with self.subTest(record_type=data["type"]):
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
-                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
-                    dns_record = create_dns_record(
-                        self.dns_zone,
-                        record_name=data["name"],
-                        record_type=data["type"],
-                        record_content=data["content"],
-                        ttl=data["ttl"],
-                    )
-                    svc.create_dns_record.return_value = dns_record
+                    svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+                    # Create the DnsRecord row inside the mocked service call, not before the POST.
+                    # Otherwise the new duplicate-record validator flags the POST as a dup of the
+                    # pre-created row (since it has identical type/name/content).
+                    def _create_and_return(*_args, _data=data, **_kwargs):
+                        return create_dns_record(
+                            self.dns_zone,
+                            record_name=_data["name"],
+                            record_type=_data["type"],
+                            record_content=_data["content"],
+                            ttl=_data["ttl"],
+                            x_record_id=f"x-create-{_data['type']}",
+                        )
+
+                    svc.create_dns_record.side_effect = _create_and_return
+
+                    record_type = data["type"]
+                    request_data = {
+                        "type": data["type"],
+                        "name": data["name"],
+                        "ttl": data["ttl"],
+                        "comment": data["comment"],
+                        "content": data["content"],
+                    }
+                    if record_type == "MX" and data["priority"]:
+                        request_data["priority"] = data["priority"]
 
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": data["type"],
-                            "name": data["name"],
-                            "ttl": data["ttl"],
-                            "comment": data["comment"],
-                            "content": data["content"],
-                        },
+                        request_data,
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    # User visible success message snippet
-                    self.assertContains(response, f'{data["type"]} record for {data["name"]}')
+                    messages = list(response.wsgi_request._messages)
+                    self.assertEqual(str(messages[0]), "The DNS record for this domain has been added.")
+                    self.assertRegex(
+                        response.content.decode(),
+                        r'<td id="dns-ttl-[^"]+"[^>]*>\s*5 minutes\s*</td>',
+                    )
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -110,8 +354,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
-            svc.create_dns_record.side_effect = APIError("Vendor rejected the record")
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+            svc.create_dns_record.side_effect = DnsHostingError()
 
             response = self.client.post(
                 self._url(),
@@ -138,21 +382,31 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_content_throws_error(self):
-        invalid_content_by_type = {"A": "not-an-ip", "AAAA": "not-an-ip", "TXT": 'not"valid text'}
+        invalid_content_by_type = {
+            "A": "not-an-ip",
+            "AAAA": "not-an-ip",
+            "CNAME": "invalid.lastlabel.123",
+            "MX": "invalid.lastlabel.123",
+            "PTR": "invalid.lastlabel.123",
+            "TXT": '"not valid text"',
+        }
 
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
+                    request_data = {
+                        "type": record_type,
+                        "name": record_case["name"],
+                        "ttl": record_case["ttl"],
+                        "comment": record_case["comment"],
+                        "content": invalid_content_by_type[record_type],
+                    }
+                    if record_type == "MX":
+                        request_data["priority"] = record_case["priority"]
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": record_type,
-                            "name": record_case["name"],
-                            "ttl": record_case["ttl"],
-                            "comment": record_case["comment"],
-                            "content": invalid_content_by_type[record_type],
-                        },
+                        request_data,
                     )
 
                     # Invalid form should re-render the page, not redirect
@@ -163,7 +417,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_dns_name_for_dns_record_throws_error(self):
-        invalid_name = "testing!"
+        invalid_name = "testing("
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
@@ -180,9 +434,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(
-                        response, "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."
-                    )
+                    self.assertContains(response, DNS_NAME_FORMAT_REQUIREMENT)
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)
@@ -198,3 +450,629 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "content-field-wrapper-txt")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_dns_records_page_displays_comments(self):
+        """
+        If comments are on the record, they should be available in the dns records page
+        """
+        for record_case in self.RECORD_TEST_CASES:
+            create_dns_record(
+                self.dns_zone,
+                record_type=record_case["type"],
+                record_name=record_case["name"],
+                record_content=record_case["content"],
+                record_comment=record_case["comment"],
+            )
+        response = self.client.get(self._url())
+
+        for record_case in self.RECORD_TEST_CASES:
+            self.assertContains(response, f'Toggle to view comment for {record_case["name"]}')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_dns_records_page_displays_human_readable_ttl(self):
+        create_dns_record(self.dns_zone, ttl=300)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, "5 minutes")
+        self.assertNotContains(response, ">300<", html=False)
+
+    # --- Tab order accessibility (issue #4804) ---
+    # An open DNS record edit form must support a tab sequence of:
+    #   Edit -> Name -> Content -> TTL -> Comment -> Cancel -> Save -> Delete
+    #   -> More options -> next row's Edit
+    # and the same sequence in reverse with Shift+Tab.
+    # Focus reordering is implemented in JS (initDNSRecordTabOrder); these tests assert the
+    # template-side hooks the JS depends on are present, so future refactors don't silently
+    # break the accessibility contract.
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_row_exposes_edit_button_hooks(self):
+        """The Edit button must carry the data-action and data-record-id hooks the
+        tab-order JS uses to identify the row."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, 'data-action="edit"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_row_exposes_delete_button_id(self):
+        """The row's trash can delete icon must declare so the tab-order JS can
+        locate it per record."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'id="row-delete-button-{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_edit_form_delete_link_is_focusable(self):
+        """The Delete control in the edit form is the 8th item in the tab sequence and
+        must be reachable via keyboard. role=button + tabindex=0 makes it focusable;
+        data-action='form-delete' lets the tab-order JS detect it as the last form pivot."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+        content = response.content.decode()
+
+        # All three markers must appear together on the form's Delete link.
+        self.assertContains(response, 'aria-label="Delete DNS record"')
+        self.assertContains(response, 'data-action="form-delete"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+        self.assertIn('role="button"', content)
+        self.assertIn('tabindex="0"', content)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_edit_form_cancel_button_has_focus_routing_hooks(self):
+        """Cancelling an edit goes through the confirm modal, which returns focus to
+        that row's Edit button on close (via the modal's data-opener). The Edit button needs
+        a stable id for that, and the Cancel button needs its record-scoped hooks."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        # Edit button is the focus-return target after the edit form closes.
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record.id}"')
+        # Cancel button opens the modal and is the focus target while it's open.
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record.id}"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_record_cancel_opens_confirmation_modal(self):
+        """The Edit form's Cancel routes through the same confirm modal as Add. On
+        confirm the JS resets the form back to its saved values."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-form-{record.id}"')
+        # The confirm modal it opens is the shared one
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_edit_row_has_stable_id_for_focus_routing(self):
+        """The edit form row id (dnsrecord-edit-row-<id>) is what the tab-order JS uses
+        to find the open form's focusable controls."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'id="dnsrecord-edit-row-{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_readonly_row_has_stable_id_for_focus_routing(self):
+        """The readonly row id (dnsrecord-row-<id>) is what the tab-order JS uses
+        to find the next record's Edit button when routing focus from the row delete."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'id="dnsrecord-row-{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_edit_unchanged_data_is_not_flagged_as_duplicate(self):
+        """Editing a record and resubmitting without changes must not trip the
+        full-duplicate validator. Regression: without binding the existing record
+        as the form's instance, form.instance.pk is None and the validator fails
+        to exclude the record being edited from its own uniqueness check.
+        """
+        existing = create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="www",
+            record_content="192.0.2.10",
+            ttl=300,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+            svc.update_dns_record.return_value = existing
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": existing.id,
+                    "type": "A",
+                    "name": "www",
+                    "content": "192.0.2.10",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertNotContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+            svc.update_dns_record.assert_called_once()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_edit_to_match_other_record_is_flagged_as_duplicate(self):
+        """Editing a record so its fields collide with a DIFFERENT existing record
+        must be flagged as a duplicate and must NOT call the vendor update."""
+        # The record being edited
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="mail",
+            record_content="192.0.2.20",
+            ttl=300,
+            x_record_id="x-editing",
+        )
+        # Another record we're about to collide with
+        create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="www",
+            record_content="192.0.2.10",
+            ttl=300,
+            x_record_id="x-other",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "www",
+                    "content": "192.0.2.10",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_conflicts_with_existing_cname_flagged_inline(self):
+        """Adding a CNAME when a CNAME with the same name already exists must surface
+        an inline name-field error and must NOT call the vendor service."""
+        create_dns_record(
+            self.dns_zone,
+            record_type="CNAME",
+            record_name="www",
+            record_content="cdn.example.com",
+            ttl=300,
+            x_record_id="x-existing-cname",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "www",
+                    "content": "cdn2.example.com",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_conflicts_with_existing_a_record_flagged_inline(self):
+        """Adding a CNAME when an A record with the same name exists must surface an
+        inline error and must NOT call the vendor service."""
+        create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="api",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "api",
+                    "content": "cdn.example.com",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_record_at_root_flagged_inline(self):
+        """Creating a duplicate MX record at the zone root must surface an inline error
+        (priority must be stored correctly so the duplicate check can match it)."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": "@",
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_record_using_zone_name_instead_of_at_flagged(self):
+        """Submitting an MX record using the full zone name is treated as equivalent to '@'."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            # Submit with full domain name instead of @
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": self.domain.name,
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
+        """A duplicate MX submission must show the duplicate message on priority but
+        must NOT show the 'Enter a priority for this record.' required message.
+        The two errors were co-appearing because add_error() removed priority from
+        cleaned_data, causing _post_clean to skip setting instance.priority, which
+        left it as None and triggered the model-level required check a second time."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": "@",
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+            self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_self_reference_shows_single_banner_with_inline_errors(self):
+        """A CNAME pointing at itself should show a single banner message and two
+        distinct inline messages (per ticket #4825).
+
+        Top banner queues exactly one message: the banner text. The name and target
+        fields each render their own inline error in the response body.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "www",
+                    "content": "www.example.gov",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            # Banner: a single message, matching the banner text
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertEqual(queued, [CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE])
+
+            # Inline errors are attached to the form's name and content fields, but the
+            # inline texts must NOT appear in the queued messages (otherwise the user
+            # would see them stacked as banner alerts).
+            form = response.context["form"]
+            self.assertIn(CNAME_NAME_INLINE_ERROR_MESSAGE, form.errors.get("name", []))
+            self.assertIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, form.errors.get("content", []))
+            self.assertNotIn(CNAME_NAME_INLINE_ERROR_MESSAGE, queued)
+            self.assertNotIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, queued)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_field_only_error_still_shows_field_message_as_banner(self):
+        """Regression test for the banner fallback path. When the form has no banner-level
+        error, each unique field error is still queued as a banner message — preserving
+        the existing UX for content/name shape errors and similar single-field validations.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "www",
+                    "content": "not-an-ip",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertTrue(queued, "Expected at least one banner message for a field-only error")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_renders_content_helptext_span(self):
+        """The add-record form's content field must render the helptext span server-side
+        so the JS handler can update its text when the type is changed (regression for #4954
+        - switching to/from MX or TXT must not strand the helper text)."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="id_content_helptext"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_type_config_includes_all_record_types(self):
+        """The type field's data-type-config drives the JS that updates the content
+        label/help text on type change. Regression for #4954: every record type — including
+        MX and TXT — must be present with its expected label and help_text."""
+        import json
+
+        response = self.client.get(self._url())
+        content = response.content.decode()
+
+        # Extract the data-type-config JSON value from the rendered type select
+        match = re.search(r'data-type-config="([^"]+)"', content)
+        self.assertIsNotNone(match, "data-type-config attribute missing from type select")
+        config = json.loads(html_module.unescape(match.group(1)))
+
+        for rt in DNSRecordTypes:
+            with self.subTest(record_type=rt.value):
+                self.assertIn(rt.value, config)
+                self.assertEqual(config[rt.value]["label"], rt.field_label)
+                self.assertEqual(config[rt.value]["help_text"], rt.help_text)
+
+        # MX and TXT are the regression targets — make sure they are explicitly present
+        self.assertIn("MX", config)
+        self.assertIn("TXT", config)
+        self.assertEqual(config["MX"]["help_text"], "Example: mail.example.gov")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_error_clears_after_posting_valid_data(self):
+        """Submitting invalid data via the edit form
+        and posting a new record clears the error field"""
+        # The record being edited
+        record_type = DNSRecordTypes.A
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=record_type,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DNSRecordTypes(record_type).error_message)
+
+            response_too = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "name": "@",
+                    "content": "192.0.2.1",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response_too.status_code, 200)
+            self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)
+
+
+class TestDnsRecordCrossTenant(TestWithDNSRecordPermissions, WebTest):
+
+    def setUp(self):
+        super().setUp()
+        case_own, case_other = self.RECORD_TEST_CASES[0], self.RECORD_TEST_CASES[1]
+        self.case_own = dict(case_own)
+        self.case_other = dict(case_other)
+
+        # The logged-in user's own record, in their own zone
+        self.own_record = create_dns_record(
+            self.dns_zone,
+            record_type=case_own["type"],
+            record_name=case_own["name"],
+            record_content=case_own["content"],
+            record_comment="own record comment",
+        )
+
+        # Another tenant's domain, zone and record (the victim)
+        other_user = create_user()
+        other_domain = create_domain(domain_name="testingthistest.gov")
+        _, _, other_zone = create_initial_dns_setup(
+            domain=other_domain, domain_manager=other_user, x_account_id="some-account-id"
+        )
+        self.comment = "only comment"
+        self.other_record = create_dns_record(
+            other_zone,
+            record_type=case_other["type"],
+            record_name=case_other["name"],
+            record_content=case_other["content"],
+            record_comment=self.comment,
+        )
+
+    def _payload(self, record_id, case, **overrides):
+        data = {
+            "id": record_id,
+            "type": case["type"],
+            "name": case["name"],
+            "content": case["content"],
+            "ttl": case["ttl"],
+            "comment": "",
+        }
+        data.update(overrides)
+        return data
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_control_edit_own_record_reaches_service(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.own_record.id, self.case_own))
+
+        self.assertEqual(resp.status_code, 200)
+        service.update_dns_record.assert_called_once()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_other_zone_record_valid_form(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.other_record.id, self.case_other))
+
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotContains(resp, self.comment, status_code=404)
+        service.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_other_zone_record_invalid_form(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.other_record.id, self.case_other, content=""))
+
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotContains(resp, self.comment, status_code=404)
+        service.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_delete_other_zone_record(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), {"id": self.other_record.id, "delete_record": True})
+
+        self.assertEqual(resp.status_code, 404)
+        service.delete_dns_record.assert_not_called()
+        self.assertTrue(DnsRecord.objects.filter(pk=self.other_record.pk).exists())

@@ -8,17 +8,28 @@ from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
 
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.forms.utility.fields import MaxLengthFirstEmailField, MaxLengthFirstURLField
 from registrar.forms.utility.wizard_form_helper import (
     RegistrarForm,
     RegistrarFormSet,
     BaseYesNoForm,
     BaseDeletableRegistrarForm,
 )
-from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency, Suborganization
+from registrar.models import (
+    Contact,
+    DomainRequest,
+    DraftDomain,
+    Domain,
+    FederalAgency,
+    FederalTribe,
+    StateTribe,
+    Suborganization,
+)
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
-from registrar.utility.constants import BranchChoices
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from registrar.validations import (
     TEXT_SHORT,
     TEXT_EXTENDED,
@@ -31,6 +42,10 @@ from registrar.validations import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Stands for Greek capital letter delta
+# which marks that a Tribe alr has a Portfolio
+DELTA = "\u0394"
 
 
 class RequestingEntityForm(RegistrarForm):
@@ -61,12 +76,18 @@ class RequestingEntityForm(RegistrarForm):
         required=False,
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
+        error_messages={
+            "max_length": "Suborganization name must be no more than 100 characters.",
+        },
     )
     suborganization_city = forms.CharField(
         label="City",
         required=False,
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
+        error_messages={
+            "max_length": "City must be no more than 50 characters.",
+        },
     )
     suborganization_state_territory = forms.ChoiceField(
         label="State, territory, or military post",
@@ -86,8 +107,8 @@ class RequestingEntityForm(RegistrarForm):
             self.fields["sub_organization"].queryset = queryset
 
             # Modify the choices to include "other" so that form can display options properly
-            self.fields["sub_organization"].choices = [(obj.id, str(obj)) for obj in queryset] + [
-                ("other", "Other (enter your suborganization manually)")
+            self.fields["sub_organization"].choices = [("other", "Other (enter your suborganization manually)")] + [
+                (obj.id, str(obj)) for obj in queryset
             ]
 
     @classmethod
@@ -186,7 +207,7 @@ class RequestingEntityForm(RegistrarForm):
             if is_requesting_new_suborganization:
                 if not cleaned_data.get("requested_suborganization") and "requested_suborganization" not in self.errors:
                     self.add_error("requested_suborganization", "Enter the name of your suborganization.")
-                if not cleaned_data.get("suborganization_city"):
+                if not cleaned_data.get("suborganization_city") and "suborganization_city" not in self.errors:
                     self.add_error("suborganization_city", "Enter the city where your suborganization is located.")
                 if not cleaned_data.get("suborganization_state_territory"):
                     self.add_error(
@@ -194,7 +215,7 @@ class RequestingEntityForm(RegistrarForm):
                         "Select the state, territory, or military post where your suborganization is located.",
                     )
             elif not suborganization:
-                self.add_error("sub_organization", "Suborganization is required.")
+                self.add_error("sub_organization", "Select the suborganization who will use the domain.")
 
         # If there are errors, restore the "other" value for rendering
         if self.errors and getattr(self, "_original_suborganization", None) == "other":
@@ -214,7 +235,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
     # IMPORTANT: This is tied to DomainRequest.is_requesting_new_suborganization().
     # This is due to the from_database method on DomainRequestWizard.
     field_name = "requesting_entity_is_suborganization"
-    required_error_message = "Requesting entity is required."
+    required_error_message = "Select who will use the domain you're requesting."
 
     def __init__(self, *args, **kwargs):
         """Extend the initialization of the form from RegistrarForm __init__"""
@@ -247,7 +268,7 @@ class RequestingEntityYesNoForm(BaseYesNoForm):
 
 
 class OrganizationTypeForm(RegistrarForm):
-    generic_org_type = forms.ChoiceField(
+    organization_type = forms.ChoiceField(
         # use the long names in the domain request form
         choices=DomainRequest.OrganizationChoicesVerbose.choices,
         widget=forms.RadioSelect,
@@ -267,12 +288,68 @@ class TribalGovernmentForm(RegistrarForm):
         required=False,
     )
 
+    # To be legacy free text field - used when is_tribal_embd flag is off
     tribe_name = forms.CharField(
         label="Name of tribe",
         error_messages={"required": "Enter the tribe you represent."},
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
+
+    # To replace tribe_name when is_tribal_embd is on
+    federal_tribe = forms.ModelChoiceField(
+        label="Which tribe do you represent?",
+        required=False,
+        queryset=FederalTribe.objects.none(),
+        widget=ComboboxWidget,
+    )
+
+    # To replace tribe_name when is_embd_tribal is on
+    state_tribe = forms.ModelChoiceField(
+        label="Which tribe do you represent?",
+        required=False,
+        queryset=StateTribe.objects.none(),
+        widget=ComboboxWidget,
+    )
+
+    @property
+    def tribe_dropdown_enabled(self):
+        """
+        The tribal dropdown will replace the free text field when the
+        is_embd_tribal flag is on
+        """
+        requester = getattr(self.domain_request, "requester", None)
+        if not requester:
+            return False
+        return flag_is_active_for_user(requester, "is_embd_tribal")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # is_embd_tribal flag OFF: legacy flow, free text
+        # Also dropping the dropdown data so it stays out of
+        # cleaned_data so it wont overwrite the FKs
+        if not self.tribe_dropdown_enabled:
+            del self.fields["federal_tribe"]
+            del self.fields["state_tribe"]
+            return
+
+        # is_embd_tribal flag is ON, so the free text field goes away
+        del self.fields["tribe_name"]
+
+        # Build dropdown for both tribe tables
+        # queryset: what django validates the submitted id against
+        # choices: what user actually sees, with delta for tribes that alr have a portfolio
+        for field_name, model in (("federal_tribe", FederalTribe), ("state_tribe", StateTribe)):
+            choices = [("", "- Select -")]
+            for option in model.get_dropdown_options():
+                name = option["name"]
+                if option["has_existing_portfolio"]:
+                    name = f"{DELTA} {name}"
+                choices.append((option["id"], name))
+
+            self.fields[field_name].queryset = model.objects.all()
+            self.fields[field_name].choices = choices
 
     def clean(self):
         """Needs to be either state or federally recognized."""
@@ -282,53 +359,30 @@ class TribalGovernmentForm(RegistrarForm):
                 # into a link. There should be no user-facing input in the
                 # HTML indicated here.
                 mark_safe(  # nosec
-                    "You can’t complete this domain request yet. "
-                    "Only tribes recognized by the U.S. federal government "
-                    "or by a U.S. state government are eligible for .gov "
-                    'domains. Use our <a href="{}">contact form</a> to '
-                    "tell us more about your tribe and why you want a .gov "
-                    "domain. We’ll review your information and get back "
-                    "to you.".format(public_site_url("contact"))
+                    "Select whether your organization is a federally or state-recognized tribe. "
+                    "Only tribes recognized by the U.S. federal government or a U.S. state government are "
+                    "eligible for .gov domains. If the tribe you represent doesn't meet this requirement, "
+                    '<a href="{}">contact us</a> to tell us more about your tribe and why you want a .gov domain. '
+                    "We’ll review your information and get back to you.".format(public_site_url("contact"))
                 ),
                 code="invalid",
             )
 
+        if not self.tribe_dropdown_enabled:
+            return
 
-class OrganizationFederalForm(RegistrarForm):
-    federal_type = forms.ChoiceField(
-        choices=BranchChoices.choices,
-        widget=forms.RadioSelect,
-        label="Which federal branch is your organization in?",
-        error_messages={"required": ("Select the part of the federal government your organization is in.")},
-    )
-
-    def to_database(self, domain_request):
-        federal_type = self.cleaned_data.get("federal_type")
-        domain_request.federal_type = federal_type
-        domain_request.save(update_fields=["federal_type"])
-
-
-class OrganizationElectionForm(RegistrarForm):
-    is_election_board = forms.NullBooleanField(
-        widget=forms.RadioSelect(
-            choices=[
-                (True, "Yes"),
-                (False, "No"),
-            ],
-        ),
-        label="Is your organization an election office?",
-    )
-
-    def clean_is_election_board(self):
-        """This box must be checked to proceed but offer a clear error."""
-        # already converted to a boolean
-        is_election_board = self.cleaned_data["is_election_board"]
-        if is_election_board is None:
-            raise forms.ValidationError(
-                ("Select “Yes” if you represent an election office. Select “No” if you don’t."),
-                code="required",
-            )
-        return is_election_board
+        # If Federal AND State are checked, we show Federal Tribes
+        # If someone picks a tribe and then switches which kind of tribe
+        # they are, the now hidden dropdown still keeps what was "picked"
+        # Only one tribe can be saved, so we drop the prev "pick" otherwise the save will fail
+        if self.cleaned_data.get("federally_recognized_tribe"):
+            self.cleaned_data["state_tribe"] = None
+            if not self.cleaned_data.get("federal_tribe"):
+                self.add_error("federal_tribe", "Select the tribe you represent")
+        elif self.cleaned_data.get("state_recognized_tribe"):
+            self.cleaned_data["federal_tribe"] = None
+            if not self.cleaned_data.get("state_tribe"):
+                self.add_error("state_tribe", "Select the tribe you represent")
 
 
 class OrganizationContactForm(RegistrarForm):
@@ -347,13 +401,19 @@ class OrganizationContactForm(RegistrarForm):
     )
     organization_name = forms.CharField(
         label="Organization name",
-        error_messages={"required": "Enter the name of your organization."},
+        error_messages={
+            "required": "Enter the name of your organization.",
+            "max_length": "Organization name must be no more than 100 characters.",
+        },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     address_line1 = forms.CharField(
         label="Street address",
-        error_messages={"required": "Enter the street address of your organization."},
+        error_messages={
+            "required": "Enter the street address of your organization.",
+            "max_length": "Street address must be no more than 100 characters.",
+        },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
@@ -361,11 +421,17 @@ class OrganizationContactForm(RegistrarForm):
         required=False,
         label="Street address line 2 (optional)",
         validators=[get_max_length_validator(TEXT_EXTENDED)],
+        error_messages={
+            "max_length": "Street address line 2 must be no more than 100 characters.",
+        },
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     city = forms.CharField(
         label="City",
-        error_messages={"required": "Enter the city where your organization is located."},
+        error_messages={
+            "required": "Enter the city where your organization is located.",
+            "max_length": "City must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
@@ -434,7 +500,10 @@ class AboutYourOrganizationForm(RegistrarForm):
         label="About your organization",
         widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
         validators=[get_max_length_validator(TEXTAREA_LONG)],
-        error_messages={"required": ("Enter more information about your organization.")},
+        error_messages={
+            "required": ("Enter more information about your organization."),
+            "max_length": "Description must be no more than 1000 characters.",
+        },
     )
 
 
@@ -463,13 +532,19 @@ class SeniorOfficialForm(RegistrarForm):
 
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": ("Enter the first name / given name of your senior official.")},
+        error_messages={
+            "required": ("Enter the first name / given name of your senior official."),
+            "max_length": "First name / given name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": ("Enter the last name / family name of your senior official.")},
+        error_messages={
+            "required": ("Enter the last name / family name of your senior official."),
+            "max_length": "Last name / family name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
@@ -479,30 +554,31 @@ class SeniorOfficialForm(RegistrarForm):
             "required": (
                 "Enter the title or role your senior official has in your"
                 " organization (e.g., Chief Information Officer)."
-            )
+            ),
+            "max_length": "Title or role must be no more than 100 characters.",
         },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[get_max_length_validator(EMAIL_MAX)],
         widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
     )
 
 
 class CurrentSitesForm(RegistrarForm):
-    website = forms.URLField(
+    website = MaxLengthFirstURLField(
         required=False,
         label="Public website",
         error_messages={
-            "invalid": ("Enter your organization's current website in the required format, like example.com.")
+            "invalid": ("Enter your organization's current website in the required format, like example.com."),
         },
-        validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.URLInput(
             attrs={
                 "aria-labelledby": "id_current_sites_header id_current_sites_body",
@@ -559,10 +635,11 @@ class AlternativeDomainForm(RegistrarForm):
 
 class BaseAlternativeDomainFormSet(RegistrarFormSet):
     JOIN = "alternative_domains"
+    deletion_widget = forms.HiddenInput
 
     def should_delete(self, cleaned):
         domain = cleaned.get("alternative_domain", "")
-        return domain.strip() == ""
+        return cleaned.get("DELETE", False) or domain.strip() == ""
 
     def pre_update(self, db_obj, cleaned):
         domain = cleaned.get("alternative_domain", None)
@@ -594,6 +671,7 @@ AlternativeDomainFormSet = forms.formset_factory(
     AlternativeDomainForm,
     extra=1,
     absolute_max=1500,  # django default; use `max_num` to limit entries
+    can_delete=True,
     formset=BaseAlternativeDomainFormSet,
 )
 
@@ -638,7 +716,12 @@ class DotGovDomainForm(RegistrarForm):
         error_messages={
             "required": DOMAIN_API_MESSAGES["required"],
         },
-        validators=[get_max_length_validator(DOMAIN_LABEL)],
+        validators=[
+            MaxLengthValidator(
+                DOMAIN_LABEL,
+                message=f"Domain name must be no more than {DOMAIN_LABEL} characters.",
+            )
+        ],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
         strip=False,
     )
@@ -659,7 +742,10 @@ class PurposeDetailsForm(BaseDeletableRegistrarForm):
             }
         ),
         validators=[get_max_length_validator(TEXTAREA_LONG)],
-        error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
+        error_messages={
+            "required": "Describe how you’ll use the .gov domain you’re requesting.",
+            "max_length": "Purpose must be no more than 1000 characters.",
+        },
     )
 
 
@@ -668,6 +754,10 @@ class OtherContactsYesNoForm(BaseYesNoForm):
 
     form_choices = ((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)"))
     field_name = "has_other_contacts"
+    required_error_message = (
+        "Select “Yes” if your organization has other employees we can contact. "
+        "Select “No” if your organization doesn’t have other employees we can contact."
+    )
 
     @property
     def form_is_checked(self):
@@ -686,7 +776,10 @@ class OtherContactsYesNoForm(BaseYesNoForm):
 class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": "Enter the first name / given name of this contact."},
+        error_messages={
+            "required": "Enter the first name / given name of this contact.",
+            "max_length": "First name / given name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
@@ -695,10 +788,14 @@ class OtherContactsForm(RegistrarForm):
         label="Middle name (optional)",
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
+        error_messages={"max_length": "Middle name must be no more than 50 characters."},
     )
     last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": "Enter the last name / family name of this contact."},
+        error_messages={
+            "required": "Enter the last name / family name of this contact.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
@@ -707,7 +804,8 @@ class OtherContactsForm(RegistrarForm):
         error_messages={
             "required": (
                 "Enter the title or role of this contact in your organization (e.g., Chief Information Officer)."
-            )
+            ),
+            "max_length": "Title or role must be no more than 100 characters.",
         },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
@@ -717,6 +815,7 @@ class OtherContactsForm(RegistrarForm):
         error_messages={
             "required": ("Enter an email address in the required format, like name@example.com."),
             "invalid": ("Enter an email address in the required format, like name@example.com."),
+            "max_length": "Email address must be no more than 320 characters.",
         },
         validators=[get_max_length_validator(EMAIL_MAX)],
         widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
@@ -725,7 +824,7 @@ class OtherContactsForm(RegistrarForm):
     phone = PhoneNumberField(
         label="Phone",
         error_messages={
-            "invalid": "Enter a valid 10-digit phone number.",
+            "invalid": "Enter a valid 10-digit phone number including area code.",
             "required": "Enter a phone number for this contact.",
         },
     )
@@ -868,20 +967,29 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
             }
         ),
         validators=[get_max_length_validator(TEXTAREA_SHORT)],
-        error_messages={"required": ("Rationale for no other employees is required.")},
+        error_messages={
+            "required": ("Rationale for no other employees is required."),
+            "max_length": "Description must be no more than 500 characters.",
+        },
     )
 
 
 class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_first_name = forms.CharField(
         label="First name / given name",
-        error_messages={"required": "Enter the first name / given name of the CISA regional representative."},
+        error_messages={
+            "required": "Enter the first name / given name of the CISA regional representative.",
+            "max_length": "First name / given name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     cisa_representative_last_name = forms.CharField(
         label="Last name / family name",
-        error_messages={"required": "Enter the last name / family name of the CISA regional representative."},
+        error_messages={
+            "required": "Enter the last name / family name of the CISA regional representative.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
+        },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
@@ -891,6 +999,7 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
+            "max_length": "Email address must be no more than 320 characters.",
         },
         validators=[get_max_length_validator(EMAIL_MAX)],
         widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
@@ -903,6 +1012,10 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
     aria_labelledby = "cisa-representative-heading"
+    required_error_message = (
+        "Select “Yes” if you’re working with a CISA regional representative on this request. "
+        "Select “No” if you’re not working with a CISA regional representative."
+    )
 
 
 class AnythingElseForm(BaseDeletableRegistrarForm):
@@ -916,11 +1029,13 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
                 **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
-        validators=[get_max_length_validator(TEXTAREA_LONG)],
+        validators=[
+            MaxLengthValidator(TEXTAREA_LONG, message=f"Description must be no more than {TEXTAREA_LONG} characters.")
+        ],
         error_messages={
             "required": (
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
-            )
+            ),
         },
     )
 
@@ -931,8 +1046,8 @@ class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=False,
         label="Anything else?",
-        widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
-        validators=[get_max_length_validator(TEXTAREA_LONG)],
+        widget=forms.Textarea(attrs=get_max_length_attrs(2000)),
+        validators=[MaxLengthValidator(2000, message="Description must be no more than 2000 characters.")],
     )
 
 
@@ -943,6 +1058,9 @@ class AnythingElseYesNoForm(BaseYesNoForm):
     form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
     aria_labelledby = "anything-else-heading"
+    required_error_message = (
+        "Select “Yes” if there are additional details you’d like us to know. Select “No” if you have nothing to add."
+    )
 
 
 class RequirementsForm(RegistrarForm):

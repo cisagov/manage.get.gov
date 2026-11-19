@@ -8,7 +8,6 @@ from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
@@ -33,6 +32,13 @@ class DomainRequest(TimeStampedModel):
             models.Index(fields=["requested_domain"]),
             models.Index(fields=["approved_domain"]),
             models.Index(fields=["status"]),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(state_tribe__isnull=True) | models.Q(federal_tribe__isnull=True),
+                name="domain_request_single_tribe_reference",
+            ),
         ]
 
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
@@ -132,9 +138,7 @@ class DomainRequest(TimeStampedModel):
 
     class OrganizationChoices(models.TextChoices):
         """
-        Primary organization choices:
-        For use in the domain request experience
-        Keys need to match OrgChoicesElectionOffice and OrganizationChoicesVerbose
+        Primary organization choices for use in the domain request experience.
         """
 
         FEDERAL = "federal", "Federal"
@@ -159,79 +163,6 @@ class DomainRequest(TimeStampedModel):
             org_names = org_name.split("_election")
             if len(org_names) > 0:
                 org_name = org_names[0]
-            return cls(org_name).label if org_name else None
-
-    class OrgChoicesElectionOffice(models.TextChoices):
-        """
-        Primary organization choices for Django admin:
-        Keys need to match OrganizationChoices and OrganizationChoicesVerbose.
-
-        The enums here come in two variants:
-        Regular (matches the choices from OrganizationChoices)
-        Election (Appends " - Election" to the string)
-
-        When adding the election variant, you must append "_election" to the end of the string.
-        """
-
-        # We can't inherit OrganizationChoices due to models.TextChoices being an enum.
-        # We can redefine these values instead.
-        FEDERAL = "federal", "Federal"
-        INTERSTATE = "interstate", "Interstate"
-        STATE_OR_TERRITORY = "state_or_territory", "State or territory"
-        TRIBAL = "tribal", "Tribal"
-        COUNTY = "county", "County"
-        CITY = "city", "City"
-        SPECIAL_DISTRICT = "special_district", "Special district"
-        SCHOOL_DISTRICT = "school_district", "School district"
-
-        # Election variants
-        STATE_OR_TERRITORY_ELECTION = "state_or_territory_election", "State or territory - Election"
-        TRIBAL_ELECTION = "tribal_election", "Tribal - Election"
-        COUNTY_ELECTION = "county_election", "County - Election"
-        CITY_ELECTION = "city_election", "City - Election"
-        SPECIAL_DISTRICT_ELECTION = "special_district_election", "Special district - Election"
-
-        @classmethod
-        def get_org_election_to_org_generic(cls):
-            """
-            Creates and returns a dictionary mapping from election-specific organization
-            choice enums to their corresponding general organization choice enums.
-
-            If no such mapping exists, it is simple excluded from the map.
-            """
-            # This can be mapped automatically but its harder to read.
-            # For clarity reasons, we manually define this.
-            org_election_map = {
-                cls.STATE_OR_TERRITORY_ELECTION: cls.STATE_OR_TERRITORY,
-                cls.TRIBAL_ELECTION: cls.TRIBAL,
-                cls.COUNTY_ELECTION: cls.COUNTY,
-                cls.CITY_ELECTION: cls.CITY,
-                cls.SPECIAL_DISTRICT_ELECTION: cls.SPECIAL_DISTRICT,
-            }
-            return org_election_map
-
-        @classmethod
-        def get_org_generic_to_org_election(cls):
-            """
-            Creates and returns a dictionary mapping from general organization
-            choice enums to their corresponding election-specific organization enums.
-
-            If no such mapping exists, it is simple excluded from the map.
-            """
-            # This can be mapped automatically but its harder to read.
-            # For clarity reasons, we manually define this.
-            org_election_map = {
-                cls.STATE_OR_TERRITORY: cls.STATE_OR_TERRITORY_ELECTION,
-                cls.TRIBAL: cls.TRIBAL_ELECTION,
-                cls.COUNTY: cls.COUNTY_ELECTION,
-                cls.CITY: cls.CITY_ELECTION,
-                cls.SPECIAL_DISTRICT: cls.SPECIAL_DISTRICT_ELECTION,
-            }
-            return org_election_map
-
-        @classmethod
-        def get_org_label(cls, org_name: str):
-            # Translating the key that is given to the direct readable value
             return cls(org_name).label if org_name else None
 
     class OrganizationChoicesVerbose(models.TextChoices):
@@ -350,7 +281,7 @@ class DomainRequest(TimeStampedModel):
 
     sub_organization = models.ForeignKey(
         "registrar.Suborganization",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="request_sub_organization",
@@ -393,28 +324,11 @@ class DomainRequest(TimeStampedModel):
         verbose_name="analyst",
     )
 
-    # ##### data fields from the initial form #####
-    generic_org_type = models.CharField(
+    organization_type = models.CharField(
         max_length=255,
-        # use the short names in Django admin
         choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-    )
-
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
-    )
-
-    # TODO - Ticket #1911: stub this data from DomainRequest
-    organization_type = models.CharField(
-        max_length=255,
-        choices=OrgChoicesElectionOffice.choices,
-        null=True,
-        blank=True,
-        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -428,6 +342,24 @@ class DomainRequest(TimeStampedModel):
     tribe_name = models.CharField(
         null=True,
         blank=True,
+    )
+
+    state_tribe = models.ForeignKey(
+        "registrar.StateTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_requests",
+        verbose_name="State recognized tribe",
+    )
+
+    federal_tribe = models.ForeignKey(
+        "registrar.FederalTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_requests",
+        verbose_name="Federally recognized tribe",
     )
 
     federal_type = models.CharField(
@@ -689,35 +621,6 @@ class DomainRequest(TimeStampedModel):
         excluded_statuses = [cls.DomainRequestStatus.INELIGIBLE, cls.DomainRequestStatus.IN_REVIEW]
         return [status for status in cls.DomainRequestStatus if status not in excluded_statuses]
 
-    def sync_organization_type(self):
-        """
-        Updates the organization_type (without saving) to match
-        the is_election_board and generic_organization_type fields.
-        """
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
-
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
-
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = self.OrgChoicesElectionOffice.get_org_election_to_org_generic()
-
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_office" and "generic_organization_type"
-        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
-            sender=self.__class__,
-            instance=self,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
-        )
-
-        # Actually updates the organization_type field
-        org_type_helper.create_or_update_organization_type()
-
     def _cache_status_and_status_reasons(self):
         """Maintains a cache of properties so we can avoid a DB call"""
         self._cached_action_needed_reason = self.action_needed_reason
@@ -729,8 +632,8 @@ class DomainRequest(TimeStampedModel):
         self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
-        # Cache the original generic_org_type to detect changes on save
-        self._cached_generic_org_type = self.generic_org_type
+        # Cache the original organization_type to detect changes on save
+        self._cached_organization_type = self.organization_type
 
     def clean(self):
         """
@@ -744,6 +647,14 @@ class DomainRequest(TimeStampedModel):
         Not presently used on the domain request wizard, though.
         """
         super().clean()
+        # A legacy domain request cannot have a federal_type
+        if (
+            self.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+            and not self.portfolio
+            and self.federal_type is not None
+        ):
+            raise ValidationError("A legacy federal domain request cannot have a federal type.")
+
         # Validation logic for a suborganization request
         if self.is_requesting_new_suborganization():
             # Raise an error if this suborganization already exists
@@ -789,14 +700,14 @@ class DomainRequest(TimeStampedModel):
         """Clears fields that are no longer relevant based on current data.
         This helps ensure that stale data isn't kept around.
 
-        When generic_org_type changes, certain conditional fields become irrelevant:
+        When organization_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
-        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
-        - is_election_board: Not applicable to Federal, Interstate, or School District
+        -  tribe_name, state_tribe, federal_tribe, federally_recognized_tribe,
+        state_recognized_tribe: Only for Tribal orgs
         - about_your_organization: Only for Special District or Interstate orgs
         """
-        old_org_type = getattr(self, "_cached_generic_org_type", None)
-        new_org_type = self.generic_org_type
+        old_org_type = getattr(self, "_cached_organization_type", None)
+        new_org_type = self.organization_type
 
         if old_org_type and new_org_type != old_org_type:
             if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
@@ -807,14 +718,8 @@ class DomainRequest(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
-
-            excluded_from_election = [
-                DomainRequest.OrganizationChoices.FEDERAL,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-            ]
-            if new_org_type in excluded_from_election:
-                self.is_election_board = None
+                self.state_tribe = None
+                self.federal_tribe = None
 
             about_org_types = [
                 DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
@@ -838,7 +743,6 @@ class DomainRequest(TimeStampedModel):
             ):
                 raise ValidationError("A newer version of this form exists. Please try again.")
 
-        self.sync_organization_type()
         self.sync_yes_no_form_fields()
         self.clear_irrelevant_fields()
 
@@ -956,7 +860,7 @@ class DomainRequest(TimeStampedModel):
         except Exception:
             return ""
 
-    def domain_is_not_active(self):
+    def domain_is_not_active(self) -> bool:
         if self.approved_domain:
             return not self.approved_domain.is_active()
         return True
@@ -1100,7 +1004,7 @@ class DomainRequest(TimeStampedModel):
                 exc_info=True,
             )
 
-    def investigator_exists_and_is_staff(self):
+    def investigator_exists_and_is_staff(self) -> bool:
         """Checks if the current investigator is in a valid state for a state transition"""
         is_valid = True
         # Check if an investigator is assigned. No approval is possible without one.
@@ -1108,7 +1012,7 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
-    def allow_in_review_omb_transition(self):
+    def allow_in_review_omb_transition(self) -> bool:
         """Checks if domain request is in enterprise mode for state transition without investigator"""
         """If it is not in enterprise mode check the investigator exists"""
         if self.is_feb():
@@ -1177,7 +1081,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.IN_REVIEW,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def in_review(self):
         """Investigate an domain request that has been submitted.
@@ -1211,7 +1115,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.ACTION_NEEDED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def action_needed(self):
         """Send back an domain request that is under investigation or rejected.
@@ -1248,7 +1152,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.APPROVED,
-        conditions=[investigator_exists_and_is_staff],
+        conditions=[investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def approve(self, send_email=True):
         """Approve an domain request that has been submitted.
@@ -1381,7 +1285,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.IN_REVIEW_OMB,
         ],
         target=DomainRequestStatus.REJECTED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def reject(self):
         """Reject an domain request that has been submitted.
@@ -1411,7 +1315,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.INELIGIBLE,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.
@@ -1433,7 +1337,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.SUBMITTED,
         ],
         target=DomainRequestStatus.IN_REVIEW_OMB,
-        conditions=[domain_is_not_active, allow_in_review_omb_transition],
+        conditions=[domain_is_not_active, allow_in_review_omb_transition],  # type: ignore[list-item]
     )
     def in_review_omb(self):
         """Transitions Domain Request Status from submitted to In review - OMB"""
@@ -1534,31 +1438,17 @@ class DomainRequest(TimeStampedModel):
 
     def show_organization_federal(self) -> bool:
         """Show this step if the answer to the first question was "federal"."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice == DomainRequest.OrganizationChoices.FEDERAL
 
     def show_tribal_government(self) -> bool:
         """Show this step if the answer to the first question was "tribal"."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice == DomainRequest.OrganizationChoices.TRIBAL
-
-    def show_organization_election(self) -> bool:
-        """Show this step if the answer to the first question implies it.
-
-        This shows for answers that aren't "Federal" or "Interstate".
-        This also doesnt show if user selected "School District" as well (#524)
-        """
-        user_choice = self.generic_org_type
-        excluded = [
-            DomainRequest.OrganizationChoices.FEDERAL,
-            DomainRequest.OrganizationChoices.INTERSTATE,
-            DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-        ]
-        return bool(user_choice and user_choice not in excluded)
 
     def show_about_your_organization(self) -> bool:
         """Show this step if this is a special district or interstate."""
-        user_choice = self.generic_org_type
+        user_choice = self.organization_type
         return user_choice in [
             DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
             DomainRequest.OrganizationChoices.INTERSTATE,
@@ -1592,12 +1482,12 @@ class DomainRequest(TimeStampedModel):
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
-        generic_org_type can be both null and blank,
+        organization_type can be both null and blank,
         """
-        if not self.generic_org_type:
-            # generic_org_type is either blank or None, can't answer
+        if not self.organization_type:
+            # organization_type is either blank or None, can't answer
             return None
-        if self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL:
+        if self.organization_type == DomainRequest.OrganizationChoices.FEDERAL:
             return True
         return False
 
@@ -1629,6 +1519,15 @@ class DomainRequest(TimeStampedModel):
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    @property
+    def tribe_display_name(self):
+        """Return the linked tribe's name, falling back to the legacy free-text name."""
+        if self.federal_tribe_id:
+            return self.federal_tribe.tribe_full_name
+        if self.state_tribe_id:
+            return self.state_tribe.tribe_name
+        return self.tribe_name
+
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""
 
@@ -1639,10 +1538,10 @@ class DomainRequest(TimeStampedModel):
         return self.organization_name
 
     @property
-    def converted_generic_org_type(self):
+    def converted_organization_type(self):
         if self.portfolio:
             return self.portfolio.organization_type
-        return self.generic_org_type
+        return self.organization_type
 
     @property
     def converted_federal_agency(self):
@@ -1702,10 +1601,10 @@ class DomainRequest(TimeStampedModel):
 
     # ----- Portfolio Properties (display values)-----
     @property
-    def converted_generic_org_type_display(self):
+    def converted_organization_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
-        return self.get_generic_org_type_display()
+        return self.get_organization_type_display()
 
     @property
     def converted_federal_type_display(self):

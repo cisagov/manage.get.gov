@@ -1,6 +1,5 @@
 """Forms for domain management."""
 
-import logging
 from django import forms
 from django.core.validators import (
     RegexValidator,
@@ -9,6 +8,14 @@ from django.core.validators import (
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.forms.utility.fields import MaxLengthFirstEmailField
+from registrar.validations import (
+    EMAIL_MAX,
+    TEXT_SHORT,
+    TEXT_EXTENDED,
+    get_max_length_attrs,
+    get_max_length_validator,
+)
 from registrar.models import DomainRequest, FederalAgency
 from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -28,30 +35,37 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
-from registrar.utility.enums import DNSRecordTypes
+from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES, format_dns_ttl
+from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
+    DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+    DNS_RECORD_CONTENT_REQUIREMENT,
+    validate_dns_name_fqdn_length,
+    get_error_message_from_requirement,
+    get_content_type_label_by_record_type,
+    get_fqdn_error_message,
+)
 
 import json
 import re
-
-logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
-        max_length=None,
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
     )
 
     def clean(self):
@@ -75,7 +89,7 @@ class DomainNameserverForm(forms.Form):
         label="Name server",
         strip=True,
         required=True,
-        error_messages={"required": "At least two name servers are required."},
+        error_messages={"required": "Domains must have at least two name servers."},
     )
 
     ip = forms.CharField(
@@ -188,7 +202,7 @@ class DomainSuborganizationForm(forms.ModelForm):
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
         """Check for duplicate entries in the formset and ensure at least two valid nameservers."""
-        error_message = "At least two name servers are required."
+        error_message = "Domains must have at least two name servers."
 
         valid_forms, invalid_forms, empty_forms = self._categorize_forms(error_message)
         self._enforce_minimum_nameservers(valid_forms, invalid_forms, empty_forms, error_message)
@@ -228,7 +242,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
             self._remove_required_error_from_forms(error_message)
 
     def _add_required_error(self, empty_forms, error_message):
-        """Add 'At least two name servers' error to one form and remove duplicates."""
+        """Add 'Domains must have at least two name servers.' error to one form and remove duplicates."""
         error_added = False
 
         for form in empty_forms:
@@ -240,7 +254,10 @@ class BaseNameserverFormset(forms.BaseFormSet):
                 error_added = True
 
     def _remove_required_error_from_forms(self, error_message):
-        """Remove the 'At least two name servers' error from all forms if sufficient nameservers exist."""
+        """
+        Remove the 'Domains must have at least two name servers.' error from all forms
+        if sufficient nameservers exist.
+        """
         for form in self.forms:
             if form.errors.get("server") == [error_message]:
                 form.errors.pop("server")
@@ -335,7 +352,10 @@ class UserForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
-    email = forms.EmailField(max_length=None)
+    email = MaxLengthFirstEmailField(
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
+    )
 
     class Meta:
         model = Contact
@@ -359,10 +379,6 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
-
-        # Define a custom validator for the email field with a custom error message
-        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
-        self.fields["email"].validators.append(email_max_length_validator)
 
         for field_name in self.required:
             self.fields[field_name].required = True
@@ -406,16 +422,31 @@ class SeniorOfficialContactForm(ContactForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your senior official."
+            "required": "Enter the first name / given name of your senior official.",
+            "max_length": "First name / given name must be no more than 50 characters.",
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your senior official."
+            "required": "Enter the last name / family name of your senior official.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
         }
-        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."}
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer).",
+            "max_length": "Title or role must be no more than 100 characters.",
+        }
         self.fields["email"].error_messages = {
-            "required": "Enter an email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com.",
+            "invalid": "Enter an email address in the required format, like name@example.com.",
         }
+
+        self.fields["first_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["first_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["last_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["last_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["title"].validators.append(get_max_length_validator(TEXT_EXTENDED))
+        self.fields["title"].widget.attrs.update(get_max_length_attrs(TEXT_EXTENDED))
 
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
@@ -440,8 +471,8 @@ class SeniorOfficialContactForm(ContactForm):
             return super().save()
 
         # Determine if the domain is federal or tribal
-        is_federal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
-        is_tribal = self.domainInfo.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
+        is_federal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        is_tribal = self.domainInfo.organization_type == DomainRequest.OrganizationChoices.TRIBAL
 
         # Get the Contact object from the db for the Senior Official
         db_so = Contact.objects.get(id=self.instance.id)
@@ -467,6 +498,7 @@ class SeniorOfficialContactForm(ContactForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
+    # This will need custom email field implemented in #4614 to correct.
     security_email = forms.EmailField(
         label="Security email (optional)",
         max_length=None,
@@ -477,7 +509,7 @@ class DomainSecurityEmailForm(forms.Form):
         validators=[
             MaxLengthValidator(
                 320,
-                message="Response must be less than 320 characters.",
+                message="Security email must be no more than 320 characters.",
             )
         ],
     )
@@ -554,8 +586,8 @@ class DomainOrgNameAddressForm(forms.ModelForm):
         self.fields["state_territory"].widget.attrs.pop("maxlength", None)
         self.fields["zipcode"].widget.attrs.pop("maxlength", None)
 
-        self.is_federal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
-        self.is_tribal = self.instance.generic_org_type == DomainRequest.OrganizationChoices.TRIBAL
+        self.is_federal = self.instance.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+        self.is_tribal = self.instance.organization_type == DomainRequest.OrganizationChoices.TRIBAL
 
         field_to_disable = None
         if self.is_federal:
@@ -578,10 +610,10 @@ class DomainOrgNameAddressForm(forms.ModelForm):
 
             if self.is_federal:
                 if not self._field_unchanged("federal_agency"):
-                    raise ValueError("federal_agency cannot be modified when the generic_org_type is federal")
+                    raise ValueError("federal_agency cannot be modified when the organization_type is federal")
 
             elif self.is_tribal and not self._field_unchanged("organization_name"):
-                raise ValueError("organization_name cannot be modified when the generic_org_type is tribal")
+                raise ValueError("organization_name cannot be modified when the organization_type is tribal")
 
             else:  # If this error that means Non-Federal Agency is missing
                 non_federal_agency_instance = FederalAgency.get_non_federal_agency()
@@ -637,7 +669,7 @@ class DomainDsdataForm(forms.Form):
     key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        error_messages={"required": "Key tag is required."},
+        error_messages={"required": "Enter a key tag for this record."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -645,7 +677,7 @@ class DomainDsdataForm(forms.Form):
         label="Algorithm",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
-        error_messages={"required": ("Algorithm is required.")},
+        error_messages={"required": ("Select the algorithm for this record.")},
     )
 
     digest_type = forms.TypedChoiceField(
@@ -653,7 +685,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest type is required.")},
+        error_messages={"required": ("Select the digest type for this record.")},
     )
 
     digest = forms.CharField(
@@ -661,7 +693,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest",
         validators=[validate_hexadecimal],
         error_messages={
-            "required": "Digest is required.",
+            "required": "Enter a digest value for this record.",
         },
         widget=forms.Textarea(
             attrs={
@@ -735,7 +767,9 @@ class BaseDsdataFormset(forms.BaseFormSet):
                 )
 
                 if ds_tuple in seen_ds_records:
-                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    form.add_error(
+                        "key_tag", "This DS record is already associated with this domain. DS records must be unique."
+                    )
                     duplicate_found = True  # Track that we found at least one duplicate
 
                 seen_ds_records.add(ds_tuple)
@@ -789,6 +823,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
     def __init__(self, *args, **kwargs):
+        self.domain_name = kwargs.pop("domain_name", None)
         super().__init__(*args, **kwargs)
 
         record_type = self.data.get("type") or self.initial.get("type")
@@ -802,15 +837,24 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
                 "help_text": getattr(rt, "help_text"),
+                "previewTemplate": rt.preview_template,
+                "previewContentPlaceholder": rt.preview_content_placeholder,
             }
             for rt in DNSRecordTypes
         }
 
         self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
 
+        ttl = self.initial.get("ttl")
+        # legacy Cloudflare "auto" rows should be treated as 300
+        if ttl == 1:
+            ttl = self.initial["ttl"] = 300
+        if ttl is not None and ttl not in dict(DNS_TTL_CHOICES):
+            self.fields["ttl"].choices = [(ttl, format_dns_ttl(ttl))] + list(DNS_TTL_CHOICES)
+
     class Meta:
         model = DnsRecord
-        fields = ["type", "name", "content", "ttl", "comment"]
+        fields = ["type", "name", "content", "priority", "ttl", "comment"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -822,6 +866,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
+                    "hide_character_count": True,
                 }
             ),
         }
@@ -830,26 +875,22 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {
+            "name": {
+                "required": DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+                "max_length": get_fqdn_error_message(),
+            }
+        }
 
     type = forms.ChoiceField(
-        # TODO: choices has been temporarily hard-coded for user testing.
-        # This is to prevent the need for multiple migrations.
-        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[
-            ("", "- Select -"),
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-            ("TXT", "TXT"),
-        ],
+        choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "x-model": "recordType",
+                "x-on:change": "recordType = $event.target.selectedIndex",
             }
         ),
     )
@@ -867,19 +908,29 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    priority = forms.CharField(
+        label="Priority",
+        required=False,
+        help_text="0–65535",
+        error_messages={
+            "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+        },
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "inputmode": "numeric",
+                "pattern": "[0-9]*",
+                "required": "required",
+            }
+        ),
+    )
+
     ttl = forms.TypedChoiceField(
         label="TTL",
         coerce=int,
-        choices=[
-            (60, "1 minute"),
-            (300, "5 minutes"),
-            (1800, "30 minutes"),
-            (3600, "1 hour"),
-            (7200, "2 hours"),
-            (18000, "5 hours"),
-            (43200, "12 hours"),
-            (86400, "1 day"),
-        ],
+        choices=DNS_TTL_CHOICES,
         initial=300,
         required=False,
         widget=forms.Select(
@@ -889,19 +940,179 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def clean_name(self):
+        """Lowercase the name field. DNS names are not case-sensitive, so
+        lowercasing here lets every check below compare values the same way."""
+        name = self.cleaned_data.get("name")
+        return name.lower() if name else name
+
+    def clean_content(self):
+        """Clean the content field based on the record type."""
+        record_type = self.cleaned_data.get("type")
+        content = self.cleaned_data.get("content", "")
+        if record_type and DNSRecordTypes(record_type).cleaner:
+            content = DNSRecordTypes(record_type).cleaner(content)
+        return content
+
+    def clean_priority(self):
+        record_type = self.cleaned_data.get("type")
+        if record_type != DNSRecordTypes.MX:
+            return
+
+        priority = self.cleaned_data.get("priority")
+        if priority == "":
+            priority = None
+            return priority
+
+        try:
+            priority = int(priority)
+        except ValueError:
+            self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
+        return priority
+
+    def clean_ttl(self):
+        """Default to 300 (5 minutes) when no TTL is submitted."""
+        return self.cleaned_data.get("ttl") or 300
+
+    def _field_is_clean(self, field: str, value) -> bool:
+        """True if a field has a non-empty value and no field-level errors yet."""
+        return bool(value) and field not in self.errors
+
+    def _validate_content(self, record_type, content):
+        """Validate content field based on record type."""
+        record = DNSRecordTypes(record_type)
+
+        # Content is required for all record types
+        if not content:
+            # Use the record's error_message if available (A, AAAA, and MX)
+            error_msg = record.error_message
+            if not error_msg:
+                content_type = get_content_type_label_by_record_type(record_type)
+                # Specify the expected record content, otherwise use a generic content required message
+                error_msg = (
+                    get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT, content_type)
+                    or DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE
+                )
+            self.add_error("content", error_msg)
+            return
+
+        # Validate format using type-specific validator
+        if record.validator:
+            try:
+                record.validator(content)
+            except ValidationError as e:
+                # Use the validator's error message
+                error_msg = e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
+                self.add_error("content", error_msg)
+
+    def _validate_cname_record(self, record_type, name, content):
+        """Validate CNAME record constraints.
+
+        When the name and target resolve to the same hostname, surface a banner
+        message at the top of the form plus inline messages on the name and
+        target fields. See ticket #4825.
+        """
+        if record_type != DNSRecordTypes.CNAME:
+            return
+        if not (self._field_is_clean("name", name) and self._field_is_clean("content", content)):
+            return
+        try:
+            DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
+        except ValidationError:
+            self.add_error(None, CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE)
+            self.add_error("name", CNAME_NAME_INLINE_ERROR_MESSAGE)
+            self.add_error("content", CNAME_TARGET_INLINE_ERROR_MESSAGE)
+
+    def _validate_name_fqdn_length(self, name):
+        """Enforce the 253-char limit after the zone name is appended."""
+        if not self._field_is_clean("name", name):
+            return
+        try:
+            validate_dns_name_fqdn_length(name, self.domain_name)
+        except ValidationError as e:
+            self.add_error("name", e.messages[0] if getattr(e, "messages", None) else str(e))
+
+    def _validate_comment_field(self, comment):
+        if comment and len(comment) > 100:
+            self.add_error("comment", "Response must be no longer than 100 characters.")
+
+    def _validate_name_conflict(self, record_type, name):
+        """Flag CNAME vs A/AAAA name conflicts (RFC 1034 §3.6.2).
+
+        CNAME records cannot coexist with A/AAAA records at the same name. MX and TXT
+        records are allowed to share names with other types (standard practice: e.g.
+        MX at the root alongside A, or SPF/DKIM TXT alongside A).
+        """
+        conflict_query = DnsRecord.has_name_conflict(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            exclude_record_id=self.instance.pk,
+        )
+        if conflict_query:
+            error_message = DnsRecord.get_conflict_error_message(record_type, conflict_query)
+            self.add_error("name", error_message)
+
+    def _validate_duplicate_record(self, record_type, name, content, priority):
+        """Flag when the submitted record matches an existing record in the zone.
+
+        Per ticket #4779: a record is a duplicate when type + name + content match
+        (plus priority for MX). TTL may differ. When found, surface a form-level
+        error plus inline errors on name, content, and (for MX) priority.
+        """
+        if not DnsRecord.has_duplicate_record(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            content=content,
+            priority=priority,
+            exclude_record_id=self.instance.pk,
+        ):
+            return
+
+        self.add_error(None, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("name", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("content", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
+            self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
+        name = cleaned_data.get("name")
         content = cleaned_data.get("content")
+        priority = cleaned_data.get("priority")
+        comment = cleaned_data.get("comment")
 
+        # The form layer is responsible for early UI / form-only checks.
+        # The model is the source of truth for record validity:
+        #   - _validate_content here mirrors model._validate_content; it runs early
+        #     so we can gate _validate_cname_record on a clean content value.
+        #   - MX priority "required" is enforced via the priority field's required=True
+        #     (set in __init__) and re-checked at the model level via _post_clean.
+        #   - _validate_name_conflict and _validate_duplicate_record delegate to
+        #     DnsRecord classmethods so the DB query lives in one place.
+        # Validation order matters: validate per-field shape (content, CNAME, name
+        # length) before cross-record DB checks. Duplicate is checked before
+        # name-conflict so a duplicate CNAME (same name AND same content) gets the
+        # specific "duplicate" message rather than the broader "name conflict" one.
         if record_type:
-            record = DNSRecordTypes(record_type)
-            if record.validator:
-                try:
-                    record.validator(content)
-                except ValidationError as e:
-                    self.add_error("content", record.error_message or e)
-            elif not content:
-                self.add_error("content", record.error_message)
+            self._validate_content(record_type, content)
+            self._validate_cname_record(record_type, name, content)
+            self._validate_comment_field(comment)
+            self._validate_name_fqdn_length(name)
+            if not self.errors and name and content:
+                self._validate_duplicate_record(record_type, name, content, priority)
+            if not self.errors and name:
+                self._validate_name_conflict(record_type, name)
+
+            # Django's add_error() removes the field from cleaned_data, so after
+            # _validate_duplicate_record fires on an MX record, _post_clean() won't
+            # update instance.priority. For new records the default is None, which
+            # causes the model-level "priority required" check to add a second
+            # error. Here we keep the known, good submitted value to prevent that.
+            if DNSRecordTypes(record_type) == DNSRecordTypes.MX and priority is not None:
+                self.instance.priority = priority
 
         return cleaned_data

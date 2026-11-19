@@ -21,6 +21,7 @@ from registrar.decorators import (
     _domain_request_exists_under_portfolio,
     _member_exists_under_portfolio,
     _member_invitation_exists_under_portfolio,
+    _is_self_view_member,
 )
 
 
@@ -150,6 +151,30 @@ class TestPortfolioResourceAccess(MockDbForIndividualTests):
         """Verify returns False when the member invitation does not exist under the portfolio."""
         self.assertFalse(_member_invitation_exists_under_portfolio(self.portfolio, self.other_portfolio_invitation.id))
 
+    # Own record checking member tests (self view access rule)
+    @less_console_noise_decorator
+    def test_is_self_view_member_when_pk_is_none(self):
+        """No access if no member_pk"""
+        self.assertFalse(_is_self_view_member(self.user, self.portfolio, None))
+
+    @less_console_noise_decorator
+    def test_is_self_view_member_when_own_record(self):
+        """Verify returns True when member_pk is the requesting users own record"""
+        self.assertTrue(_is_self_view_member(self.user, self.portfolio, self.user_permission.id))
+
+    @less_console_noise_decorator
+    def test_is_self_view_member_when_other_users_record(self):
+        """Verify returns False when member_pk belongs to a diff user in the same portfolio"""
+        other_user_same_portfolio = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.assertFalse(_is_self_view_member(self.user, self.portfolio, other_user_same_portfolio.id))
+
+    @less_console_noise_decorator
+    def test_is_self_view_member_when_different_portfolio(self):
+        """Verify returns False when member_pk is the users record but under a diff portfolio"""
+        self.assertFalse(_is_self_view_member(self.user, self.other_portfolio, self.other_user_permission.id))
+
 
 class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
     """Tests for domain request views to ensure users can only access domain requests in their portfolio."""
@@ -188,7 +213,7 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator
@@ -276,7 +301,7 @@ class TestPortfolioDomainViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator
@@ -299,6 +324,10 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
         super().setUp()
         self.client = Client()
         self.client.force_login(self.user)
+
+        self.meoward_user.title = "Member"
+        self.meoward_user.phone = "8003111234"
+        self.meoward_user.save()
 
         # Create portfolios
         self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
@@ -324,7 +353,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator
@@ -337,4 +366,74 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
     def test_member_view_different_portfolio(self):
         """Test that user cannot access member not in their portfolio."""
         response = self.client.get(reverse("member", kwargs={"member_pk": self.other_member_permission.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_members_list_reachable_by_self_view_member(self):
+        """A no Member access user (can't view or edit other members permission)
+        can reach the member list page"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("members"))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_view_self_as_self_view_member(self):
+        """A no Member access user can view their own member
+        record"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member", kwargs={"member_pk": self.member_permission.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_view_self_cannot_view_others(self):
+        """A no Member access user cannot view other
+        members records even in same portfolio"""
+        another_basic_member = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member", kwargs={"member_pk": another_basic_member.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_member_domains_view_self_view_member(self):
+        """A no Member access user can view their own domain assignments"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-domains", kwargs={"member_pk": self.member_permission.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_domains_view_self_cannot_view_others(self):
+        """A no Member access user cannot view another members
+        domain assignments page"""
+        another_basic_member = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-domains", kwargs={"member_pk": another_basic_member.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_member_edit_still_blocked_for_basic_member_on_self(self):
+        """A no Member access user cannot edit or delete their own record"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-permissions", kwargs={"member_pk": self.member_permission.pk}))
         self.assertEqual(response.status_code, 403)

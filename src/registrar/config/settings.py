@@ -96,9 +96,8 @@ secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # Used for DNS hosting
 secret_dns_tenant_key = secret("DNS_TENANT_KEY", "")
-secret_dns_tenant_name = secret("DNS_TENANT_NAME", "")
 secret_registry_service_email = secret("DNS_SERVICE_EMAIL", "")
-secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", "")
+secret_dns_tenant_id = secret("DNS_TENANT_ID", "")
 dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
@@ -281,8 +280,8 @@ TEMPLATES = [
 ]
 
 # Stop using table-based default form renderer which is deprecated
-FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
-
+# FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# Default is already DjangoTemplates
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
 # IS_DEMO_SITE controls whether or not we show our big red "TEST SITE" banner
@@ -455,8 +454,8 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-USE_L10N = True
-
+# USE_L10N = True
+# COMMENT: Can be removed becuase it's enabled by default now
 # make datetimes timezone-aware by default
 USE_TZ = True
 
@@ -487,77 +486,85 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.critical("Going to crash now.")
 
 
+# Standard LogRecord attributes that are already represented in the structured
+# log fields above, so we skip them when sweeping `record.__dict__` for extras.
+# `taskName` is included because Python 3.12+ adds it as a default attribute
+# (always None under WSGI) which would otherwise leak through as JSON noise.
+_STANDARD_LOG_RECORD_ATTRS = frozenset(
+    {
+        "name",
+        "msg",
+        "args",
+        "levelname",
+        "levelno",
+        "pathname",
+        "filename",
+        "module",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "getMessage",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "message",
+        "taskName",
+    }
+)
+
+
 class JsonFormatter(logging.Formatter):
     """Formats logs into JSON for better parsing"""
 
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
-    def user_prepend(self):
-        context = get_user_log_context()
-        user_email = context["user_email"]
-        ip = context["ip_address"]
-        request_path = context["request_path"]
+    @staticmethod
+    def _user_prepend(context):
         parts = []
-        if user_email:
-            parts.append(f"user: {user_email}")
-        if ip:
-            parts.append(f"ip: {ip}")
-        if request_path:
-            parts.append(f"request_path: {request_path}")
-
+        if context["user_email"]:
+            parts.append(f"user: {context['user_email']}")
+        if context["ip_address"]:
+            parts.append(f"ip: {context['ip_address']}")
+        if context["request_path"]:
+            parts.append(f"request_path: {context['request_path']}")
         return " | ".join(parts)
 
     def format(self, record):
+        context = get_user_log_context()
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": f"{self.user_prepend()} | {record.getMessage()}",
+            "message": f"{self._user_prepend(context)} | {record.getMessage()}",
         }
-        # Capture exception info if it exists
+        # Surface request_id as a top-level field so OpenSearch can group every
+        # log line for a single request without parsing the message string.
+        request_id = context.get("request_id")
+        if request_id:
+            log_record["request_id"] = request_id
+        domain_name = context.get("domain_name")
+        if domain_name:
+            log_record["domain_name"] = domain_name
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
-        # Add all extra fields from the log record
-        extra_fields = {}
         for key, value in record.__dict__.items():
-            # Skip standard LogRecord attributes
-            if key not in {
-                "name",
-                "msg",
-                "args",
-                "levelname",
-                "levelno",
-                "pathname",
-                "filename",
-                "module",
-                "lineno",
-                "funcName",
-                "created",
-                "msecs",
-                "relativeCreated",
-                "thread",
-                "threadName",
-                "processName",
-                "process",
-                "getMessage",
-                "exc_info",
-                "exc_text",
-                "stack_info",
-                "message",
-            }:
-                # Only include JSON-serializable values
-                try:
-                    json.dumps(value)
-                    extra_fields[key] = value
-                except (TypeError, ValueError):
-                    # Convert non-serializable values to strings
-                    extra_fields[key] = str(value)
-
-        # Merge extra fields into the main log record
-        log_record.update(extra_fields)
+            if key in _STANDARD_LOG_RECORD_ATTRS:
+                continue
+            # Only include JSON-serializable values; stringify the rest.
+            try:
+                json.dumps(value)
+                log_record[key] = value
+            except (TypeError, ValueError):
+                log_record[key] = str(value)
 
         return json.dumps(log_record, ensure_ascii=False)
 
@@ -579,18 +586,21 @@ class JsonServerFormatter(ServerFormatter):
         return json.dumps(log_entry)
 
 
-# If we're running locally we don't want json formatting
-if "localhost" in env_base_url:
-    django_handlers = ["console"]
-elif env_log_format == "json":
-    # in production we need everything to be logged as json so that log levels are parsed correctly
+# Log-format selection, driven entirely by DJANGO_LOG_FORMAT (set per environment
+# in ops/manifests, and overridable per-invocation on a server):
+#   - "json"  -> structured JSON, one line per event, parsed into named fields by
+#                OpenSearch. Used by stable + staging.
+#   - anything else (default "console") -> human-readable console text. Used by
+#                local and the developer sandboxes, where a person reads the logs
+#                directly.
+# There's no per-severity split anymore, so an environment logs one shape and its
+# own output never comes out half console / half JSON. To flip a single session
+# while SSHed onto a server, run the command with DJANGO_LOG_FORMAT=json (to read
+# structured output) or =console (to read it plainly).
+if env_log_format == "json":
     django_handlers = ["json"]
 else:
-    # for non-production non-local environments:
-    # - send ERROR and above to json handler
-    # - send below ERROR to console handler with verbose formatting
-    # yes this is janky but it's the best we can do for now
-    django_handlers = ["split_console", "split_json"]
+    django_handlers = ["console"]
 
 LOGGING = {
     "version": 1,
@@ -626,18 +636,6 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
-        # Special handlers for split logging case
-        "split_console": {
-            "level": env_log_level,
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-            "filters": ["below_error"],
-        },
-        "split_json": {
-            "level": "ERROR",
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-        },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
@@ -651,12 +649,6 @@ LOGGING = {
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
-    },
-    "filters": {
-        "below_error": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda record: record.levelno < logging.ERROR,
-        }
     },
     # define loggers: these are "sinks" into which
     # messages are sent for processing
@@ -728,7 +720,6 @@ LOGGING = {
 
 # list of Python classes used when trying to authenticate a user
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
     "djangooidc.backends.OpenIdConnectBackend",
 ]
 
@@ -753,7 +744,6 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # (code does not currently support user selection)
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
-
 
 OIDC_PROVIDERS = {
     "identity sandbox": {
@@ -824,19 +814,47 @@ SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # endregion
+# region: EPP connection Pool----------------------------------------------###
+
+# Max EPP connections per worker process. Environments that share registry
+# credentials also share the registry's connection allowance.
+# keep the code default small in test environments (except when needed)
+EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
+
+# Seconds a request will wait for a pooled connection before failing.
+EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=10)
+
+# A connection idle longer than this is health-checked (EPP CheckDomain, see EPPConnectionPool._is_healthy)
+# before reuse, and replaced if it fails.
+EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
+
+# How often, in seconds, the background heartbeat pings the registry to keep the
+# EPP connection warm and detect a dead connection. 0 disables it.
+EPP_POOL_HEARTBEAT_INTERVAL = (
+    env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=30) if not (RUNNING_TESTS or IS_LOCAL) else 0
+)
+
+# Max seconds an established EPP socket may block on a read/send before raising
+# (does not bound the initial TCP connect). The registry normally responds in
+# milliseconds; this is a backstop so an unresponsive registry cannot hang a
+# request (and hold the connection lock) indefinitely.
+EPP_CONNECTION_TIMEOUT = 5
+
+# endregion
 
 # region: DNS----------------------------------------------------------###
 
 # SECURITY WARNING: keep all DNS variables in production secret!
 SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
-SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
 SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
 SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # Configuration
 DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+DNS_NS_SET_RANGE = 5
 
 # endregion
+
 
 # region: Security and Privacy----------------------------------------------###
 
@@ -874,9 +892,11 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-tjh.app.cloud.gov",
+    "getgov-cp.app.cloud.gov",
+    "getgov-amt.app.cloud.gov",
+    "getgov-sm.app.cloud.gov",
     "getgov-ab.app.cloud.gov",
-    "getgov-ap.app.cloud.gov",
-    "getgov-cw.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
     "getgov-testdb.app.cloud.gov",
     "getgov-acadia.app.cloud.gov",
@@ -889,15 +909,11 @@ ALLOWED_HOSTS = [
     "getgov-aa.app.cloud.gov",
     "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
-    "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
-    "getgov-es.app.cloud.gov",
-    "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
     "getgov-kma.app.cloud.gov",
-    "getgov-dg.app.cloud.gov",
     "manage.get.gov",
 ]
 
@@ -977,8 +993,7 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
-
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"  # JSONSerializer is the default
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe

@@ -5,6 +5,8 @@ from registrar.models import Portfolio, SeniorOfficial
 from unittest.mock import MagicMock, patch
 from django_webtest import WebTest  # type: ignore
 from django.core.handlers.wsgi import WSGIRequest
+from django.core.exceptions import PermissionDenied
+from django.test import RequestFactory
 from registrar.models import (
     DomainRequest,
     Domain,
@@ -24,7 +26,13 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from registrar.views.portfolios import PortfolioOrganizationSelectView
+from registrar.views.portfolios import (
+    PortfolioMemberDeleteView,
+    PortfolioInvitedMemberDeleteView,
+    PortfolioInvitedMemberEditView,
+    PortfolioInvitedMemberDomainsEditView,
+    PortfolioOrganizationSelectView,
+)
 from .common import (
     MockEppLib,
     MockSESClient,
@@ -70,7 +78,7 @@ class TestPortfolio(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = (portfolio or self.portfolio).id
         session.save()
 
     @less_console_noise_decorator
@@ -429,11 +437,11 @@ class TestPortfolio(WebTest):
 
         # Domain page should be accessible (they have VIEW_MANAGED_DOMAINS from role)
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
         # Domain request page should not be accessible (no domain request permissions)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-        self.assertEquals(domain_request_page.status_code, 403)
+        self.assertEqual(domain_request_page.status_code, 403)
 
     @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator
@@ -486,7 +494,7 @@ class TestPortfolio(WebTest):
 
         # Domain page accessible
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
     @less_console_noise_decorator
     def test_accessible_pages_when_user_does_not_have_role(self):
@@ -528,9 +536,9 @@ class TestPortfolio(WebTest):
 
         # Both domain pages should not be accessible
         domain_page = self.app.get(reverse("domains"), expect_errors=True)
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-        self.assertEquals(domain_request_page.status_code, 403)
+        self.assertEqual(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_org_name(self):
@@ -680,7 +688,7 @@ class TestPortfolio(WebTest):
         # Check if the 'portfolio' session variable exists
         self.assertIn("portfolio", session, "Portfolio session variable should exist.")
         # Check the value of the 'portfolio' session variable
-        self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+        self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_for_single_portfolio_users_with_multiple_portfolios_flag(self):
@@ -703,7 +711,7 @@ class TestPortfolio(WebTest):
             self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
             self.assertIsNotNone(session["portfolio"])
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_and_no_portfolio(self):
@@ -855,14 +863,10 @@ class TestPortfolio(WebTest):
         self.assertEqual(domain_requests.status_code, 200)
 
     @less_console_noise_decorator
-    def test_cannot_view_members_table(self):
-        """Test that user without proper permission is denied access to members view."""
-
-        # Users can only view the members table if they have
-        # Portfolio Permission "view_members" selected.
-        # NOTE: Admins, by default, DO have permission
-        # to view/edit members.
-        # Testing scenario: User is not admin and can view portfolio, but not the members table
+    def test_user_with_no_member_access_sees_self_view_only(self):
+        """A user with no Member access (no edit or view) can still reach
+        the Members page (self view only) to only their own record
+        and the text that only displays in Member table in self view"""
 
         # --- non-admin
         self.app.set_user(self.user.username)
@@ -879,8 +883,45 @@ class TestPortfolio(WebTest):
         # This will redirect the user to the members page.
         self.client.force_login(self.user)
         response = self.client.get(reverse("members"), follow=True)
-        # Assert the response is a 403 Forbidden
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search bar should not render
+        self.assertNotContains(response, "Search by member email address")
+        self.assertNotContains(response, 'id="members__search-field"')
+
+        # Export button should not render
+        self.assertNotContains(response, "Export as CSV")
+
+    @less_console_noise_decorator
+    def test_member_with_view_permission_does_not_see_self_view_text(self):
+        """A user with view Member access should not see self
+        view only text below in the Member table"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+        self.set_session_portfolio()
+
+        members_page = self.app.get(reverse("members"))
+        self.assertNotContains(
+            members_page,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search + export should render
+        self.assertContains(members_page, "Search by member email address")
+        self.assertContains(members_page, 'id="members__search-field"')
+        self.assertContains(members_page, "Export as CSV")
 
     @less_console_noise_decorator
     def test_can_view_members_table(self):
@@ -1265,8 +1306,8 @@ class TestPortfolio(WebTest):
         self.assertNotContains(portfolio_landing_page, 'href="/requests/')
         # nav does not include link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
-        # nav does not include link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        # nav DOES include link to members (now that we have self view only)
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     def test_main_nav_when_user_has_all_permissions(self):
@@ -1390,7 +1431,8 @@ class TestPortfolio(WebTest):
         # Initial request to set the portfolio in session
         response = self.client.get(reverse("home"), follow=True)
 
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Hotel California")
         self.assertContains(response, "Hotel California")
 
@@ -1405,7 +1447,8 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Updated Hotel California")
 
         # Verify that the session contains the updated portfolio
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Updated Hotel California")
 
     @less_console_noise_decorator
@@ -1444,7 +1487,10 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_delete_domain_request_as_org_user_without_permission_with_deletable_status(self):
-        """Test that an org user without edit permission cant delete their DomainRequest even if status is deletable."""
+        """
+        Test that an org user without edit permission cant delete their
+        DomainRequest even if status is deletable.
+        """
 
         # Assign the user to a portfolio without edit permission
         UserPortfolioPermission.objects.get_or_create(
@@ -1717,6 +1763,7 @@ class TestPortfolioMemberDeleteView(WebTest):
     def setUp(self):
         super().setUp()
         self.client = Client()
+        self.factory = RequestFactory()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
@@ -1725,6 +1772,16 @@ class TestPortfolioMemberDeleteView(WebTest):
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        self.view_only_user = User.objects.create(
+            username="view_only_membmer_delete",
+            email="view_only_member_delete@example.com",
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
         )
 
     def tearDown(self):
@@ -1736,6 +1793,13 @@ class TestPortfolioMemberDeleteView(WebTest):
         Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
+
+    def _add_middleware(self, request):
+        """Attach session middleware to a RequestFactory request."""
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(request)
+        request.session.save()
+        return request
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
@@ -1868,7 +1932,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -1880,7 +1943,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is not called
@@ -1944,7 +2007,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -1956,7 +2018,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2019,7 +2081,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -2031,7 +2092,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2148,6 +2209,25 @@ class TestPortfolioMemberDeleteView(WebTest):
                     response.headers["Location"], reverse("member", kwargs={"member_pk": admin_perm_user.pk})
                 )
 
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_member_delete(self, mock_decorator):
+        """MEMBER-DELETE: View layer check blocks view only user bypassing decorator"""
+        target_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]},
+        )
+        request = self.factory.post(
+            reverse("member-delete", kwargs={"member_pk": target_permission.pk}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioMemberDeleteView.as_view()(request, member_pk=target_permission.pk)
+
 
 class TestPortfolioInvitedMemberDeleteView(WebTest):
     def setUp(self):
@@ -2196,6 +2276,12 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+        permission = UserPortfolioPermission.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
 
         # Invited member removal email sent successfully
         send_invited_member_removal.return_value = True
@@ -2208,7 +2294,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2219,6 +2305,9 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
             # and then confirm that we're now on Members Table page
             self.assertEqual(response.headers["Location"], reverse("members"))
+            permission.refresh_from_db()
+            self.assertEqual(permission.status, UserPortfolioPermission.Status.REJECTED)
+            self.assertFalse(PortfolioInvitation.objects.filter(pk=invitation.pk).exists())
 
             # assert send_portfolio_admin_removal_emails not called since invitation
             # is for a basic member
@@ -2271,7 +2360,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2342,7 +2431,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2402,6 +2491,16 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             title="No Permissions",
         )
 
+        # Create view only user (can see members but not edit)
+        cls.user_view_only = User.objects.create(
+            username="test_user_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003112345",
+            title="View Only",
+        )
+
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
@@ -2422,6 +2521,15 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        cls.view_only_permission = UserPortfolioPermission.objects.create(
+            user=cls.user_view_only,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -2473,6 +2581,56 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
 
 class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
@@ -2611,9 +2769,20 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         cls.domain2 = Domain.objects.create(name="2.gov")
         cls.domain3 = Domain.objects.create(name="3.gov")
 
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain1, defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain2, defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain3, defaults={"portfolio": cls.portfolio}
+        )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         Domain.objects.all().delete()
@@ -2667,6 +2836,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         DomainInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.exclude(id=self.portfolio.id).delete()
         User.objects.exclude(id=self.user.id).delete()
 
@@ -2732,7 +2902,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
         # assert that send_domain_manager_removal_emails_to_domain_managers is not called
@@ -2771,7 +2941,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
         # assert that send_domain_invitation_email is not called
         mock_send_domain_email.assert_not_called()
         # assert that send_domain_manager_removal_emails_to_domain_managers is called twice
@@ -2845,7 +3015,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_domain_invitation_email")
@@ -2868,9 +3038,159 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
+        print(str(messages[0]))
         self.assertEqual(
             str(messages[0]),
-            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains_edit_cross_portfolio_domain_assignment_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a domain from a different portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        # Attempt to assign other portfolio's domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([other_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No UserDomainRole should have been created
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains_edit_cross_portfolio_domain_removal_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a domain from a different portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        UserDomainRole.objects.create(
+            domain=other_domain,
+            user=self.user_member,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains_edit_domain_assignment_for_legacy_domain_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        legacy_domain = Domain.objects.create(name="legacy-example.gov")
+
+        # Associate with domain info
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=legacy_domain,
+            portfolio=None,
+        )
+
+        # Attempt to assign legacy domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([legacy_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No UserDomainRole should have been created
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=legacy_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains_edit_domain_removal_for_legacy_domain_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        other_domain = Domain.objects.create(name="other.gov")
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=None,
+        )
+
+        UserDomainRole.objects.create(
+            domain=other_domain,
+            user=self.user_member,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # The DomainRole should still exist since the removal was forbidden
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+                role=UserDomainRole.Roles.MANAGER,
+            ).exists()
         )
 
 
@@ -2885,9 +3205,20 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         cls.domain2 = Domain.objects.create(name="2.gov")
         cls.domain3 = Domain.objects.create(name="3.gov")
 
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain1, defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain2, defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user, domain=cls.domain3, defaults={"portfolio": cls.portfolio}
+        )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         Domain.objects.all().delete()
@@ -2932,6 +3263,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         DomainInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.exclude(id=self.portfolio.id).delete()
         User.objects.exclude(id=self.user.id).delete()
 
@@ -3008,7 +3340,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
         # Verify that the invitation email was sent
@@ -3055,7 +3387,9 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         # Check that domain_id=3 was created as INVITED
         self.assertTrue(
             DomainInvitation.objects.filter(
-                domain=self.domain3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                domain=self.domain3,
+                email="invited@example.com",
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).exists()
         )
 
@@ -3172,7 +3506,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_domain_invitation_email")
@@ -3202,7 +3536,162 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(len(messages), 1)
         self.assertEqual(
             str(messages[0]),
-            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_domains_edit_cross_portfolio_domain_assignment_forbidden(self):
+        """Tests that a member from one portfolio cannot invite another member to a domain in another portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        # Attempt to assign other portfolio's domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([other_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No DomainInvitation should have been created
+        self.assertFalse(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_domains_edit_cross_portfolio_domain_removal_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a domain of a different portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        DomainInvitation.objects.create(
+            domain=other_domain,
+            email=self.invited_member_email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # The DomainInvitation should still exist with status INVITED
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_edit_domains_assignment_for_legacy_domain_forbidden(self):
+        """Tests that a member of one portfolio can't be invited to a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        legacy_domain = Domain.objects.create(name="legacy-example.gov")
+
+        # Associate with domain info
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=legacy_domain,
+            portfolio=None,
+        )
+
+        # Attempt to assign legacy domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([legacy_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No DomainInvitation should have been created
+        self.assertFalse(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=legacy_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_edit_domains_removal_for_legacy_domain_forbidden(self):
+        """Tests that a member from one portfolio cannot be uninvited from a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=None,
+        )
+
+        DomainInvitation.objects.create(
+            domain=other_domain,
+            email=self.invited_member_email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # The DomainInvitation should still exist with status INVITED
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
         )
 
 
@@ -3448,7 +3937,7 @@ class TestRequestingEntity(WebTest):
         form_data = [(key, value) for key, value in form_data if key != "portfolio_requesting_entity-sub_organization"]
         response = self.app.post(form_action, dict(form_data))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.assertContains(response, "Suborganization is required.", status_code=200)
+        self.assertContains(response, "Select the suborganization who will use the domain.", status_code=200)
 
         # Test missing custom suborganization details
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -3516,7 +4005,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertIn("Administrators from your organization:", body)
 
@@ -3544,7 +4032,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertNotIn("Administrators from your organization:", body)
 
@@ -3598,7 +4085,6 @@ class TestRequestingEntity(WebTest):
 
 
 class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
-
     def setUp(self):
         super().setUp()
 
@@ -3618,6 +4104,16 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             ],
         )
 
+        # View only user (can see members but not edit them)
+        self.view_only_user = User.objects.create(
+            username="view_only_user",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
         self.new_member_email = "newmember@example.com"
 
         AllowedEmail.objects.get_or_create(email=self.new_member_email)
@@ -3630,6 +4126,15 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -3683,7 +4188,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             self.assertTrue(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_removed_user(self, mock_send_email):
         """Tests the member invitation flow for an existing member which was previously removed."""
         self.client.force_login(self.user)
@@ -3804,7 +4309,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             self.assertFalse(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member_initial_ajax_call_fails(self, mock_send_email):
         """Tests the initial ajax call in the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -3840,7 +4345,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_email_sending_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises EmailSendingError."""
         mock_send_email.side_effect = EmailSendingError("Failed to send email.")
@@ -3874,7 +4379,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_error.assert_called_once_with(response.wsgi_request, "Could not send organization invitation email.")
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Failed to send"
+                ' email. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+                " for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -3882,7 +4392,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises MissingEmailError."""
         mock_send_email.side_effect = MissingEmailError()
@@ -3924,7 +4434,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_exception(self, mock_send_email):
         """Test when adding a new member and email_send method raises Exception."""
         mock_send_email.side_effect = Exception("Generic exception")
@@ -3944,7 +4454,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         }
 
         # Act
-        with patch("django.contrib.messages.warning") as mock_warning:
+        with patch("django.contrib.messages.error") as mock_error:
             response = self.client.post(reverse("new-member"), data=form_data)
 
             # Assert
@@ -3958,7 +4468,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Generic exception."
+                ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                "for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -3966,7 +4481,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4002,7 +4517,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4029,7 +4544,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email} is already a member of this organization.",
         )
 
         # Validate Database has not changed
@@ -4040,7 +4555,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member_uppercase(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member with a different case."""
         self.client.force_login(self.user)
@@ -4067,7 +4582,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email.upper()} is already a member of this organization.",
         )
 
         # Validate Database has not changed
@@ -4078,7 +4593,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_user_who_is_not_a_member(self, mock_send_email):
         """Tests the member invitation flow for existing user who is not a portfolio member."""
         self.client.force_login(self.user)
@@ -4121,10 +4636,11 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         call_args = mock_send_email.call_args.kwargs
         self.assertEqual(call_args["email"], "newuser@example.com")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertIsNone(call_args.get("is_member_of_different_org"))
+        self.assertEqual(call_args["portfolio"], self.portfolio)
+        self.assertFalse(call_args["is_admin_invitation"])
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_admin_invite_for_new_users(self, mock_send_email):
         """Tests the member invitation flow for new admin."""
         self.client.force_login(self.user)
@@ -4169,6 +4685,45 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(called_kwargs["email"], self.new_member_email)
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+        self.assertTrue(called_kwargs["is_admin_invitation"])
+
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    def test_view_only_user_cannot_invite_new_member(self, mock_invite_to_portfolio):
+        """Test user with only VIEW_MEMBERS cannot add a new member"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_invite_to_portfolio.assert_not_called()
+
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_invite_new_member_view_layer(self, mock_decorator, mock_invite_to_portfolio):
+        """Test user with only VIEW_MEMBERS cannot add a new member
+        - bypasses decorator and tests view layer specifically"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_invite_to_portfolio.assert_not_called()
 
 
 class TestPortfolioMemberEditView(WebTest):
@@ -4198,6 +4753,25 @@ class TestPortfolioMemberEditView(WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # View only user (can see members but not edit)
+        self.view_only_user = User.objects.create(
+            username="test_user_member_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
+        self.view_only_permission = UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -4265,6 +4839,67 @@ class TestPortfolioMemberEditView(WebTest):
         # Assert the update notification email content
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["permissions"], basic_permission)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit their own permissions - checks decorator"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit their own permissions -
+        bypasses the decorator and checks the view layer specifically"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - checks decorator"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - bypasses the decorator and checks the view layer specifically"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
 
     @less_console_noise_decorator
     @patch("django.contrib.messages.warning")
@@ -4435,7 +5070,7 @@ class TestPortfolioMemberEditView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
-        print(admin_permission)
+
         mock_send_removal_emails.return_value = True
         mock_send_update_email.return_value = True
 
@@ -4921,6 +5556,94 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         mock_send_removal_emails.assert_not_called()
 
 
+class TestPortfolioInvitedMemberView(WebTest):
+    """Tests that view layer perm checks block view only users on
+    invited member write endpoints
+
+    We are SPECIFICALLY bypassing the decorator to check the view layer
+    so we're using RequestFactory to skip the middleware, but then
+    we need to add the middleware back in bc we need a session for the
+    request
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.factory = RequestFactory()
+        self.user = create_test_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
+        self.invitation = PortfolioInvitation.objects.create(
+            email="invited@member.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        self.view_only_user = User.objects.create(
+            username="view_only_user",
+            email="view_only@user.com",
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+
+    def tearDown(self):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
+    def _add_middleware(self, request):
+        """Attach session middleware to a RequestFactory request
+        (i took this from above and just put it into a helper)"""
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(request)
+        request.session.save()
+        return request
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_delete(self, mock_perm):
+        """INVITEDMEMBER-DELETE: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-delete", kwargs={"invitedmember_pk": self.invitation.id}),
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberDeleteView.as_view()(request, invitedmember_pk=self.invitation.id)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_permissions(self, mock_perm):
+        """INVITEDMEMBER-PERMISSIONS: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.invitation.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberEditView.as_view()(request, invitedmember_pk=self.invitation.id)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_domains_edit(self, mock_perm):
+        """INVITEDMEMBER-DOMAINS-EDIT: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.id}),
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberDomainsEditView.as_view()(request, invitedmember_pk=self.invitation.id)
+
+
 class TestPortfolioSelectOrganizationView(WebTest):
     """Tests for the select organization page"""
 
@@ -4987,7 +5710,9 @@ class TestPortfolioSelectOrganizationView(WebTest):
             self.client.post(reverse("set-session-portfolio"))
 
         # Access the session via the request
-        active_portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        active_portfolio = Portfolio.objects.get(pk=portfolio_id)
+
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
 
 
@@ -5032,7 +5757,7 @@ class TestMultiplePortfolios(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @override_flag("multiple_portfolios", active=True)
@@ -5147,7 +5872,7 @@ class TestMultiplePortfolios(WebTest):
 
         # Domain page accessible
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
     @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator

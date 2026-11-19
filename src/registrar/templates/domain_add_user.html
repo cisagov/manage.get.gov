@@ -14,18 +14,10 @@
   {% include "includes/form_errors.html" with form=form %}
 
   <h1>Add a domain manager</h1>
-  {% if portfolio %}
     <p>
       Provide an email address for the domain manager you’d like to add. 
       They’ll need to access the registrar using a Login.gov account that’s associated with this email address. 
-      Domain managers can be a member of only one .gov organization.
     </p>
-  {% else %}
-  <p>
-      Provide an email address for the domain manager you’d like to add. 
-      They’ll need to access the registrar using a Login.gov account that’s associated with this email address.
-  </p>
-  {% endif %}
 
   <form class="usa-form usa-form--large" method="post" novalidate>
     {% csrf_token %}

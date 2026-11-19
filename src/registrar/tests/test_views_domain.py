@@ -3,16 +3,23 @@ from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
-from registrar.services.mock_cloudflare_service import MockCloudflareService
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
+from registrar.views.domain import DomainDNSRecordsView
+from .common import (
+    GenericTestHelper,
+    MockEppLib,
+    create_domain_manager_user,
+    create_user,
+    form_with_field,
+    get_ap_style_month,
+)  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
@@ -29,6 +36,7 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
+    DnsRecord,
     DomainRequest,
     Domain,
     DomainInformation,
@@ -48,6 +56,7 @@ from registrar.models import (
 
 from datetime import date, datetime, timedelta
 from django.utils import timezone
+from django.utils.html import escape
 
 from .common import less_console_noise
 from .test_views import TestWithUser
@@ -84,6 +93,9 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_nameserver, _ = Domain.objects.get_or_create(name="nonameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
+        self.domain_ready_state, _ = Domain.objects.get_or_create(
+            name="domainwithexternalhosting.gov", state=Domain.State.READY
+        )
         self.domain_on_hold, _ = Domain.objects.get_or_create(
             name="on-hold.gov",
             state=Domain.State.ON_HOLD,
@@ -103,7 +115,13 @@ class TestWithDomainPermissions(TestWithUser):
             ),
         )
         # Set up a domain enrolled in DNS hosting
-        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(name="enrolledindnshosting.gov")
+        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(
+            name="enrolledindnshosting.gov",
+            state=Domain.State.READY,
+            expiration_date=timezone.make_aware(
+                datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
+            ),
+        )
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="New org", requester=self.user)
         DomainInformation.objects.get_or_create(
             requester=self.user, domain=self.domain_enrolled_in_dns_hosting, portfolio=portfolio
@@ -139,6 +157,7 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dns_needed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_ready_state)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -200,6 +219,9 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_ready_state, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
@@ -298,10 +320,34 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    @skip("For some reason, this test is breaking and returning 200 instead of 403. Need to investigate and fix.")
-    def test_domain_pages_blocked_for_on_hold_and_deleted_for_dns_records(self):
-        """Test that the domain pages are blocked for on hold and deleted domains for DNS Records page"""
+    def test_dns_records_page_blocked_for_on_hold_domains(self):
+        """
+        Test that the domain DNS records page is blocked for on hold domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
         self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        self.domain_enrolled_in_dns_hosting.save()
+        with override_flag("dns_hosting", active=True):
+            response = self.client.get(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
+            self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_dns_records_page_blocked_for_deleted_domains(self):
+        """
+        Test that the domain DNS records page is blocked for deleted domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
+        self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        # Bypass EPP requirements to delete domain since we're just trying to get domain in Deleted state
+        with patch("registrar.models.domain.Domain._domain_can_be_deleted", return_value=True):
+            self.domain_enrolled_in_dns_hosting.deleteInEpp()
+        self.domain_enrolled_in_dns_hosting.save()
         with override_flag("dns_hosting", active=True):
             response = self.client.get(
                 reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
@@ -347,7 +393,7 @@ class TestDomainDetail(TestDomainOverview):
             )
 
             igorville = Domain.objects.get(name="igorville.gov")
-            self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+            self.assertEqual(igorville.state, Domain.State.UNKNOWN)
             detail_page = self.app.get(f"/domain/{igorville.id}")
             self.assertContains(detail_page, "Expired")
 
@@ -394,18 +440,48 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "2.3.4.5)")
 
     @override_flag("dns_hosting", active=True)
-    def test_domain_detail_no_nameserver_info_when_enrolled_in_dns_hosting(self):
+    def test_domain_detail_no_external_dns_info_when_enrolled_in_dns_hosting(self):
         with less_console_noise():
-            # Views DNS record and does not view nameserver on Domain Overview page
+            # Views DNS record and does not view nameservers or DNSSEC on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertNotContains(detail_page, "DNS name servers")
+            self.assertNotContains(detail_page, "DNSSEC")
 
-    def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
+    def test_domain_detail_show_external_dns_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
         with less_console_noise() and override_flag("dns_hosting", active=False):
-            # Does not view dns record and not nameserver on Domain Overview page
+            # Displays dns nameservers and DNSSEC pages on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
             self.assertContains(detail_page, "DNS name servers")
+            self.assertContains(detail_page, "DNSSEC")
+
+    def test_domain_detail_dns_hosting_active_status(self):
+        # added patches to override the is_expiring and is_expired checks for the domain
+        # the is_expired and is_expiring statuses on the domain overview page takes precedent over the "active" status
+        def custom_is_expiring_or_expired(self):
+            return False
+
+        with less_console_noise() and override_flag("dns_hosting", active=True):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertContains(detail_page, "Active")
+                self.assertNotContains(detail_page, "Ready")
+
+        with less_console_noise() and override_flag("dns_hosting", active=False):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertNotContains(detail_page, "Active")
+                self.assertContains(detail_page, "Ready")
 
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
@@ -527,6 +603,23 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
+    def test_domain_external_hosting_detail_banner_message(self):
+        """
+        Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
+        - is ready or on hold state
+        - not enrolled in dns hosting
+        """
+        banner_message = "This domain's name servers"
+
+        on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+        self.assertContains(on_hold_detail_page, banner_message)
+
+        ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+        self.assertContains(ready_state_detail_page, banner_message)
+
+        domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+        self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
+
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
     def setUp(self):
@@ -586,7 +679,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
             Domain, "is_expired", self.custom_is_expired_false
         ):
-            self.assertEquals(self.domain_to_renew.state, Domain.State.UNKNOWN)
+            self.assertEqual(self.domain_to_renew.state, Domain.State.UNKNOWN)
             detail_page = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_to_renew.id}),
             )
@@ -918,7 +1011,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation(self, mock_send_domain_email, mock_send_portfolio_email):
         """Adding an existing user works and sends portfolio invitation when
@@ -975,7 +1068,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1025,7 +1118,117 @@ class TestDomainManagers(TestDomainOverview):
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_permission_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the invitation service when the invitation flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "uppflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+
+        mock_send_portfolio_email.assert_called_once_with(
+            email="uppflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+
+        self.assertTrue(
+            UserPortfolioPermission.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=UserPortfolioPermission.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(
+                user__isnull=False,
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    def test_domain_user_add_form_creates_user_domain_role_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the UserDomainRole invitation flow when the flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "udrflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+        mock_send_portfolio_email.assert_called_once_with(
+            email="udrflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=UserDomainRole.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+        success_page = response.follow()
+        domain_role = UserDomainRole.objects.get(
+            email="udrflaguser@igorville.gov",
+            domain=self.domain,
+        )
+        cancel_url = reverse("invitation-cancel", kwargs={"user_domain_role_pk": domain_role.id})
+        self.assertContains(success_page, cancel_url)
+
+        self.client.post(cancel_url)
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.status, UserDomainRole.Status.REJECTED)
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.CANCELED,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_fails_to_send_to_some_managers(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1060,7 +1263,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_doesnt_send_portfolio_invitation_if_already_member(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1110,7 +1313,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_raises_email_sending_error(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1205,6 +1408,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, email_address)
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
+        self.assertFalse(UserDomainRole.objects.filter(email=email_address, domain=self.domain).exists())
 
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1461,7 +1665,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "be canceled because it is no longer pending.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1469,17 +1674,28 @@ class TestDomainManagers(TestDomainOverview):
         DomainInvitation.objects.filter(email=email_address).delete()
 
     @less_console_noise_decorator
-    def test_domain_invitation_cancel_no_permissions(self):
-        """Posting to the cancel view as a different user should fail."""
+    def test_domain_invitation_cancel_no_permission_forbidden(self):
+        """Logged in user (as domain manager or staff managing domain) cannot cancel domain they don't manage"""
         email_address = "mayor@igorville.gov"
-        invitation, _ = DomainInvitation.objects.get_or_create(domain=self.domain, email=email_address)
+        user_role, _ = UserDomainRole.objects.get_or_create(domain=self.domain, email=email_address)
 
+        # Domain manager forbidden without user domain role
+        other_domain_user = create_domain_manager_user()
+        other_domain_user.save()
+        self.client.force_login(other_domain_user)
+        mock_client = MagicMock()
+        with boto3_mocking.clients.handler_for("sesv2", mock_client):
+            result = self.client.post(reverse("invitation-cancel", kwargs={"user_domain_role_pk": user_role.id}))
+
+        self.assertEqual(result.status_code, 403)
+
+        # Staff managing domain forbidden without user domain role
         other_user = create_user()
         other_user.save()
         self.client.force_login(other_user)
         mock_client = MagicMock()
         with boto3_mocking.clients.handler_for("sesv2", mock_client):
-            result = self.client.post(reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}))
+            result = self.client.post(reverse("invitation-cancel", kwargs={"user_domain_role_pk": user_role.id}))
 
         self.assertEqual(result.status_code, 403)
 
@@ -1537,7 +1753,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": new_user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        self.assertContains(response, f"{email_address} has been removed from this domain.")
         # Assert that the second user is displayed
         self.assertContains(response, f"{email_address_2}")
         # Assert that the UserDomainRole is deleted
@@ -1551,7 +1767,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "Domains must have at least one domain manager.")
+        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager.")
         # Assert that the user is still displayed
         self.assertContains(response, f"{self.user.email}")
         # Assert that the UserDomainRole still exists
@@ -1568,7 +1784,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "been removed from this domain.")
         # Assert that the UserDomainRole no longer exists
         self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
@@ -1580,32 +1797,10 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
-        """Cannot load domain's nameservers page. Redirects to dns records page instead."""
-        with override_flag("dns_hosting", active=True):
-            response = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
-            self.assertRedirects(
-                response,
-                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
-            )
-
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
             page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
-            self.assertContains(page, "DNS name servers")
-
-    @override_flag("dns_hosting", active=False)
-    def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers page when dns hosting flag is disabled
-        and domain is enrolled in dns hosting.
-        """
-        with override_flag("dns_hosting", active=False):
-            page = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
             self.assertContains(page, "DNS name servers")
 
     @less_console_noise_decorator
@@ -1632,7 +1827,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  form requires a minimum of 2 name servers
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
@@ -1657,7 +1852,8 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  subdomain missing an ip
         self.assertContains(
             result,
-            str(NameserverError(code=NameserverErrorCodes.MISSING_IP)),
+            # Note that the string must be escaped as HTML displays apostrophe as &#x27;
+            escape(str(NameserverError(code=NameserverErrorCodes.MISSING_IP))),
             count=2,
             status_code=200,
         )
@@ -1901,7 +2097,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         # form submission was a successful post, response should be a 302
 
-        self.assertEqual(result.status_code, 302)
+        self.assertEqual(result.status_code, 302, result.text)
         self.assertEqual(
             result["Location"],
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
@@ -2059,10 +2255,51 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # once around the required field.
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
+
+    @less_console_noise_decorator
+    def test_domain_nameservers_banner_view(self):
+        detail_page = self.client.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_ready_state.id})
+        )
+        self.assertContains(detail_page, "This domain's name servers")
+
+
+class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
+    def test_domain_external_dns_pages_redirect_when_dns_hosting_flag_enabled_and_enrolled(self):
+        """
+        When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page.
+        Redirects to dns records page instead."""
+        with override_flag("dns_hosting", active=True):
+            for view_name in [
+                "domain-dns-nameservers",
+                "domain-dns-dnssec",
+                "domain-dns-dnssec-dsdata",
+            ]:
+                response = self.client.get(
+                    reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertRedirects(
+                    response,
+                    reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+                )
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_loads_external_dns_pages_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+        """Can load domain's nameservers, DNSSEC, and DS data pages when dns hosting flag is disabled
+        and domain is enrolled in dns hosting.
+        """
+        with override_flag("dns_hosting", active=False):
+            for view_page, page_title in [
+                ("domain-dns-nameservers", "DNS name servers"),
+                ("domain-dns-dnssec", "DNSSEC"),
+                ("domain-dns-dnssec-dsdata", "DS data"),
+            ]:
+                page = self.client.get(reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+                self.assertContains(page, page_title)
 
 
 class TestDomainSeniorOfficial(TestDomainOverview):
@@ -2138,7 +2375,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is federal"""
 
         # Set the org type to federal
-        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.save()
 
         # Add an SO
@@ -2159,7 +2396,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
-        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.TRIBAL
         self.domain_information.save()
 
         # Add an SO. We can do this at the model level, just not the form level.
@@ -2256,7 +2493,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
-        self.domain_information.generic_org_type = tribal_org_type
+        self.domain_information.organization_type = tribal_org_type
         self.domain_information.save()
         try:
             # Add an org name
@@ -2265,7 +2502,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.generic_org_type, tribal_org_type)
+        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
 
@@ -2314,7 +2551,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.generic_org_type = federal_org_type
+        self.domain_information.organization_type = federal_org_type
         self.domain_information.save()
 
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
@@ -2326,7 +2563,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.generic_org_type, federal_org_type)
+        self.assertEqual(self.domain_information.organization_type, federal_org_type)
 
         new_value = ("Department of State", "Department of State")
         self.client.post(
@@ -2537,8 +2774,6 @@ class TestDomainSecurityEmail(TestDomainOverview):
         Test against the success and error messages that are defined in the view
         """
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
             form_data_registry_error = {
                 "security_email": "test@failCreate.gov",
             }
@@ -2689,10 +2924,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, "Key tag is required", count=2, status_code=200)
-        self.assertContains(result, "Algorithm is required", count=2, status_code=200)
-        self.assertContains(result, "Digest type is required", count=2, status_code=200)
-        self.assertContains(result, "Digest is required", count=2, status_code=200)
+        self.assertContains(result, "Enter a key tag for this record.", count=2, status_code=200)
+        self.assertContains(result, "Select the algorithm for this record.", count=2, status_code=200)
+        self.assertContains(result, "Select the digest type for this record.", count=2, status_code=200)
+        self.assertContains(result, "Enter a digest value for this record.", count=2, status_code=200)
 
     @less_console_noise_decorator
     def test_ds_data_form_duplicate(self):
@@ -2717,7 +2952,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(
-            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+            result,
+            "This DS record is already associated with this domain. DS records must be unique.",
+            count=2,
+            status_code=200,
         )
 
     @less_console_noise_decorator
@@ -3103,6 +3341,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
+        # reset to match expected form structure
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
         nameservers_page = self.app.get(
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
         )
@@ -3120,6 +3361,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
 
 class TestDomainRenewal(TestWithUser):
@@ -3569,6 +3813,30 @@ class TestDomainDeletion(TestWithUser):
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
 
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_with_active_nameservers_failure(self):
+        """Deletion should be blocked when the domain has active nameservers"""
+        domain = Domain.objects.create(
+            name="blocked.gov", state=Domain.State.ON_HOLD, expiration_date=timezone.now().date() + timedelta(days=65)
+        )
+
+        Host.objects.create(name="ns1.blocked.gov", domain=domain)
+        Host.objects.create(name="ns2.blocked.gov", domain=domain)
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        self.client.force_login(self.user)
+
+        # Attempt deletion via POST
+        self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"domain_pk": domain.id},
+            follow=True,
+        )
+
+        # Validate that the domain exists despite trying to delete.
+        self.assertTrue(Domain.objects.filter(id=domain.id).exists())
+
 
 class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
     def setUp(self):
@@ -3598,6 +3866,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertNotContains(page, "Name servers")
         self.assertContains(page, "DNS Records")
+        self.assertNotContains(page, "DNSSEC")
 
     @override_flag("dns_hosting", active=False)
     def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
@@ -3612,22 +3881,22 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
+        self.assertContains(page, "DNSSEC")
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_dns_banner_for_external_dns_hosting(self):
+        domain = Domain.objects.create(name="domainwithexternalhosting.gov", state=Domain.State.READY)
+        DomainInformation.objects.create(requester=self.user, domain=domain)
+        UserDomainRole.objects.create(domain=domain, user=self.user, role=UserDomainRole.Roles.MANAGER)
+        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": domain.id}))
+        self.assertContains(
+            page,
+            "This domain's name servers",
+        )
 
 
+@override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
-    mock_api_service = MockCloudflareService()
-
-    @classmethod
-    def setUpClass(cls):
-        """Start mock service once for all tests in this class"""
-        super().setUpClass()
-        cls.mock_api_service.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop mock service after all tests"""
-        cls.mock_api_service.stop()
-        super().tearDownClass()
 
     def tearDown(self):
         delete_all_dns_data()
@@ -3636,15 +3905,31 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.cf_service = CloudflareService(self.client)
         self.user = create_user()
         self.client.force_login(self.user)
+
+    @override_flag("dns_hosting", active=True)
+    def test_dns_records_denies_non_manager_before_touching_domain(self):
+        random_user = get_user_model().objects.create(
+            username="random_user",
+            first_name="First",
+            last_name="Last",
+            email="info@example.com",
+            phone="8003111234",
+            title="test title",
+        )
+        self.client.force_login(random_user)
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
+        with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
+            response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertEqual(response.status_code, 403)
+        mock_get.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
-        domain, _, _ = create_initial_dns_setup()  # creates enrolled domain
+        """Can load a domain's DNS records page when enrolled and dns hosting is enabled."""
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")
 
@@ -3670,7 +3955,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_name_servers_no_vanity_servers_table(self):
         """Name Servers table appears when there are nameservers and shows DNS records"""
-        domain, _, dns_zone = create_initial_dns_setup()
+        domain, _, dns_zone = create_initial_dns_setup(domain_manager=self.user)
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
@@ -3681,7 +3966,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_vanity_nameservers_table(self):
         """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
-        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
+        domain, _, _ = create_initial_dns_setup(
+            domain_manager=self.user, **{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]}
+        )
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
         self.assertContains(page, "rainbow.dns.gov")
@@ -3691,7 +3978,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_form_is_available_for_new_dns_record(self):
         """User should be able to leave edit form with clicking cancel"""
-        domain, _, dns_zone = create_initial_dns_setup()
+        domain, _, dns_zone = create_initial_dns_setup(domain_manager=self.user)
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Edit record")
@@ -3701,7 +3988,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_updates_record(self):
         """Editing an existing DNS record saves changes and returns the updated row."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
 
         response = self.client.post(
@@ -3719,10 +4008,11 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         dns_record.refresh_from_db()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(dns_record.name, "api")
+        self.assertEqual(dns_record.name, "api.igorville.gov")
         self.assertEqual(dns_record.content, "203.0.113.15")
         self.assertEqual(dns_record.ttl, 3600)
-        self.assertContains(response, "api")
+        # Names submitted without zone name append zone name to end
+        self.assertContains(response, "api.igorville.gov")
         self.assertContains(response, "203.0.113.15")
         self.assertContains(response, "3600")
         self.assertJSONEqual(
@@ -3741,7 +4031,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
            form with a clean one, so reopening the form shows no leftover errors.
         """
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-close-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
 
         response = self.client.post(
@@ -3771,7 +4063,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_returns_400_without_active_vendor_id(self):
         """Editing fails when the DNS record has no active vendor record link."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-124")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124", dns_record_is_active=False)
 
         response = self.client.post(
@@ -3793,3 +4087,110 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_dns_record_general_500_returns_500_page_with_request_id(self):
+        """A 500 error (when not a DnsHostingError) returns the custom 500.html page."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124")
+
+        # Return the 500 response instead of re-raising the view's exception in the test
+        self.client.raise_request_exception = False
+
+        # WebTest forces DEBUG_PROPAGATE_EXCEPTIONS=True, which skips handler500 entirely.
+        # Turns it off so Django renders the custom 500 page, and let the client return it.
+        with (
+            override_settings(DEBUG_PROPAGATE_EXCEPTIONS=False),
+            patch.object(DnsHostService, "update_and_save_dns_record", side_effect=Exception("simulated")),
+        ):
+            response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+                data={
+                    "id": dns_record.id,
+                    "type": dns_record.type,
+                    "name": "api",
+                    "content": "203.0.113.25",
+                    "ttl": 3600,
+                    "comment": "Should display 500 page",
+                },
+                headers={"HX-Request": True},
+            )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.headers["HX-Retarget"], "body")
+        self.assertEqual(response.headers["HX-Reswap"], "innerHTML")
+        self.assertContains(response, "Here's a unique identifier for this error", status_code=500)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_deletes_record(self):
+        """Deleting an existing DNS record saves changes and returns an empty response to replace the row."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_removes_record_row(self):
+        """After a successful deletion, the response signals form close and removes the deleted row"""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
+        record_name = "delete.me"
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123", record_name=record_name)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertContains(page, record_name)
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertNotContains(page, record_name)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    @patch("registrar.views.domain.DnsHostService")
+    def test_get_does_not_create_dns_client(self, mock_service_cls):
+        _, _, _ = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
+        response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+
+        self.assertEqual(response.status_code, 200)
+        mock_service_cls.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    @patch("registrar.views.domain.DnsHostService")
+    def test_invalid_post_does_not_create_dns_client(self, mock_service_cls):
+        _, _, _ = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
+        self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={"type": "A", "name": "", "content": "", "ttl": 60},
+        )  # Bad Request due to missing required values
+
+        mock_service_cls.assert_not_called()

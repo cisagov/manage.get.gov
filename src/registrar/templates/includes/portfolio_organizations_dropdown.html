@@ -4,7 +4,7 @@
     <div class="usa-accordion">
         <div class="usa-accordion__heading usa-nav__secondary-menu">
             <button
-            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button"
             id="organizations-menu"
             aria-controls="organizations-submenu"
             aria-expanded="false"
@@ -13,7 +13,7 @@
                 <span class="ellipsis usa-nav__username">Organizations</span>
             </button>
         </div>
-        <div id="organizations-submenu" class="usa-nav__submenu">
+        <div id="organizations-submenu" class="usa-nav__submenu" hidden>
             {% for user_portfolio_permission in user_portfolio_permissions %}
             <div class="usa-nav__submenu-item usa-nav-link">
                 {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_nav_menu" %}
@@ -23,8 +23,8 @@
                     <span>
                         {{ request.user.email }}’s account
                     </span>
-                </a>  
-                {% endif %}    
+                </a>
+                {% endif %}
         </div>
     </div>
 </li>
@@ -33,7 +33,7 @@
     <div class="usa-accordion">
         <div class="usa-accordion__heading usa-nav__secondary-menu">
             <button
-            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button"
             id="organizations-menu"
             aria-controls="portfolio-{{ forloop.counter }}"
             aria-expanded="false"
@@ -42,7 +42,7 @@
                 <span class="ellipsis usa-nav__username">{{ user_portfolio_permission.portfolio.organization_name }}</span>
             </button>
         </div>
-        <ul id="portfolio-{{ forloop.counter }}" class="usa-nav__submenu">
+        <ul id="portfolio-{{ forloop.counter }}" class="usa-nav__submenu" hidden>
             <li class="usa-nav__submenu-item"><a href="{% url 'domains' %}"><span>Domains</span></a></li>
             <li class="usa-nav__submenu-item">
             {% if has_edit_request_portfolio_permission or has_any_requests_portfolio_permission %}

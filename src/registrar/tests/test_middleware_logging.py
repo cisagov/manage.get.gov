@@ -1,7 +1,9 @@
 from django.test import TestCase, override_settings
 from django.urls import reverse
 import io
+import json
 import logging
+import uuid
 from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
@@ -56,3 +58,106 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.client.get(reverse("health"))
         log_output = self.stream.getvalue()
         self.assertNotIn("Router log", log_output)
+
+    def test_request_id_generated_when_header_missing(self):
+        """A UUID4 is minted when the header is absent and echoed on the response."""
+        response = self.client.get(reverse("health"))
+        echoed = response["X-Request-ID"]
+        # Must parse as a UUID4 (raises ValueError if not).
+        parsed = uuid.UUID(echoed)
+        self.assertEqual(parsed.version, 4)
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_request_id_appears_in_log_json(self):
+        """The JsonFormatter sends request_id as a top-level field on every log line."""
+        self.client.get(reverse("health"), HTTP_X_REQUEST_ID="trace-id-xyz")
+        self.handler.flush()
+        log_lines = [line for line in self.stream.getvalue().splitlines() if line.strip()]
+        matching = [json.loads(line) for line in log_lines if "trace-id-xyz" in line]
+        self.assertTrue(matching, "No log line carried the request_id")
+        for entry in matching:
+            self.assertEqual(entry.get("request_id"), "trace-id-xyz")
+
+    def test_db_middleware_reuses_request_id(self):
+        """Both DB_CONN log lines carry the shared request_id as a structured JSON field."""
+        response = self.client.get(reverse("health"), HTTP_X_REQUEST_ID="shared-id-42")
+        self.handler.flush()
+        self.assertEqual(response["X-Request-ID"], "shared-id-42")
+
+        db_lines = [
+            json.loads(line)
+            for line in self.stream.getvalue().splitlines()
+            if line.strip() and ("DB_CONN_START" in line or "DB_CONN_END" in line)
+        ]
+        self.assertEqual(len(db_lines), 2, "Expected one DB_CONN_START and one DB_CONN_END line")
+        for entry in db_lines:
+            self.assertEqual(entry.get("request_id"), "shared-id-42")
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_arbitrary_extra_fields_appear_in_log_json(self):
+        """
+        Fields passed via 'extra' on a log call surface as a top-level JSON keys,
+        not just imbedded in the message string. This was primarily created for dns hosting,
+        so it may need to be edited if we expand our logging in other parts of the app
+        """
+        self.logger.info(
+            "Doing a thing",
+            extra={"zone_id": "abc123", "record_id": "xyz789"},
+        )
+        self.handler.flush()
+
+        # Get everything written to the fake log stream, split into individual lines.
+        raw_output = self.stream.getvalue()
+        raw_lines = raw_output.splitlines()
+
+        # Parse each non-blank line as JSON, since each line is one structured log entry.
+        log_entries = []
+        for line in raw_lines:
+            if line.strip():
+                log_entries.append(json.loads(line))
+
+        # Find the entry that actually contains our extra fields as real keys.
+        matching_entry = None
+        for entry in log_entries:
+            if entry.get("zone_id") == "abc123":
+                matching_entry = entry
+
+        self.assertIsNotNone(matching_entry, "No log line carried zone_id as a structured field")
+        self.assertEqual(matching_entry.get("zone_id"), "abc123")
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_non_serializable_extra_field_is_stringified(self):
+        """
+        A value in 'extra' that isn't JSON-serializeable (e.g. an object)
+        gets converted to a string rather than raising or being silently dropped.
+        """
+
+        class Unserializeable:
+            def __str__(self):
+                return "unserializable-thing"
+
+        self.logger.info(
+            "Doing a thing with a weird value",
+            extra={"weird_field": Unserializeable()},
+        )
+        self.handler.flush()
+
+        # Get everything written to the fake log stream, split into individual lines.
+        raw_output = self.stream.getvalue()
+        raw_lines = raw_output.splitlines()
+
+        # Parse each non-blank line as JSON, since each line is one structured log entry.
+        log_entries = []
+        for line in raw_lines:
+            if line.strip():
+                log_entries.append(json.loads(line))
+
+        # Find the entry that actually contains our extra fields as real keys.
+        matching_entry = None
+        for entry in log_entries:
+            if "weird_field" in entry:
+                matching_entry = entry
+                break
+
+        self.assertIsNotNone(matching_entry, "No log line carried weird_field")
+        self.assertEqual(matching_entry.get("weird_field"), "unserializable-thing")

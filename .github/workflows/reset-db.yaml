@@ -16,8 +16,10 @@ on:
         options:
           - staging
           - development
+          - tjh
+          - cp
+          - amt
           - ab
-          - ap
           - cw
           - testdb
           - acadia
@@ -30,15 +32,15 @@ on:
           - aa
           - el
           - ad
-          - litterbox
           - hotgov
           - meoward
           - backup
-          - es
-          - nl
           - rh
+          - sm
           - kma
-          - dg
+
+permissions:
+  contents: read
 
 jobs:
   reset-db:
@@ -48,7 +50,7 @@ jobs:
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
       - name: Delete existing data for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
@@ -57,7 +59,7 @@ jobs:
           cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py flush --no-input' --name flush"
 
       - name: Run Django migrations for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
@@ -66,7 +68,7 @@ jobs:
           cf_command: "run-task getgov-${{ github.event.inputs.environment }} --command 'python manage.py migrate' --name migrate"
 
       - name: Load fake data for ${{ github.event.inputs.environment }}
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}

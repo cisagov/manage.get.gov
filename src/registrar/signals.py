@@ -18,7 +18,7 @@ def cleanup_retrieved_domain_invitations(sender, instance, **kwargs):
         return
 
     DomainInvitation.objects.filter(
-        email=email,
+        email__iexact=email,
         domain_id=instance.domain_id,
         status=DomainInvitation.DomainInvitationStatus.RETRIEVED,
     ).delete()

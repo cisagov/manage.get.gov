@@ -1,5 +1,5 @@
 from datetime import datetime
-from django.forms import ValidationError
+from django.forms import ValidationError, modelform_factory
 from django.utils import timezone
 from registrar.models.federal_agency import FederalAgency
 from registrar.utility.constants import BranchChoices
@@ -13,6 +13,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainRequestAdmin,
     DomainRequestAdminForm,
+    TribalDomainRequestAdminForm,
     MyUserAdmin,
     AuditedAdmin,
 )
@@ -30,6 +31,8 @@ from registrar.models import (
     Suborganization,
 )
 from registrar.models.host import Host
+from registrar.models.federal_tribe import FederalTribe
+from registrar.models.state_tribe import StateTribe
 from registrar.models.public_contact import PublicContact
 from .common import (
     MockSESClient,
@@ -732,12 +735,15 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         self.client.force_login(self.superuser)
         completed_domain_request()
-        response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
+        response = self.client.get("/admin/registrar/domainrequest/?converted_org_types=federal")
         # There are 2 template references to Federal (4) and two in the results data
-        # of the request
-        self.assertContains(response, "Federal", count=6)
+        # of the request including "add federal agency", "add federal tribe"
+        self.assertContains(response, "Federal", count=8)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
+        self.assertContains(
+            response,
+            '<a id="organizationtype-filter-federal"' ' href="?converted_org_types=federal">' "Federal</a>",
+        )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -2037,8 +2043,8 @@ class TestDomainRequestAdmin(MockEppLib):
             "other_contacts",
             "current_websites",
             "alternative_domains",
-            "is_election_board",
             "status_history",
+            "tribe_recognition",
             "id",
             "created_at",
             "updated_at",
@@ -2055,12 +2061,12 @@ class TestDomainRequestAdmin(MockEppLib):
             "suborganization_state_territory",
             "requester",
             "investigator",
-            "generic_org_type",
-            "is_election_board",
             "organization_type",
             "federally_recognized_tribe",
             "state_recognized_tribe",
             "tribe_name",
+            "state_tribe",
+            "federal_tribe",
             "federal_type",
             "organization_name",
             "address_line1",
@@ -2093,6 +2099,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "last_submitted_date",
             "last_status_update",
             "notes",
+            "tribe",
             "alternative_domains",
         ]
         self.assertEqual(readonly_fields, expected_fields)
@@ -2118,8 +2125,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
+                "tribe_recognition",
                 "federal_agency",
                 "requester",
                 "about_your_organization",
@@ -2158,8 +2165,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
+                "tribe_recognition",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2186,8 +2193,8 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
+                "tribe_recognition",
                 "federal_agency",
                 "requester",
                 "about_your_organization",
@@ -2223,10 +2230,9 @@ class TestDomainRequestAdmin(MockEppLib):
                 "portfolio_city",
                 "portfolio_zipcode",
                 "portfolio_urbanization",
-                "is_election_board",
-                "organization_type",
                 "federal_type",
                 "federal_agency",
+                "tribe",
                 "tribe_name",
                 "federally_recognized_tribe",
                 "state_recognized_tribe",
@@ -2516,9 +2522,8 @@ class TestDomainRequestAdmin(MockEppLib):
             expected_fields = (
                 DomainRequestAdmin.PortfolioFilter,
                 DomainRequestAdmin.StatusListFilter,
-                DomainRequestAdmin.GenericOrgFilter,
+                DomainRequestAdmin.OrgTypeFilter,
                 DomainRequestAdmin.FederalTypeFilter,
-                DomainRequestAdmin.ElectionOfficeFilter,
                 "rejection_reason",
                 DomainRequestAdmin.InvestigatorFilter,
             )
@@ -2724,7 +2729,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Create a fake domain request. State will be NY (2).
         _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, organization_type="interstate"
         )
 
         self.client.force_login(self.staffuser)
@@ -2747,6 +2752,69 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Check if response contains expected_html
         self.assertIn(expected_html, response_content)
+
+
+class TestTribalDomainRequestAdminForm(TestCase):
+
+    @less_console_noise_decorator
+    def test_select_federal_tribe(self):
+        domain_request = completed_domain_request(organization_type="tribal")
+        tribe = FederalTribe.objects.create(tribe_full_name="The Slim Tribe")
+
+        # admin.py does this with the fieldset, we do it here manually
+        form_class = modelform_factory(
+            DomainRequest,
+            form=TribalDomainRequestAdminForm,
+            fields=["organization_type", "tribe", "organization_name"],
+        )
+        form = form_class(
+            instance=domain_request,
+            data={
+                "organization_type": "tribal",
+                "tribe": f"federal:{tribe.pk}",
+                "organization_name": "Previous organization name",
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        domain_request.refresh_from_db()
+
+        self.assertEqual(domain_request.federal_tribe, tribe)
+        self.assertIsNone(domain_request.state_tribe)
+        self.assertEqual(domain_request.organization_name, "The Slim Tribe")
+        self.assertTrue(domain_request.federally_recognized_tribe)
+        self.assertFalse(domain_request.state_recognized_tribe)
+
+    @less_console_noise_decorator
+    def test_select_state_tribe(self):
+        domain_request = completed_domain_request(organization_type="tribal")
+        tribe = StateTribe.objects.create(tribe_name="The Shady Tribe")
+
+        # admin.py does this with the fieldset, we do it here manually
+        form_class = modelform_factory(
+            DomainRequest,
+            form=TribalDomainRequestAdminForm,
+            fields=["organization_type", "tribe", "organization_name"],
+        )
+        form = form_class(
+            instance=domain_request,
+            data={
+                "organization_type": "tribal",
+                "tribe": f"state:{tribe.pk}",
+                "organization_name": "Previous organization name",
+            },
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        domain_request.refresh_from_db()
+
+        self.assertEqual(domain_request.state_tribe, tribe)
+        self.assertIsNone(domain_request.federal_tribe)
+        self.assertEqual(domain_request.organization_name, "The Shady Tribe")
+        self.assertTrue(domain_request.state_recognized_tribe)
+        self.assertFalse(domain_request.federally_recognized_tribe)
 
 
 class TestDomainRequestAdminForm(TestCase):

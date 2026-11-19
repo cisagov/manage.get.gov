@@ -531,6 +531,9 @@ export class BaseTable {
   }
 
   initializeSearchHandler() {
+    // Search may be intentionally hidden (ie self only Members view - #4944),
+    // in which case this element won't exist. We graceful bail out rather than fail
+    if (!this.searchSubmit) return;
     this.searchSubmit.addEventListener('click', (e) => {
       e.preventDefault();
       this.currentSearchTerm = this.searchInput.value;

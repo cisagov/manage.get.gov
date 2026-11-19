@@ -4,7 +4,10 @@ import respx
 import logging
 from datetime import datetime, timezone
 from faker import Faker
+import re
+from respx.patterns import M
 
+from registrar.models import DnsZone, VendorDnsZone
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.services.utility.mock_cf_service_data import (
@@ -27,6 +30,7 @@ class MockCloudflareService:
     fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
+    hostname_record_types = ["CNAME", "MX", "PTR"]
 
     def __new__(cls):
         if cls._instance is None:
@@ -37,7 +41,7 @@ class MockCloudflareService:
         if not hasattr(self, "initialized"):
             self.initialized = True
             self.is_active = False
-        self.__initial_state()
+            self.__initial_state()
 
     def __initial_state(self):
         # using deepcopy to create copy of initial values
@@ -45,13 +49,17 @@ class MockCloudflareService:
         self.accounts_results_info = copy.deepcopy(CF_ACCOUNTS_RESULT_INFO)
         self.account_zones = copy.deepcopy(CF_ACCOUNT_ZONES)
         self.account_zones_result_info = copy.deepcopy(CF_ACCOUNT_ZONES_RESULT_INFO)
+        self.new_account_id = self._mock_create_cf_id()
 
     def start(self):
         """Start mocking external APIs"""
         if self.is_active:
             self.stop()  # to ensure clean start
         base_url = CloudflareService.base_url
-        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=False)
+        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=True)
+        # Anything that isn't Cloudflare goes to the real network. Without this,
+        # every httpx call in the process is auto-mocked with an empty 200.
+        self._mock_context.route(~M(host="api.cloudflare.com")).pass_through()
         self._mock_context.start()
 
         # Register all mock routes
@@ -73,8 +81,9 @@ class MockCloudflareService:
 
     def _register_account_mocks(self):
         tenant_id = CloudflareService.tenant_id
-        self._mock_context.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(
-            side_effect=self._mock_get_page_accounts_response
+
+        self._mock_context.get(f"/tenants/{tenant_id}/accounts", params__contains={"per_page": 1}).mock(
+            side_effect=self._mock_get_account_by_name_response
         )
         self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
@@ -104,15 +113,26 @@ class MockCloudflareService:
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
+        self._mock_context.get(url__regex=r"/zones/[\w-]+").mock(side_effect=self._mock_get_cf_zone_response)
 
-        # Mock the api with any zone id
+        # Mock the create api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
 
-        # Mock the api with any record id
+        # Mock the update api with any record id
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
             side_effect=self._mock_update_dns_record_response
+        )
+
+        # Mock the delete api with any zone and record id
+        self._mock_context.delete(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+            side_effect=self._mock_delete_dns_record_response
+        )
+
+        # Mock the delete api with any account id
+        self._mock_context.delete(url__regex=r"/accounts/[\w-]+").mock(
+            side_effect=self._mock_delete_cf_account_response
         )
 
         # PATCH account dns_settings
@@ -134,17 +154,19 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_get_page_accounts_response(self, request) -> httpx.Response:
-        logger.debug("😎 Mocking accounts GET")
-        # use exists.gov domain to simulate an account that already exists
+    def _mock_get_account_by_name_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking accounts GET by name")
+        params = dict(request.url.params)
+        name = params.get("name")
+        matched = [a for a in self.accounts if a.get("account_pubname") == name]
         return httpx.Response(
             200,
             json={
                 "errors": [],
                 "messages": [],
                 "success": True,
-                "result": self.accounts,
-                "result_info": self.accounts_results_info,
+                "result": matched,
+                "result_info": {"count": len(matched), "total_count": len(matched)},
             },
         )
 
@@ -196,6 +218,25 @@ class MockCloudflareService:
             },
         )
 
+    def _mock_delete_cf_account_response(self, request) -> httpx.Response:
+        logger.debug("🐟 mocking dns account delete")
+        # Get account id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        account_id = request_url.split("/accounts/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": account_id,
+                },
+                "errors": [],
+                "messages": [],
+            },
+        )
+
     def _mock_create_cf_zone_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking cf zone create")
         request_as_json = json.loads(request.content.decode("utf-8"))
@@ -233,7 +274,41 @@ class MockCloudflareService:
             },
         )
 
+    def _mock_get_cf_zone_response(self, request) -> httpx.Response:
+        logger.debug("😃 mocking dns zone get response")
+
+        # Get zone id from request url
+        request_url = str(request.url)
+        zone_id = request_url.split("/zones/")[1]
+        matched = next((zone for zone in self.account_zones if zone.get("id") == zone_id), None)
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": bool(matched),
+                "result": matched,
+            },
+        )
+
     def _mock_create_dns_record_response(self, request) -> httpx.Response:
+        # Fields returned in the result object mirror real Cloudflare DNS record responses.
+        # Keep this list in sync with what CF actually returns so tests don't silently diverge:
+        #   id          — CF-assigned record UUID (generated here via _mock_create_cf_id)
+        #   name        — Fully-qualified record name (apex '@' expanded to zone name)
+        #   type        — Record type (A, AAAA, CNAME, MX, TXT, PTR, …)
+        #   content     — Record value (IP address, hostname, text, …)
+        #   ttl         — TTL in seconds (1 = automatic in CF)
+        #   comment     — Optional freetext annotation
+        #   priority    — MX priority (None for all other record types)
+        #   proxiable   — Whether the record can be proxied (always True here)
+        #   proxied     — Whether the record is currently proxied (always False here)
+        #   settings    — Per-record CF settings object (empty dict)
+        #   meta        — CF internal metadata (empty dict)
+        #   tags        — List of string tags (empty list)
+        #   created_on  — ISO-8601 timestamp
+        #   modified_on — ISO-8601 timestamp
+        # If CF adds new fields that our code reads, add them here to avoid silent None storage.
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
@@ -241,24 +316,19 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
+        request_url = str(request.url)
+        cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
+
         if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
-                )
-            return httpx.Response(500)
+            return self._mock_cf_error_response(record_name, type)
 
         return httpx.Response(
             200,
@@ -266,7 +336,7 @@ class MockCloudflareService:
                 "success": True,
                 "result": {
                     "id": self._mock_create_cf_id(),
-                    "name": record_name,
+                    "name": cf_record_name,
                     "type": type,
                     "content": content,
                     "proxiable": True,
@@ -276,6 +346,7 @@ class MockCloudflareService:
                     "meta": {},
                     "comment": comment,
                     "tags": [],
+                    "priority": priority,
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
@@ -285,38 +356,32 @@ class MockCloudflareService:
         )
 
     def _mock_update_dns_record_response(self, request) -> httpx.Response:
-        # Mocks updating a DNS A record.
-        # If we want to mock updating other DNS records, we may want to split
-        # this out and write a method to return a DNS record response by type.
-        logger.debug("🐟 mocking dns A record update")
+        # Update response shape must match the create response — see the field inventory
+        # in _mock_create_dns_record_response. The only difference is that the record id
+        # comes from the request URL rather than being newly generated.
+        logger.debug("🐟 mocking dns record update")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
         content = request_as_json["content"]
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
         record_id = request_url.split("/dns_records/")[1]
+        cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
+
         if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
-                )
-            return httpx.Response(500)
+            return self._mock_cf_error_response(cf_record_name, type)
 
         # Update response so it fits with whatever record we're returning
         return httpx.Response(
@@ -325,7 +390,7 @@ class MockCloudflareService:
                 "success": True,
                 "result": {
                     "id": record_id,
-                    "name": record_name,
+                    "name": cf_record_name,
                     "type": type,
                     "content": content,
                     "proxiable": True,
@@ -335,8 +400,29 @@ class MockCloudflareService:
                     "meta": {},
                     "comment": comment,
                     "tags": [],
+                    "priority": priority,
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
+                },
+                "errors": [],
+                "messages": [],
+            },
+        )
+
+    def _mock_delete_dns_record_response(self, request) -> httpx.Response:
+        """Response result returns only record id so we return the record id from the request."""
+        logger.debug("🐟 mocking dns record delete")
+        # Get record id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        record_id = request_url.split("/dns_records/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": record_id,
                 },
                 "errors": [],
                 "messages": [],
@@ -346,3 +432,155 @@ class MockCloudflareService:
     def _mock_create_cf_id(self):
         """Create a 32 character UUID by removing the 4 -'s in a UUID4."""
         return fake.uuid4().replace("-", "")
+
+    def _convert_record_name_to_cf_record_name(self, record_name, request_url):
+        """
+        Get record name in matching format to how Cloudflare stores record names.
+        Root records (@) are converted to the record's zone name.
+        Record names not ending in the zone name get the zone name appended to them.
+
+        Returns None if used outside scope of DNS records page / record name not given.
+        """
+        try:
+            zone_name = self._get_zone_name_from_request_url(request_url)
+            if record_name == ("@"):
+                record_name = zone_name
+            elif not record_name.endswith(zone_name):
+                record_name = f"{record_name}.{zone_name}"
+            return record_name
+        except Exception as e:
+            logger.error(f"Failed to rename record using record's DNS zone: {e}.")
+
+    def _get_zone_name_from_request_url(self, request_url):
+        """
+        Get record zone. Used to configure root names to records.
+        """
+        try:
+            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
+            vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
+            dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+            return dns_zone.name
+        except Exception as e:
+            logger.error(f"Failed to get record zone name using request URL: {e}.")
+
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:  # noqa: C901
+        """Return an error response for ``error-*`` record names. These represent actual CF error codes and messages"""
+        if record_name.startswith("error-duplicate"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81058, "message": "An identical record already exists."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB8"},
+            )
+        if record_name.startswith("error-invalid-name"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9000, "message": "DNS name is invalid."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB9"},
+            )
+        if record_name.startswith("error-exceed-content-max"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [
+                        {
+                            "code": 9015,
+                            "message": "Record content exceeds the allowed length of 4096 wire format bytes.",
+                        }
+                    ],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB10"},
+            )
+        if record_name.startswith("error-exceed-combined-content-max"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [
+                        {
+                            "code": 83011,
+                            "message": "Combined content length of records with this name and type exceeds the limit.",
+                        }
+                    ],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB11"},
+            )
+        if record_name.startswith("error-name-conflict"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [
+                        {
+                            "code": 81053,
+                            "message": "An A, AAAA, or CNAME record with that host already exists. For more details, "
+                            "refer to <https://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/"
+                            "records-with-same-name/>.",
+                        }
+                    ],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB12"},
+            )
+        if record_name.startswith("error-content"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9007, "message": f"Content for {record_type} record is invalid."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 0000, "message": "Unidentified 400 error"}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-401"):
+            return httpx.Response(
+                401,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "AARD"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                403,
+                json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
+                headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                404,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-429"):
+            return httpx.Response(
+                429,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "VARK"},
+            )
+        return httpx.Response(500)

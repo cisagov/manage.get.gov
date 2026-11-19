@@ -13,6 +13,7 @@ from django.utils import timezone
 from functools import cached_property
 from django.core.exceptions import ValidationError
 from typing import Any
+from registrar.logging_context import set_dns_log_context
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
@@ -47,6 +48,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,6 @@ class Domain(TimeStampedModel, DomainHelper):
            DNS entries in the registry
 
     ~~~ HOW TO USE THIS CLASS ~~~
-
     A) You can create a Domain object with just a name. `Domain(name="something.gov")`.
     B) Saving the Domain object will not contact the registry, as it may be useful
        to have Domain objects in an `UNKNOWN` pre-created state.
@@ -85,10 +86,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # If domain is in deleted state, its name can be reused - submitted/approved
         constraints = [
             models.UniqueConstraint(
-                fields=["name"],
-                condition=~models.Q(state="deleted"),
-                name="unique_name_except_deleted",
-            )
+                fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
+            ),
         ]
 
     def __init__(self, *args, **kwargs):
@@ -248,14 +247,7 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(
-        self,
-        force_insert=False,
-        force_update=False,
-        using=None,
-        update_fields=None,
-        optimistic_lock=False,
-    ):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -273,6 +265,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         super().save(force_insert, force_update, using, update_fields)
         self._original_updated_at = self.updated_at
+
+    @property
+    def display_created_at(self):
+        """Creation date shown in the UI: the registry creation date, falling
+        back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
+        return self.x_registry_created_at or self.created_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -854,6 +852,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
+        # clear self._cache to fetch fresh data from the registry
+        self._invalidate_cache()
+
         if successTotalNameservers < 2:
             try:
                 self.dns_needed()
@@ -1207,7 +1208,7 @@ class Domain(TimeStampedModel, DomainHelper):
             raise e
 
         logger.info(
-            "Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s",
+            "Deleting associated database objects (hosts, contacts, DNSSEC, dns host data) for domain %s",
             self.name,
         )
         self._delete_related_objects_from_db()
@@ -1275,9 +1276,73 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
+    def _delete_db_and_vendor_dns_data(self):
+        """
+        Delete DNS objects associated with this domain from database.
+        Includes:
+        - DnsAccount, VendorDnsAccount, DnsAccountVendorDnsAccount
+        - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
+        - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord
+
+        Deletes account from vendor
+        """
+        from registrar.models import DnsZone
+
+        if self.is_enrolled_in_dns_hosting and DnsZone.objects.filter(domain_id=self.id).exists():
+            from registrar.models import (
+                DnsRecord,
+                DnsAccount_VendorDnsAccount,
+                DnsZone_VendorDnsZone,
+                DnsRecord_VendorDnsRecord,
+                VendorDnsRecord,
+            )
+
+            with set_dns_log_context(self.name):
+                logger.debug("Deleting DNS data for %s.", self.name)
+                try:
+                    with transaction.atomic():
+                        dns_zone = DnsZone.objects.get(domain_id=self.id)
+                        logger.info("Removing db DNS records associated with %s.", self.name)
+                        records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                        logger.info("Removing %s db DNS records: %s.", self.name, str(records))
+                        # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
+                        # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
+                        for record in records:
+                            vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(
+                                dns_record=record
+                            ).values_list("vendor_dns_record_id", flat=True)
+                            vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
+                            if vendor_records:
+                                vendor_records.delete()
+                        records.delete()
+                        logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
+                        logger.info("Removing db DNS zone data for domain %s.", self.name)
+                        vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
+                        dns_zone.delete()
+                        vendor_zone.delete()
+                        logger.info("Removed db DNS zone data for domain %s.", self.name)
+                        logger.info("Removing db DNS account data for %s.", self.name)
+                        dns_account = dns_zone.dns_account
+                        vendor_account = DnsAccount_VendorDnsAccount.objects.get(
+                            dns_account=dns_account
+                        ).vendor_dns_account
+                        x_account_id = vendor_account.x_account_id
+                        dns_account.delete()
+                        vendor_account.delete()
+                        logger.info("Removed db DNS account data for domain %s.", self.name)
+
+                        logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
+                        from registrar.services.dns_host_service import DnsHostService
+
+                        dns_host_service = DnsHostService()
+                        dns_host_service.delete_account(x_account_id)  # deletes account from vendor
+                except Exception as e:
+                    logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
+                    raise e
+
     def _delete_related_objects_from_db(self):
         """
-        Deletes related Host/HostIP records, and non-registrant contacts
+        Deletes related Host/HostIP records, and non-registrant contacts, and dns hosting data
         for this domain from the database after it's been deleted from EPP
         FYI there's no DNSSEC data stored in the DB
         """
@@ -1303,6 +1368,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 c.delete()
         except Exception as e:
             logger.error("Error deleting contacts for domain %s: %s", self.name, str(e))
+
+        logger.info("Deleting db DNS data")
+        try:
+            self._delete_db_and_vendor_dns_data()
+        except Exception as e:
+            logger.error("Error deleting DNS data for domain %s: %s", self.name, str(e))
 
     def _domain_can_be_deleted(self, max_attempts=5, wait_interval=2) -> bool:
         """
@@ -1378,6 +1449,13 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Date the domain expires in the registry"),
     )
 
+    x_registry_created_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        editable=True,
+        help_text=("Date the domain record was created in the registry"),
+    )
+
     security_contact_registry_id = TextField(
         null=True,
         help_text=("Duplication of registry's security contact id for when registry unavailable"),
@@ -1406,7 +1484,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     is_enrolled_in_dns_hosting = models.BooleanField(
         default=False,
-        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
+        help_text=("Indicates whether the domain is enrolled in .gov DNS hosting."),
+        verbose_name=".gov DNS",
     )
 
     def isActive(self):
@@ -1446,7 +1525,19 @@ class Domain(TimeStampedModel, DomainHelper):
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
+        elif (
+            self.state == self.State.READY
+            and self.is_enrolled_in_dns_hosting
+            and flag_is_active_for_user(request, "dns_hosting")
+        ):
+            return "Active"
         return self.state.capitalize()
+
+    def enrolled_hosting_display(self, request=None):
+        return "Yes" if self.is_enrolled_in_dns_hosting else "No"
+
+    def is_using_external_hosting(self, request=None):
+        return not self.is_enrolled_in_dns_hosting and self.state in [self.State.READY, self.State.ON_HOLD]
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""
@@ -1891,29 +1982,19 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             self._invalidate_cache()
 
-    # def is_dns_needed(self):
-    #     """Commented out and kept in the codebase
-    #     as this call should be made, but adds
-    #     a lot of processing time
-    #     when EPP calling is made more efficient
-    #     this should be added back in
+    def is_dns_needed(self) -> bool:
+        """Double check that the nameservers we set are in fact on the registry"""
+        nameserverList = self.nameservers
+        return len(nameserverList) < 2
 
-    #     The goal is to double check that
-    #     the nameservers we set are in fact
-    #     on the registry
-    #     """
-    #     self._invalidate_cache()
-    #     nameserverList = self.nameservers
-    #     return len(nameserverList) < 2
-
-    # def dns_not_needed(self):
-    #     return not self.is_dns_needed()
+    def dns_not_needed(self) -> bool:
+        return not self.is_dns_needed()
 
     @transition(
         field="state",
         source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
-        # conditions=[dns_not_needed]
+        conditions=[dns_not_needed],  # type: ignore[list-item]
     )
     def ready(self):
         """Transition to the ready state
@@ -1926,13 +2007,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # domain was READY, then not READY, then is READY again.
         # We do not want to overwrite first_ready.
         if self.first_ready is None:
-            self.first_ready = timezone.now()
+            self.first_ready = date.today()
 
     @transition(
         field="state",
         source=[State.READY],
         target=State.DNS_NEEDED,
-        # conditions=[is_dns_needed]
+        conditions=[is_dns_needed],  # type: ignore[list-item]
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
@@ -2081,8 +2162,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.debug(
             "Updated domain contact %s to disclose: %s",
-            contact.email,
-            disclose_args.get("flag"),
+            contact.registry_id,
+            disclose_fields,
         )
         return epp.Disclose(**disclose_args)  # type: ignore
 
@@ -2530,9 +2611,16 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # if creation_date from registry does not match what is in db,
         # update the db
-        if "cr_date" in cleaned and cleaned["cr_date"] != self.created_at:
-            self.created_at = cleaned["cr_date"]
-            requires_save = True
+        if "cr_date" in cleaned:
+            cr_date = cleaned["cr_date"]
+
+            if cr_date and cr_date != self.created_at:
+                self.created_at = cr_date
+                requires_save = True
+
+            if cr_date and self.x_registry_created_at != cr_date:
+                self.x_registry_created_at = cr_date
+                requires_save = True
 
         # if either registration date or creation date need updating
         if requires_save:
@@ -2637,7 +2725,7 @@ class Domain(TimeStampedModel, DomainHelper):
         NOTE: The "on hold date" property is a one off addition - we want to
         make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
-        logging.info(f"Delete hold date on {self.name}")
+        logging.info(f"Cache is empty for domain: {self.name}")
         delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
@@ -2654,6 +2742,16 @@ class Domain(TimeStampedModel, DomainHelper):
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
 
     def delete_with_no_dns(self, *args, **kwargs):
+        # Guard: stop deletion if domain has active nameservers
+        # self.nameservers checks the registry, self.host.all() checks our db
+        if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
+            logger.error(
+                f"Domain {self.name} has {len(self.nameservers)} nameservers "
+                f"and {self.host.all().count()} hosts "
+                f"but is in state {self.state}. Aborting deletion."
+            )
+            raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")
+
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain

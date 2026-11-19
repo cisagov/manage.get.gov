@@ -21,7 +21,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import APIError
+from registrar.utility.errors import DnsHostingError, DnsHostingErrorCodes
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -159,7 +159,6 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertNotContains(response, "id_domain_info-0-portfolio_city")
         self.assertNotContains(response, "id_domain_info-0-portfolio_zipcode")
         self.assertNotContains(response, "id_domain_info-0-portfolio_urbanization")
-        self.assertNotContains(response, "id_domain_info-0-organization_type")
         self.assertNotContains(response, "id_domain_info-0-federal_type")
         self.assertNotContains(response, "id_domain_info-0-federal_agency")
         self.assertNotContains(response, "id_domain_info-0-tribe_name")
@@ -253,7 +252,7 @@ class TestDomainAdminAsStaff(MockEppLib):
 
         # Create a fake domain request. State will be NY (2).
         _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, organization_type="interstate"
         )
 
         _domain_request.approve()
@@ -527,9 +526,9 @@ class TestDomainAdminAsStaff(MockEppLib):
             filters = self.admin.get_list_filter(request)
 
             expected_filters = [
-                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.DnsEnrolledFilter,
+                DomainAdmin.OrgTypeFilter,
                 DomainAdmin.FederalTypeFilter,
-                DomainAdmin.ElectionOfficeFilter,
                 "state",
             ]
 
@@ -1094,10 +1093,10 @@ class TestDomainAdminWithClient(TestCase):
 
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
-        # for our actual domain_request
-        self.assertContains(response, "Federal", count=7)
+        # for our actual domain_request including "add federal agency", "add federal tribe"
+        self.assertContains(response, "Federal", count=9)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
+        self.assertContains(response, '<td class="field-converted_organization_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
@@ -1118,9 +1117,9 @@ class TestDomainAdminWithClient(TestCase):
             filters = self.admin.get_list_filter(request)
 
             expected_filters = [
-                DomainAdmin.GenericOrgFilter,
+                DomainAdmin.DnsEnrolledFilter,
+                DomainAdmin.OrgTypeFilter,
                 DomainAdmin.FederalTypeFilter,
-                DomainAdmin.ElectionOfficeFilter,
                 "state",
             ]
 
@@ -1341,7 +1340,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         domain = Domain.objects.create(
             name="enrolltest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.DNS_NEEDED,
             is_enrolled_in_dns_hosting=False,
         )
 
@@ -1360,8 +1359,13 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         with patch("registrar.admin.DnsHostService.dns_account_setup", return_value="x_account_id_123"), patch(
             "registrar.admin.DnsHostService.get_x_zone_id_if_zone_exists",
-            return_value=("zone_id_123", ["ns1.example.gov", "ns2.example.gov"]),
-        ), patch("registrar.admin.DnsHostService.dns_zone_setup", return_value=None), patch(
+            return_value="zone_id_123",
+        ), patch(
+            "registrar.admin.DnsHostService.get_nameservers_from_zone",
+            return_value=(["ns1.example.gov", "ns2.example.gov"]),
+        ), patch(
+            "registrar.admin.DnsHostService.dns_zone_setup", return_value=None
+        ), patch(
             "django.contrib.messages.add_message"
         ) as mock_add_message:
 
@@ -1394,9 +1398,10 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             requester=self.superuser,
         )
 
+        # Added dns needed, domains do not have nameservers initially
         domain = Domain.objects.create(
             name="enrolltest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.DNS_NEEDED,
             is_enrolled_in_dns_hosting=False,
         )
 
@@ -1417,18 +1422,18 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             "registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf", return_value=None
         ), patch(
             "registrar.services.dns_host_service.DnsHostService.create_and_save_account",
-            side_effect=APIError("Cloudflare account setup failed"),
+            side_effect=DnsHostingError(code=DnsHostingErrorCodes.AUTH_FAILED, upstream_status="404"),
         ), patch.object(
             DomainAdmin, "message_user"
         ) as mock_message_user:
 
             response = form.submit("_enroll_dns_hosting")
             response = response.follow()
-
         # Ensure an error message was sent to the user
         mock_message_user.assert_called_once_with(
             ANY,
-            "Failed to enroll domain in DNS hosting.",
+            "This domain could not be enrolled. Please try again. If the problem persists, "
+            "contact an admin for assistance.",
             messages.ERROR,
         )
 
@@ -1472,7 +1477,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         domain = Domain.objects.create(
             name="flagtest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.DNS_NEEDED,
             is_enrolled_in_dns_hosting=False,
         )
 

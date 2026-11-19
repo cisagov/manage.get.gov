@@ -54,11 +54,11 @@ class Command(BaseCommand):
         TerminalHelper.log_script_run_summary(self.to_update, self.failed_to_update, self.skipped, [], debug=debug)
 
     def update_first_ready_for_domain(self, domain: Domain, debug: bool):
-        """Grabs the created_at field and associates it with the first_ready column.
+        """Grabs the registry creation date and associates it with the first_ready column.
         Appends the result to the to_update list."""
-        created_at = domain.created_at
-        if created_at is not None:
-            domain.first_ready = domain.created_at
+        registry_created_at = domain.x_registry_created_at
+        if registry_created_at is not None:
+            domain.first_ready = domain.x_registry_created_at
             self.to_update.append(domain)
             if debug:
                 logger.info(f"Updating {domain}")

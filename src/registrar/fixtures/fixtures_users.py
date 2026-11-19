@@ -42,13 +42,6 @@ class UserFixture:
             "title": "Grove keeper",
         },
         {
-            "username": "47b9668b-6764-4818-a8cd-3505494093a6",
-            "first_name": "Natalie",
-            "last_name": "Wong",
-            "email": "Wai-wan.wong@ecstech.com",
-            "title": "Designer",
-        },
-        {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
             "first_name": "Gaby",
             "last_name": "DiSarli",
@@ -70,23 +63,11 @@ class UserFixture:
             "title": "Catlady",
         },
         {
-            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
-            "first_name": "Nicolle",
-            "last_name": "LeClair",
-            "email": "nicolle.leclair@ecstech.com",
-            "title": "Nightowl",
-        },
-        {
-            "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
-            "first_name": "Erin",
-            "last_name": "Song",
-            "title": "Catlady 2",
-        },
-        {
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
-            "title": "Hufflepuff prefect",
+            "email": "kristina.yin@cisa.dhs.gov",
+            "title": "Sorcerer",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -96,17 +77,10 @@ class UserFixture:
             "title": "Software Engineer",
         },
         {
-            "username": "c9c64cd5-bc76-45ef-85cd-4f6eefa9e998",
-            "first_name": "Samiyah",
-            "last_name": "Key",
-            "email": "skey@truss.works",
-            "title": "Designer",
-        },
-        {
-            "username": "f20b7a53-f40d-48f8-8c12-f42f35eede92",
+            "username": "287019a2-5355-4b5e-99c0-0d2a243071f3",
             "first_name": "Kimberly",
             "last_name": "Aralar",
-            "email": "kimberly.aralar@gsa.gov",
+            "email": "kimberlyanne.aralar@cisa.dhs.gov",
             "title": "Designer",
         },
         {
@@ -117,25 +91,11 @@ class UserFixture:
             "title": "Product Manager",
         },
         {
-            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
-            "first_name": "Jaxon",
-            "last_name": "Silva",
-            "email": "jaxon.silva@cisa.dhs.gov",
-            "title": "Designer",
-        },
-        {
             "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
             "first_name": "Kim",
             "last_name": "Allen",
             "email": "kim+dotgov@truss.works",
             "title": "Farmer",
-        },
-        {
-            "username": "0f784268-a481-445e-9e37-ea2be43ce318",
-            "first_name": "Daisy",
-            "last_name": "Gutierrez",
-            "email": "dgutierrez@guydo.com",
-            "title": "Lima",
         },
         {
             "username": "fb3671a7-4513-49d7-9723-4c41ed23f608",
@@ -156,6 +116,34 @@ class UserFixture:
             "last_name": "Broddrick",
             "email": "abroddrick@truss.works",
             "title": "I drink coffee and know things",
+        },
+        {
+            "username": "41407964-a570-4c5c-9179-ddbf45326eeb",
+            "first_name": "Samir",
+            "last_name": "Mishra",
+            "email": "samir.mishra@ecstech.com",
+            "title": "Code Mage",
+        },
+        {
+            "username": "413803a4-ac88-4e68-a441-93535c4648d1",
+            "first_name": "Amir",
+            "last_name": "Tawfik",
+            "email": "amr.tawfik@ecstech.com",
+            "title": "Software Engineer",
+        },
+        {
+            "username": "6d11be5-d028-47b6-842b-e52448de36ba",
+            "first_name": "Corwayne",
+            "last_name": "Pyle",
+            "email": "corwayne.pyle@ecstech.com",
+            "title": "Tech Lead",
+        },
+        {
+            "username": "fea47f0a-3699-4e04-92c6-08f7ff1d95d6",
+            "first_name": "TJ",
+            "last_name": "Harris",
+            "email": "lafayette.harris@ecstech.com",
+            "title": "Software Development Test Engineer",
         },
     ]
 
@@ -183,6 +171,7 @@ class UserFixture:
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
             "first_name": "Rebecca-Analyst",
             "last_name": "Hsieh-Analyst",
+            "email": "rebecca.hsieh+1@truss.works",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
@@ -191,28 +180,11 @@ class UserFixture:
             "email": "gaby+1@truss.works",
         },
         {
-            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
-            "first_name": "Nicolle-Analyst",
-            "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair.gov@ecstech.com",
-        },
-        {
-            "username": "106632de-8681-43db-85dd-83857c55660f",
-            "first_name": "Natalie-Analyst",
-            "last_name": "Wong-Analyst",
-            "email": "wai-wan.wong@associates.cisa.dhs.gov",
-        },
-        {
-            "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
-            "first_name": "Erin-Analyst",
-            "last_name": "Song-Analyst",
-            "email": "erin.song+1@gsa.gov",
-        },
-        {
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
-            "email": "kristina.yin+1@gsa.gov",
+            "email": "kristina.yin@gwe.cisa.dhs.gov",
+            "title": "ANALYST",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
@@ -221,16 +193,10 @@ class UserFixture:
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",
         },
         {
-            "username": "ee1e68da-41a5-47f7-949b-d8a4e9e2b9d2",
-            "first_name": "Samiyah-Analyst",
-            "last_name": "Key-Analyst",
-            "email": "skey+1@truss.works",
-        },
-        {
-            "username": "cf2b32fe-280d-4bc0-96c2-99eec09ba4da",
+            "username": "e464e2a7-3928-4e89-aff1-89a8b699307f",
             "first_name": "Kimberly-Analyst",
             "last_name": "Aralar-Analyst",
-            "email": "kimberly.aralar+1@gsa.gov",
+            "email": "kimberlyanne.aralar+1@cisa.dhs.gov",
         },
         {
             "username": "80db923e-ac64-4128-9b6f-e54b2174a09b",
@@ -243,12 +209,6 @@ class UserFixture:
             "first_name": "Kim-Analyst",
             "last_name": "Allen-Analyst",
             "email": "kim+a@truss.works",
-        },
-        {
-            "username": "acb8e287-9b45-4993-8f76-12648b417b75",
-            "first_name": "Daisy-Analyst",
-            "last_name": "Gutierrez-Analyst",
-            "email": "daisy.gutierrez-ctr@ecstech.com",
         },
         {
             "username": "fa2ea396-0ec1-46e3-a296-a37670996f17",
@@ -283,8 +243,64 @@ class UserFixture:
             "last_name": "Alysia-Analyst",
             "email": "abroddrick+1@truss.works",
         },
+        {
+            "username": "55b55db0-bb8d-4223-b1df-9482174a3679",
+            "first_name": "Samir-Analyst",
+            "last_name": "Mishra-Analyst",
+            "email": "samir.mishra.gov@ecstech.com",
+        },
     ]
 
+    STANDARD_USERS = [
+        {
+            "username": "e2201529-6901-44ee-9698-0d08bfe7fb01",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_1",
+            "email": "feedback+1@get.gov",
+        },
+        {
+            "username": "74cca338-21d6-4135-910e-4cf9ce179ea6",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_2",
+            "email": "feedback+2@get.gov",
+        },
+        {
+            "username": "22acf459-79d5-43b3-a73e-a81b30cc693c",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_3",
+            "email": "feedback+3@get.gov",
+        },
+        {
+            "username": "f88283cc-0a1f-4c23-b1a8-0cd31411d852",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_4",
+            "email": "feedback+4@get.gov",
+        },
+        {
+            "username": "c2e02542-8cc4-4d95-b153-fb97706a72f1",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_5",
+            "email": "feedback+5@get.gov",
+        },
+        {
+            "username": "fbb06d6c-c58f-49c0-8845-21f0c77b6497",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_6",
+            "email": "feedback+6@get.gov",
+        },
+        {
+            "username": "9e820a1c-c570-465a-9fc3-979c65f3ab17",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_7",
+            "email": "feedback+7@get.gov",
+        },
+        {
+            "username": "b8194c1a-4dec-4b3e-9cc1-829f3dbf78a7",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_8",
+            "email": "feedback+8@get.gov",
+        },
+    ]
     # Additional emails to add to the AllowedEmail whitelist.
     ADDITIONAL_ALLOWED_EMAILS: list[str] = []
 
@@ -383,13 +399,14 @@ class UserFixture:
         return existing_usernames, existing_user_ids
 
     @staticmethod
-    def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers):
+    def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers, is_staff=True):
         new_users = []
         for i, user_data in enumerate(users):
-            username = user_data.get("username")
             id = user_data.get("id")
             first_name = user_data.get("first_name", "Bob")
             last_name = user_data.get("last_name", "Builder")
+            # If username is not provided, create one (must be unique)
+            username = user_data.get("username", first_name + last_name + str(id))
 
             default_email = f"placeholder.{first_name.lower()}.{last_name.lower()}+{i}@igorville.gov"
             email = user_data.get("email", default_email)
@@ -403,7 +420,7 @@ class UserFixture:
                     title=user_data.get("title", "team member"),
                     phone=user_data.get("phone", "2022222222"),
                     is_active=user_data.get("is_active", True),
-                    is_staff=True,
+                    is_staff=is_staff,
                     is_superuser=are_superusers,
                 )
                 new_users.append(user)
@@ -421,17 +438,20 @@ class UserFixture:
             logger.info("No new users to create.")
 
     @staticmethod
-    def _get_users_to_update(users):
+    def _get_users_to_update(users, is_staff=True):
         users_to_update = []
         for user in users:
             updated = False
-            if not user.title:
+            if not user.title and is_staff:
                 user.title = "Team member"
+                updated = True
+            if not user.title and not is_staff:
+                user.title = "User testing account"
                 updated = True
             if not user.phone:
                 user.phone = "2022222222"
                 updated = True
-            if not user.is_staff:
+            if not user.is_staff and is_staff:
                 user.is_staff = True
                 updated = True
             if updated:
@@ -451,12 +471,35 @@ class UserFixture:
             group.user_set.add(*users_not_in_group)
 
     @classmethod
+    def load_standard_users(cls):
+        """Loads standard (non-staff) test users without assigning an admin group."""
+        logger.info(f"Going to load {len(cls.STANDARD_USERS)} standard users")
+        try:
+            existing_usernames, existing_user_ids = cls._get_existing_users(cls.STANDARD_USERS)
+            new_users = cls._prepare_new_users(
+                cls.STANDARD_USERS,
+                existing_usernames,
+                existing_user_ids,
+                are_superusers=False,
+                is_staff=False,
+            )
+            cls._create_new_users(new_users)
+
+            created_or_existing = User.objects.filter(username__in=[u["username"] for u in cls.STANDARD_USERS])
+            users_to_update = cls._get_users_to_update(created_or_existing, is_staff=False)
+            cls._update_existing_users(users_to_update)
+            logger.info("Standard users loaded.")
+        except Exception as e:
+            logger.warning(e)
+
+    @classmethod
     def load(cls, delete_existing_allowed_emails=False):
         cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
         cls.load_users(cls.STAFF, "cisa_analysts_group")
+        cls.load_standard_users()
 
-        # Combine ADMINS and STAFF lists
-        all_users = cls.ADMINS + cls.STAFF
+        # Combine ADMINS, STAFF, and STANDARD_USERS lists
+        all_users = cls.ADMINS + cls.STAFF + cls.STANDARD_USERS
         cls.load_allowed_emails(
             cls,
             all_users,

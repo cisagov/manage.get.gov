@@ -1,6 +1,5 @@
 import io
-from unittest import skip
-from django.test import Client, RequestFactory
+from django.test import Client, RequestFactory, SimpleTestCase
 from io import StringIO
 from registrar.decorators import allow_slow_queries
 from registrar.models import (
@@ -10,7 +9,7 @@ from registrar.models import (
     PortfolioInvitation,
     User,
 )
-from registrar.models import Portfolio, DraftDomain
+from registrar.models import Portfolio, DraftDomain, DomainInformation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
@@ -329,6 +328,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_1.domain_info.save()
         self.domain_3.domain_info.save()
 
+        # User manages this domain (VIEW_MANAGED_DOMAINS) AND it's in the portfolio
+        domain_4, _ = Domain.objects.get_or_create(name="fourthdomain.gov")
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_4, portfolio=portfolio)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain_4, role=UserDomainRole.Roles.MANAGER)
+
         # Set up user permissions
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission.save()
@@ -343,12 +347,14 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect only domains associated with the user's portfolio
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -357,12 +363,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
+        # domain_1/domain_3: in portfolio, BUT user has no UserDomainRole -> excluded
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
-        self.assertIn(self.domain_2.name, csv_content)
+        # domain_2: user has UserDomainRole, BUT not in this portfolio -> excluded
+        self.assertNotIn(self.domain_2.name, csv_content)
+        # domain_4: user has UserDomainRole AND it's in this portfolio -> included
+        self.assertIn(domain_4.name, csv_content)
         self.domain_1.delete()
         self.domain_2.delete()
         self.domain_3.delete()
+        domain_4.delete()
         portfolio.delete()
 
     def _run_domain_data_type_user_export(self, request):
@@ -621,13 +632,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "MANAGED DOMAINS COUNTS AT START DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "0,0,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "0,0,0,0,0,0,0,0,0\n"
             "\n"
             "MANAGED DOMAINS COUNTS AT END DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,"
-            "Special district,School district,Election office\n"
-            "3,2,1,0,0,0,0,0,0,0\n"
+            "Special district,School district\n"
+            "3,2,1,0,0,0,0,0,0\n"
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Federal,meoward@rocks.com,\n"
@@ -659,13 +670,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "UNMANAGED DOMAINS AT START DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "0,0,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "0,0,0,0,0,0,0,0,0\n"
             "\n"
             "UNMANAGED DOMAINS AT END DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "1,1,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "1,1,0,0,0,0,0,0,0\n"
             "\n"
             "Domain name,Domain type\n"
             "adomain10.gov,Federal\n"
@@ -728,7 +739,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Federal type",
             "Federal agency",
             "Organization name",
-            "Election office",
             "City",
             "State/territory",
             "Region",
@@ -766,30 +776,30 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = (
                 # Header
                 "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
-                "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
+                "City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
                 "Suborg state/territory,Requester first name,Requester last name,Requester email,"
                 "Requester approved domains count,Requester active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
-                "city5.gov,Approved,Federal,No,,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
+                "city5.gov,Approved,Federal,No,,,Testorg,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
                 "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
                 "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
-                "N/A,,,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
+                ",,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
                 "city3.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
-                "N/A,,,2,,,,,,,,0,1,"
+                ",,2,,,,,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
                 'test@igorville.com,"city.com, https://www.example2.com, https://www.example.com",\n'
-                "city4.gov,Submitted,City,No,,,Testorg,Yes,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
+                "city4.gov,Submitted,City,No,,,Testorg,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
                 "Tester,testy@town.com,"
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,N/A,"
+                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
                 ",,2,,,,,,,,0,1,city1.gov,,,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,\n"
             )
@@ -809,7 +819,70 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         super().setUp()
         self.factory = RequestFactory()
 
-    @skip("flaky test that needs to be refactored")
+    def get_exported_members(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        request = GenericTestHelper._mock_user_request_for_factory(request)
+        request.session["portfolio"] = self.portfolio_1.id
+        return MemberExport.get_model_annotation_dict(request=request)
+
+    def test_member_export_includes_new_model_invitation(self):
+        email = "new_model_invitee@igorville.gov"
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            invited_by=self.lebowski_user,
+        )
+        UserDomainRole.objects.create(
+            domain=self.domain_1,
+            email=email,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        member = self.get_exported_members()[email]
+
+        self.assertEqual(member["type"], "invitedmember")
+        self.assertEqual(member["invited_by_user"], self.lebowski_user.email)
+        self.assertEqual(member["domain_info"], [self.domain_1.name])
+
+    def test_member_export_prefers_member_over_duplicate_invitation(self):
+        member_user = User.objects.create(username="export_member", email="export_member@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=member_user,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.ACCEPTED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        member = self.get_exported_members()[member_user.email]
+
+        self.assertEqual(member["type"], "member")
+        self.assertEqual(member["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+    def test_member_export_treats_invited_permission_with_user_as_invitation(self):
+        invited_user = User.objects.create(username="invited_export_user", email="invited_export_user@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=invited_user,
+            email=invited_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        member = self.get_exported_members()[invited_user.email]
+
+        self.assertEqual(member["type"], "invitedmember")
+
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""
@@ -863,7 +936,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         request.user = self.user
         # Add portfolio to session
         request = GenericTestHelper._mock_user_request_for_factory(request)
-        request.session["portfolio"] = self.portfolio_1
+        request.session["portfolio"] = self.portfolio_1.id
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -872,39 +945,171 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
         # Read the content into a variable
-        csv_content = csv_file.read()
-        expected_content = (
-            # Header
-            "Email,Member role,Invited by,Joined date,Last active,Domain requests,"
-            "Members,Domains,Number domains assigned,Domain assignments\n"
-            # Content
-            "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
-            "Viewer,True,1,cdomain1.gov\n"
-            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer Requester,Manager,False,0,\n"
-            "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer Requester,Manager,False,0,\n"
-            "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
-            'Manager,True,2,"adomain2.gov,cdomain1.gov"\n'
-            "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "None,Manager,False,0,\n"
-            "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "None,Viewer,False,0,\n"
-            "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "Viewer,None,False,0,\n"
-            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer Requester,Manager,False,0,\n"
-            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer Requester,Manager,False,0,\n"
-            "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,"
-            "None,False,0,\n"
-        )
-        # Normalize line endings and remove commas,
-        # spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        reader = csv.reader(csv_file)
+        header, *data_rows = list(reader)
+        data_rows.sort(key=lambda r: r[0])
+
+        expected_header = [
+            "Email",
+            "Member role",
+            "Invited by",
+            "Joined date",
+            "Last active",
+            "Domain requests",
+            "Members",
+            "Domains",
+            "Number domains assigned",
+            "Domain assignments",
+        ]
+        # Content
+
+        expected_rows = [
+            [
+                "big_lebowski@dude.co",
+                "Basic",
+                "help@get.gov",
+                "2022-04-01",
+                "Invalid date",
+                "No access",
+                "Viewer",
+                "Viewer, limited",
+                "1",
+                "cdomain1.gov",
+            ],
+            [
+                "cozy_staffuser@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "2022-04-01",
+                "2024-02-01",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "icy_superuser@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "2022-04-01",
+                "2024-02-01",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "meoward@rocks.com",
+                "Basic",
+                "big_lebowski@dude.co",
+                "2022-04-01",
+                "Invalid date",
+                "No access",
+                "Manager",
+                "Viewer, limited",
+                "2",
+                "adomain2.gov, cdomain1.gov",
+            ],
+            [
+                "nonexistentmember_1@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "No access",
+                "Manager",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_2@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "No access",
+                "Viewer",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_3@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Viewer",
+                "No access",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_4@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_5@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "tired_sleepy@igorville.gov",
+                "Basic",
+                "System",
+                "2022-04-01",
+                "Invalid date",
+                "Viewer",
+                "No access",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+        ]
+
         self.maxDiff = None
-        self.assertEqual(csv_content, expected_content)
+        self.assertEqual(header, expected_header)
+        self.assertEqual(data_rows, expected_rows)
+
+
+class MemberExportNoneDomainInfoTest(SimpleTestCase):
+    """parse_row and write_csv when domain_info=None and unexpected errors."""
+
+    columns = [
+        "Email",
+        "Number domains assigned",
+        "Domain assignments",
+    ]
+
+    @less_console_noise_decorator
+    def test_parse_row_handles_none_domain_info(self):
+        model = {
+            "email_display": "a@example.gov",
+            "roles": [],
+            "additional_permissions_display": None,
+            "domain_info": None,
+        }
+        row = MemberExport.parse_row(self.columns, model)
+        self.assertEqual(row, ["a@example.gov", 0, ""])
 
 
 class HelperFunctions(MockDbForSharedTests):
@@ -922,7 +1127,7 @@ class HelperFunctions(MockDbForSharedTests):
         self.assertEqual(actual_date.date(), expected_date.date())
 
     def test_get_sliced_domains(self):
-        """Should get fitered domains counts sliced by org type and election office."""
+        """Should get fitered domains counts sliced by org type."""
 
         with less_console_noise():
             filter_condition = {
@@ -931,16 +1136,16 @@ class HelperFunctions(MockDbForSharedTests):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = DomainExport.get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
             # Test without distinct
             managed_domains_sliced_at_end_date = DomainExport.get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
-        """Should get fitered requests counts sliced by org type and election office."""
+        """Should get fitered requests counts sliced by org type."""
 
         with less_console_noise():
             filter_condition = {
@@ -948,5 +1153,5 @@ class HelperFunctions(MockDbForSharedTests):
                 "last_submitted_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = DomainRequestExport.get_sliced_requests(filter_condition)
-            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0, 1]
+            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

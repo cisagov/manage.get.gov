@@ -20,7 +20,8 @@ from registrar.decorators import (
 from registrar.forms import domain_request_wizard as forms
 from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
-from registrar.models import DomainRequest
+from registrar.models import DomainRequest, Portfolio
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
@@ -67,8 +68,7 @@ class DomainRequestWizard(TemplateView):
     REGULAR_TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
-        Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
-        Step.ORGANIZATION_ELECTION: _("Election office"),
+        Step.ORGANIZATION_FEDERAL: _("Federal government"),
         Step.ORGANIZATION_CONTACT: _("Organization"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.SENIOR_OFFICIAL: _("Senior official"),
@@ -98,7 +98,6 @@ class DomainRequestWizard(TemplateView):
     REGULAR_WIZARD_CONDITIONS = {
         Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
         Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
@@ -108,10 +107,13 @@ class DomainRequestWizard(TemplateView):
     # region: Unlocking steps
     # The conditions by which each step is "unlocked" or "locked"
     REGULAR_UNLOCKING_STEPS = {
-        Step.ORGANIZATION_TYPE: lambda self: self.domain_request.generic_org_type is not None,
-        Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
+        Step.ORGANIZATION_TYPE: lambda self: self.domain_request.organization_type is not None,
+        Step.TRIBAL_GOVERNMENT: lambda self: (
+            self.domain_request.tribe_name is not None
+            or self.domain_request.federal_tribe_id is not None
+            or self.domain_request.state_tribe_id is not None
+        ),
         Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
-        Step.ORGANIZATION_ELECTION: lambda self: self.domain_request.is_election_board is not None,
         Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
@@ -183,7 +185,7 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio:
             return self.domain_request.is_feb()
         return False
@@ -225,13 +227,14 @@ class DomainRequestWizard(TemplateView):
 
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
+            portfolio_id = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
                 requester=self.request.user,
-                portfolio=portfolio,
+                portfolio_id=portfolio_id,
             )
-            if portfolio and not self._domain_request.generic_org_type:
-                self._domain_request.generic_org_type = portfolio.organization_type
+            if portfolio_id and not self._domain_request.organization_type:
+                portfolio = Portfolio.objects.get(pk=portfolio_id)
+                self._domain_request.organization_type = portfolio.organization_type
                 self._domain_request.save()
         else:
             self._domain_request = DomainRequest.objects.create(requester=self.request.user)
@@ -330,6 +333,15 @@ class DomainRequestWizard(TemplateView):
         # refresh step_history to ensure we don't erroneously unlock unfinished
         # steps just because we visited it
         self.storage["step_history"] = self.db_check_for_unlocking_steps()
+
+        # Redirect federal users away from steps they shouldn't access
+        if (
+            not self.is_portfolio
+            and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+            and current_url not in ["organization_type", "organization_federal"]
+        ):
+            return self.goto("organization_federal")
+
         context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
@@ -471,6 +483,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": True,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         else:  # form is not complete
             context = {
@@ -481,6 +497,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": False,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.organization_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         context["domain_request_id"] = self.domain_request.id
         context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
@@ -674,19 +694,26 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return feb_anything_else_yes_no_form.is_valid()
-        anything_else_forms_valid = True
-        if not portfolio_anything_else_form.is_valid():
-            feb_anything_else_yes_no_form.mark_form_for_deletion()
-            anything_else_forms_valid = False
-        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
-            feb_anything_else_yes_no_form.fields["anything_else"].required = True
-            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
+            return portfolio_anything_else_form.is_valid()
+
+        # Determine, from the raw posted data, whether "Yes" was selected, so that we can require the text field
+        # before calling is_valid() on the form that contains it.
+        yes_no_value = feb_anything_else_yes_no_form.data.get(
+            feb_anything_else_yes_no_form.add_prefix("has_anything_else_text")
+        )
+        if yes_no_value == "True":
+            portfolio_anything_else_form.fields["anything_else"].required = True
+            portfolio_anything_else_form.fields["anything_else"].error_messages[
                 "required"
-            ] = "Please provide additional details you'd like us to know. \
-                If you have nothing to add, select 'No'."
-            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
-        return anything_else_forms_valid
+            ] = 'Provide additional details you\'d like us to know. If you have nothing to add, select "No."'
+
+        anything_else_forms_valid = portfolio_anything_else_form.is_valid()
+
+        # Always fold the yes/no form's own validity (e.g. the 'select one' error) into the result,
+        # regardless of the other form's outcome.
+        yes_no_valid = feb_anything_else_yes_no_form.is_valid()
+
+        return yes_no_valid and anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -702,12 +729,7 @@ class TribalGovernment(DomainRequestWizard):
 
 class OrganizationFederal(DomainRequestWizard):
     template_name = "domain_request_org_federal.html"
-    forms = [forms.OrganizationFederalForm]
-
-
-class OrganizationElection(DomainRequestWizard):
-    template_name = "domain_request_org_election.html"
-    forms = [forms.OrganizationElectionForm]
+    forms: list = []  # need this for linter
 
 
 class OrganizationContact(DomainRequestWizard):
@@ -726,7 +748,7 @@ class SeniorOfficial(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["generic_org_type"] = self.domain_request.generic_org_type
+        context["organization_type"] = self.domain_request.organization_type
         context["federal_type"] = self.domain_request.federal_type
         return context
 
@@ -747,7 +769,7 @@ class DotgovDomain(DomainRequestWizard):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context["generic_org_type"] = self.domain_request.generic_org_type
+        context["organization_type"] = self.domain_request.organization_type
         context["federal_type"] = self.domain_request.federal_type
         context["requires_feb_questions"] = self.requires_feb_questions()
         return context
@@ -833,15 +855,18 @@ class Purpose(DomainRequestWizard):
             option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
             if option == "new":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a new domain is required."
+                    "required": "Provide details on why a new domain is required.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "redirect":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a redirect is necessary."
+                    "required": "Provide details on why a redirect is necessary.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "other":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on how this domain will be used."
+                    "required": "Provide details on how this domain will be used.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             # If somehow none of these are true use the default error message
         else:
@@ -991,7 +1016,7 @@ class Requirements(DomainRequestWizard):
 
 class Review(DomainRequestWizard):
     template_name = "domain_request_review.html"
-    forms = []  # type: ignore
+    forms: list = []  # need this for linter
 
     def get_context_data(self):
         form_complete = self.form_is_complete()
@@ -1286,7 +1311,7 @@ class DomainRequestStatusViewOnly(DetailView):
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
-        context["portfolio"] = self.request.session.get("portfolio")
+        context["portfolio"] = get_portfolio_from_session(self.request.session)
 
         return context
 

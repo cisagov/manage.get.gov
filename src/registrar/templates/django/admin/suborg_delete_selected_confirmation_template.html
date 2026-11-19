@@ -1,0 +1,23 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+{% load i18n static %}
+{% block content %}
+
+<p>Are you sure you want to delete the selected suborganizations? </p>
+<p> The suborganization(s) will be removed from any domain and domain requests. </p>
+
+  <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_selected"/>
+        <input type="hidden" name="post" value="yes">
+        <ul>
+        {% for object in queryset %}
+         <input type="hidden" name="_selected_action" value="{{ object.id }}" />
+           <li><a href="{% url 'admin:registrar_suborganization_change' object.id %}">{{object}}</a> </li>
+        {% endfor %}
+        </ul>
+        <div class="submit-row">
+            <input type="submit" value="Yes, I'm sure" class="button danger-button"/>
+            <a href="#" class="button cancel-link">No, take me back</a>
+        </div>
+    </form>
+{% endblock %}

@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.apps import apps
 from django.forms import ValidationError
+from django.utils import timezone
 from registrar.utility.waffle import flag_is_active_for_user
 from django.contrib.auth import get_user_model
 import logging
@@ -427,13 +428,25 @@ def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
 
     # Fetch domain invitations matching the criteria
     invitations = DomainInvitation.objects.filter(
-        email=email, domain__domain_info__portfolio=portfolio, status=DomainInvitation.DomainInvitationStatus.INVITED
+        email__iexact=email,
+        domain__domain_info__portfolio=portfolio,
+        status=DomainInvitation.DomainInvitationStatus.INVITED,
     )
 
     # Call `cancel_invitation` on each invitation
     for invitation in invitations:
         invitation.cancel_invitation()
         invitation.save()
+
+    domain_role_invitations = UserDomainRole.objects.filter(
+        email__iexact=email,
+        domain__domain_info__portfolio=portfolio,
+        status=UserDomainRole.Status.INVITED,
+    )
+    for domain_role in domain_role_invitations:
+        domain_role.status = UserDomainRole.Status.REJECTED
+        domain_role.revoked_at = timezone.now()
+        domain_role.save()
 
     if user:
         # Remove user's domain roles for the current portfolio

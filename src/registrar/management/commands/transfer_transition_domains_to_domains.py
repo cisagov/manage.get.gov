@@ -189,6 +189,7 @@ class Command(BaseCommand):
                     # the created_at date was null (violated a key constraint).
                     # How do we want to handle this case?
                     target_domain.created_at = transition_domain_creation_date
+                    target_domain.x_registry_created_at = transition_domain_creation_date
 
                 if transition_domain_expiration_date is not None:
                     target_domain.expiration_date = transition_domain_expiration_date
@@ -296,6 +297,9 @@ class Command(BaseCommand):
 
         # check that the given e-mail is valid
         if domain_email is not None and domain_email != "":
+            # If domain hasn't been saved yet, no invitation can exist for it
+            if associated_domain.pk is None:
+                return DomainInvitation(email=domain_email.lower(), domain=associated_domain)
             # check that a domain invitation doesn't already
             # exist for this e-mail / Domain pair
             domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
@@ -320,7 +324,7 @@ class Command(BaseCommand):
         updated = False
 
         fields_to_update = [
-            "generic_org_type",
+            "organization_type",
             "federal_type",
             "federal_agency",
             "organization_name",
@@ -419,7 +423,7 @@ class Command(BaseCommand):
         }
 
         if valid_org_type:
-            new_domain_info_data["generic_org_type"] = org_type[0]
+            new_domain_info_data["organization_type"] = org_type[0]
         elif debug_on:
             logger.debug(f"No org type found on {domain.name}")
 
@@ -459,7 +463,7 @@ class Command(BaseCommand):
         # Get associated domain
         domain_data = Domain.objects.filter(name=transition_domain.domain_name)
         if not domain_data.exists():
-            logger.warn(
+            logger.warning(
                 f"{TerminalColors.FAIL}"
                 f"WARNING: No Domain exists for:"
                 f"{transition_domain_name}"

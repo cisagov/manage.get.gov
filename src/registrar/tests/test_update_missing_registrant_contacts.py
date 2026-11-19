@@ -1,0 +1,86 @@
+import logging
+from registrar.models import Domain, DomainInformation
+from registrar.models.public_contact import PublicContact
+from registrar.utility.enums import DefaultEmail
+
+from django.core.management import call_command
+from unittest.mock import patch
+
+from .common import create_user, MockEppLib
+
+logger = logging.getLogger(__name__)
+
+
+class TestUpdateMissingRegistrantContacts(MockEppLib):
+    def setUp(self):
+        super().setUp()
+        self.user_one = create_user(username="testuser", email="testuser@example.gov")
+        self.domain_one = Domain.objects.create(name="example.gov")
+        self.domain_info_one = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_one,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
+            city="Arlington",
+            state_territory="VA",
+            zipcode="22201",
+        )
+        self.domain_two = Domain.objects.create(name="exampletwo.gov", state=Domain.State.READY)
+        self.domain_info_two = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_two,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
+            city="Arlington",
+            state_territory="VA",
+            zipcode="22201",
+        )
+
+        self.domain_three = Domain.objects.create(name="examplethree.gov", state=Domain.State.DNS_NEEDED)
+        self.domain_info_three = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_three,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
+            city="Arlington",
+            state_territory="VA",
+            zipcode="22201",
+        )
+
+        self.contact_one = PublicContact(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            name="Registrant CSD/CB – Attn: .gov TLD",
+            org="Cybersecurity and Infrastructure Security Agency",
+            street1="1110 N. Glebe Rd",
+            city="Arlington",
+            sp="VA",
+            pc="22201",
+            cc="US",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+            voice="+1.8882820870",
+            pw="thisisnotapassword",
+        )
+
+        self.contact_one.registry_id = "contact"
+        self.contact_one.domain = self.domain_one
+
+        self.contact_one.save(skip_epp_save=True)
+
+    def test_command_update_missing_registrant_contacts_dry_run(self):
+        with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
+            call_command("update_missing_registrant_contacts", dry_run=True)
+            # Mock contacts count = 3
+            self.assertEqual(Domain.objects.all().count(), 3)
+            # Dry run so none should be added
+            self.assertEqual(update_mock.call_count, 0)
+
+    @patch("registrar.models.domain.Domain.addRegistrant")
+    @patch("registrar.models.domain.Domain._add_registrant_to_existing_domain")
+    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_epp_lib, mock_add_registrants):
+        call_command("update_missing_registrant_contacts", dry_run=False)
+        # Mock contacts count = 3
+        self.assertEqual(Domain.objects.all().count(), 3)
+        # Only 2 are valid registrant contacts, make sure those are updated
+        self.assertEqual(Domain.objects.filter(state__in=[Domain.State.READY, Domain.State.DNS_NEEDED]).count(), 2)
+        self.assertEqual(mock_add_registrants.call_count, 2)
+        self.assertEqual(mock_epp_lib.call_count, 2)

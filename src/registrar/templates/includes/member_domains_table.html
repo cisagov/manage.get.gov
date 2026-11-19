@@ -34,7 +34,7 @@
 
     <div class="section-outlined__header margin-bottom-3 grid-row" id="edit-member-domains__search">
       <!-- ---------- SEARCH ---------- -->
-      {% with label_text="Domains assigned to " %}
+      {% with label_text="Search by domains assigned to " %}
         {% if member %}
           {% with label_text=label_text|add:member.email item_name="member-domains" aria_label_text="Member domains search component" %}
             {% include "includes/search.html" %}

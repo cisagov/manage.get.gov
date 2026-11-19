@@ -14,12 +14,13 @@ on:
           - el
           - aa
           - ad
-          - litterbox
           - hotgov
           - meoward
           - backup
+          - tjh
+          - cp
+          - amt
           - ab
-          - ap
           - cw
           - testdb
           - acadia
@@ -29,11 +30,12 @@ on:
           - zion
           - potato
           - product
-          - es
-          - nl
           - rh
+          - sm
           - kma
-          - dg
+
+permissions:
+  contents: read
 
 jobs:
   reset-db:

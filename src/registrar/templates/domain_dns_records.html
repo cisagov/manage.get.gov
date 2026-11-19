@@ -14,41 +14,47 @@
 
 
 {% block domain_content %}
-<!-- Wrapped div to store showFormId to track across all the forms on the page, so only one form appears at a time-->
-<div x-data="{ showFormId: null, recordType: '' }" @record-submit-success.camel.window="showFormId = null">
+<!-- showFormId = which form is open (null = none, 0 = Add, record-id = edit row).
+     x-effect resets recordType whenever the Add form closes/reopens, so it starts clean. -->
+<div
+    x-data="{ showFormId: null, recordType: null , openComments: []}"
+    x-effect="showFormId === null || showFormId === 0 ? recordType = null : null"
+    @record-submit-success.camel.window="showFormId = null">
 
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
-        <div class="display-flex flex-align-center">
-            <div class="grid-col">
-                <h1>DNS records</h1>
-            </div>
-            
-            <div class="grid-col-auto">
-                <button
-                    class="usa-button"
-                    id="add-dnsrecord-button"
-                    type="button"
-                    x-on:click="showFormId = 0"
-                >
-                    Add record
-                </button>
-            </div>
-        </div>
-    
+        <h1>DNS records</h1>
+
         <div class="grid-row">
             <div class="grid-col-12">
-                <p class="measure-none">
-                    Review, add, and edit DNS records for this domain. Changes take effect once they’re saved.                </p>
+                <p class="measure-none margin-top-0">
+                    Review, add, and edit DNS records for this domain. Changes take effect once they’re saved.
+                </p>
                 <p class="measure-none">
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
+                <div class="margin-top-5 margin-bottom-1 tablet:display-flex tablet:flex-align-center">
+                    <div class="grid-col-12 margin-bottom-2 tablet:grid-col tablet:margin-bottom-0">
+                        <h2 class="margin-top-0  margin-bottom-2 tablet:margin-bottom-0">Manage DNS records</h2>
+                    </div>
+                    <div class="grid-col-12 margin-bottom-1 tablet:grid-col-auto">
+                        <button
+                            class="usa-button mobile-lg:width-full"
+                            id="add-dnsrecord-button"
+                            type="button"
+                        >
+                            Add record
+                        </button>
+                    </div>
+                </div>
 
-                <div x-cloak x-show="showFormId == 0">
+                <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
-                
-                    <section class="section-outlined section-outlined--extra-padding">
-                    <form 
+
+                    <section class="border radius-lg border-base-lighter padding-3"
+                        :class="{ 'padding-bottom-5': !recordType }"
+                        x-init="recordType = ($el.querySelector('#id_type') || {}).selectedIndex || recordType">
+                    <form
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
                         hx-swap="innerHTML show:top"
@@ -65,12 +71,25 @@
              </div>
         </div>
     </div>
-    
+
+    {% include 'includes/domain_dns_records_modals_and_openers.html' %}
+
     <div id="dns-records-table-container">
         {% include "domain_dns_records_table.html" %}
     </div>
 
-    {% include "domain_dns_nameservers_table.html" %}
-
+    <h2 class="h3 margin-top-6 margin-bottom-2">Authoritative name servers</h2>
+    <div class="grid-row">
+        <div class="grid-col-12">
+            <p class="measure-none margin-bottom-1 margin-top-0">
+                Name servers tell the internet where to find your domain’s DNS records. Domains enrolled in .gov DNS hosting are assigned default name servers that cannot be changed.
+            </p>
+        </div>
     </div>
+    <ul class="usa-list">
+        {% for nameserver in nameservers %}
+            <li class="margin-top-1">{{nameserver}}</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endblock %}  {# domain_content #}

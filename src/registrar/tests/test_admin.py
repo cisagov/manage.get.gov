@@ -1,12 +1,11 @@
 from datetime import datetime
 from django.utils import timezone
-from django.test import TestCase, RequestFactory, Client
+from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from registrar import models
 from registrar.utility.constants import BranchChoices
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from waffle.testutils import override_flag
 from django_webtest import WebTest  # type: ignore
 from api.tests.common import less_console_noise_decorator
 from bs4 import BeautifulSoup
@@ -14,6 +13,7 @@ from django.urls import reverse
 from registrar.admin import (
     DomainAdmin,
     DomainInvitationAdmin,
+    DnsRecordAdmin,
     ListHeaderAdmin,
     MyUserAdmin,
     AuditedAdmin,
@@ -21,7 +21,9 @@ from registrar.admin import (
     DomainInformationAdmin,
     MyHostAdmin,
     PortfolioInvitationAdmin,
+    UserPortfolioPermissionAdmin,
     UserDomainRoleAdmin,
+    UserDomainRoleForm,
     UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
     FsmModelResource,
@@ -32,11 +34,13 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
+    SuborganizationAdmin,
 )
 from registrar.models import (
     Domain,
     DomainRequest,
     DomainInformation,
+    DnsRecord,
     DraftDomain,
     User,
     DomainInvitation,
@@ -70,11 +74,15 @@ from .common import (
     GenericTestHelper,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.utility.enums import DNSRecordTypes
 from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from waffle.testutils import override_flag
 
 import logging
 
@@ -1149,6 +1157,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.factory = RequestFactory()
         self.superuser = create_superuser()
         self.testuser = create_test_user()
         self.omb_analyst = create_omb_analyst_user()
@@ -1182,29 +1191,6 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_has_change_form_description(self):
-        """Tests if this model has a model description on the change form view"""
-        self.client.force_login(self.superuser)
-
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
-
-        response = self.client.get(
-            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
-            follow=True,
-        )
-
-        # Make sure that the page is loaded correctly
-        self.assertEqual(response.status_code, 200)
-
-        # Test for a description snippet
-        self.assertContains(
-            response,
-            "If you add someone to a portfolio here, it won't trigger any email notifications.",
-        )
-
-    @less_console_noise_decorator
     def test_delete_confirmation_page_contains_static_message(self):
         """Ensure the custom message appears in the delete confirmation page."""
         self.client.force_login(self.superuser)
@@ -1218,6 +1204,540 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Check if the response contains the expected static message
         expected_message = "If you remove someone from a portfolio here, it won't trigger any email notifications."
         self.assertIn(expected_message, response.content.decode("utf-8"))
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    def test_add_form_includes_invitation_and_permission_controls(self):
+        """User, portfolio, invitation, and permission controls are shown when adding."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
+        self.assertContains(response, 'data-placeholder="Search by email address"')
+        self.assertContains(response, "or enter a new email address to send an invitation")
+        self.assertContains(response, 'id="id_portfolio"')
+        self.assertContains(response, "Invitation status")
+        self.assertContains(response, 'id="id_send_email"')
+        self.assertContains(response, 'id="id_role"')
+        self.assertContains(response, 'id="id_domain_permissions"')
+        self.assertContains(response, 'id="id_request_permissions"')
+        self.assertContains(response, 'id="id_member_permissions"')
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    def test_add_form_uses_direct_permission_fields_when_invitation_flag_off(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'id="id_portfolio"')
+        self.assertContains(response, 'id="id_role"')
+        self.assertNotContains(response, 'data-tags="true"')
+        self.assertNotContains(response, 'id="id_send_email"')
+        self.assertNotContains(response, "Invitation status")
+
+    def test_form_accepts_email_and_auto_populates_existing_user(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.email.upper(),
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["user"], self.testuser)
+        self.assertEqual(form.cleaned_data["email"], self.testuser.email.lower())
+
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
+
+    def test_form_rejects_email_with_multiple_users(self):
+        User.objects.create(username="duplicate", email=self.testuser.email.upper())
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("More than one user account exists", form.errors["user"][0])
+
+    def test_form_rerenders_unknown_email_tag_without_user_id_error(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "new.person@example.gov",
+                "portfolio": self.portfolio.id,
+                "role": "",
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("new.person@example.gov", str(form["user"]))
+
+    def test_form_does_not_add_status_error_for_invalid_email(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "not-an-email",
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["user"],
+            ["Enter an email address in the required format, like name@example.gov."],
+        )
+
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @override_settings(IS_PRODUCTION=False)
+    def test_add_view_does_not_show_success_when_invitation_email_is_not_allowed(self):
+        self.client.force_login(self.superuser)
+        blocked_email = "blocked.person@example.gov"
+
+        response = self.client.post(
+            reverse("admin:registrar_userportfoliopermission_add"),
+            data={
+                "user": blocked_email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, blocked_email)
+        self.assertContains(response, "allowed emails list.")
+        self.assertNotContains(response, "was added successfully")
+        self.assertFalse(UserPortfolioPermission.objects.filter(email=blocked_email).exists())
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_unknown_email_forces_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email="new.person@example.gov")
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "new.person@example.gov",
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertIsNone(permission.user)
+        self.assertEqual(permission.email, "new.person@example.gov")
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertEqual(permission.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(
+            request,
+            f"new.person@example.gov has been invited to {self.portfolio}. Member role: Admin.",
+        )
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_existing_user_without_email_adds_permission(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.id,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.testuser)
+        self.assertEqual(permission.email, self.testuser.email.lower())
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNone(permission.invited_by)
+        mock_send_email.assert_not_called()
+        mock_messages_success.assert_called_once_with(
+            request,
+            f"{self.testuser.email.lower()} has been added to {self.portfolio}. Member role: Admin.",
+        )
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_existing_user_with_email_sends_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email=self.testuser.email)
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.id,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "on",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.testuser)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertEqual(permission.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(
+            request,
+            f"{self.testuser.email.lower()} has been added to {self.portfolio}. Member role: Admin.",
+        )
+
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    @patch("registrar.admin.create_portfolio_permission_or_invitation")
+    def test_save_with_invitation_flag_off_uses_direct_model_save(self, mock_create_permission):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        permission = UserPortfolioPermission(
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, None, False)
+
+        self.assertTrue(UserPortfolioPermission.objects.filter(user=self.testuser, portfolio=self.portfolio).exists())
+        mock_create_permission.assert_not_called()
+
+    def test_delete_invitation_without_user(self):
+        permission = UserPortfolioPermission.objects.create(
+            email="new.person@example.gov",
+            user=None,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            status=UserPortfolioPermission.Status.INVITED,
+        )
+
+        permission.delete()
+
+        self.assertFalse(UserPortfolioPermission.objects.filter(email="new.person@example.gov").exists())
+
+    @patch("registrar.models.user_portfolio_permission.cleanup_after_portfolio_member_deletion")
+    def test_delete_permission_with_user_and_no_email_still_runs_cleanup(self, mock_cleanup):
+        self.testuser.email = ""
+        self.testuser.save()
+        permission = UserPortfolioPermission.objects.create(
+            email="",
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+
+        permission.delete()
+
+        mock_cleanup.assert_called_once_with(portfolio=self.portfolio, email="", user=self.testuser)
+
+
+class TestUserDomainRoleInvitationAdmin(TestCase):
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.testuser = create_test_user()
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
+        self.domain = Domain.objects.create(name="test.gov")
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.domain,
+            portfolio=self.portfolio,
+            requester=self.superuser,
+        )
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    def test_add_form_includes_invitation_controls(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
+        self.assertContains(response, 'data-placeholder="Search by email address"')
+        self.assertContains(response, "or enter a new email address to send an invitation")
+        self.assertContains(response, 'id="id_domain"')
+        self.assertContains(response, "Invitation status")
+        self.assertContains(response, 'id="id_send_email"')
+        self.assertNotContains(response, 'id="id_role"')
+
+    def test_form_does_not_add_status_error_for_invalid_email(self):
+        form = UserDomainRoleForm(
+            data={
+                "user": "not-an-email",
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["user"],
+            ["Enter an email address in the required format, like name@example.gov."],
+        )
+
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserDomainRoleForm(
+            data={
+                "user": email,
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_unknown_email_forces_invitation_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email="new.person@example.gov")
+        form = UserDomainRoleForm(
+            data={
+                "user": "new.person@example.gov",
+                "domain": self.domain.id,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        self.assertIsNone(role.user)
+        self.assertEqual(role.email, "new.person@example.gov")
+        self.assertEqual(role.role, UserDomainRole.Roles.MANAGER)
+        self.assertEqual(role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(role.invited_by, self.superuser)
+        mock_send_domain_email.assert_called_once_with(
+            email="new.person@example.gov",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+            skip_existing_invitation_check=True,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="new.person@example.gov",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_messages_success.assert_has_calls(
+            [
+                call(
+                    request,
+                    f"new.person@example.gov has been invited to become a member of {self.portfolio}",
+                ),
+                call(request, "new.person@example.gov has been invited to the domain: test.gov"),
+            ]
+        )
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_analyst_save_existing_user_email_adds_user_to_domain_portfolio_without_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        analyst = create_omb_analyst_user()
+        other_portfolio = Portfolio.objects.create(
+            organization_name="Other Portfolio",
+            requester=self.superuser,
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.testuser,
+            portfolio=other_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+        form = UserDomainRoleForm(
+            data={
+                "user": self.testuser.email,
+                "domain": self.domain.id,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = analyst
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        portfolio_permission = UserPortfolioPermission.objects.get(
+            user=self.testuser,
+            portfolio=self.portfolio,
+        )
+        self.assertEqual(role.user, self.testuser)
+        self.assertEqual(role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(portfolio_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+        self.assertEqual(portfolio_permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        mock_send_domain_email.assert_not_called()
+        mock_send_portfolio_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_analyst_save_existing_portfolio_member_with_email_sends_only_domain_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        analyst = create_omb_analyst_user()
+        models.AllowedEmail.objects.create(email=self.testuser.email)
+        UserPortfolioPermission.objects.create(
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+        form = UserDomainRoleForm(
+            data={
+                "user": self.testuser.email,
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = analyst
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        self.assertEqual(role.user, self.testuser)
+        self.assertEqual(role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(role.invited_by, analyst)
+        self.assertEqual(
+            UserPortfolioPermission.objects.filter(user=self.testuser, portfolio=self.portfolio).count(),
+            1,
+        )
+        mock_send_domain_email.assert_called_once_with(
+            email=self.testuser.email,
+            requestor=analyst,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=self.testuser,
+            skip_existing_invitation_check=True,
+        )
+        mock_send_portfolio_email.assert_not_called()
+        mock_messages_success.assert_called_once_with(
+            request,
+            f"{self.testuser.email} has been added to the domain: {self.domain}",
+        )
+
+    @override_flag("user_domain_role_invitations", active=False)
+    @patch("registrar.admin.create_domain_role_or_invitation")
+    def test_save_with_invitation_flag_off_uses_direct_model_save(self, mock_create_role):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        role = UserDomainRole(
+            user=self.testuser,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, role, None, False)
+
+        self.assertTrue(UserDomainRole.objects.filter(user=self.testuser, domain=self.domain).exists())
+        mock_create_role.assert_not_called()
 
 
 class TestPortfolioInvitationAdmin(TestCase):
@@ -1372,7 +1892,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1412,7 +1934,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_error.assert_called_once_with(request, "User is already a member of this portfolio.")
+        mock_messages_error.assert_called_once_with(
+            request, "staff@example.com is already a member of this organization."
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1454,7 +1978,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
         # The invitation is not retrieved
         portfolio_invitation_mock_retrieve.assert_called_once()
@@ -1497,7 +2023,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
         # The invitation is not retrieved
         portfolio_invitation_mock_retrieve.assert_not_called()
@@ -1529,8 +2057,8 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
         msg = (
-            "Email service unavailable. Try again, and if the problem persists, "
-            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+            "Email service unavailable. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -1601,8 +2129,8 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         msg = (
             "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
-            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
-            'class="usa-link" target="_blank">contact us</a>.'
+            "Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -2117,7 +2645,7 @@ class TestDomainInformationAdmin(TestCase):
 
         # Create a fake domain request. State will be NY (2).
         _domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.IN_REVIEW, generic_org_type="interstate"
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW, organization_type="interstate"
         )
         _domain_request.approve()
 
@@ -2357,7 +2885,6 @@ class TestDomainInformationAdmin(TestCase):
                 "portfolio_zipcode",
                 "portfolio_urbanization",
                 "other_contacts",
-                "is_election_board",
                 "federal_agency",
                 "requester",
                 "type_of_work",
@@ -3065,8 +3592,8 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, '<table class="usa-table">')
 
         # cleanup
-        portfolio.delete()
         UserPortfolioPermission.objects.filter(portfolio=portfolio).delete()
+        portfolio.delete()
 
     @less_console_noise_decorator
     def test_user_no_portfolio_does_not_appear_no_requests_and_no_domains_assoc_with_no_port(self):
@@ -3923,8 +4450,7 @@ class TestPublicContactAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
@@ -4279,7 +4805,14 @@ class TestPortfolioAdmin(TestCase):
             ],
         )
 
-        url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
+        admin_url = (
+            reverse("admin:registrar_userportfoliopermission_changelist")
+            + f"?portfolio={self.portfolio.id}&member_type={UserPortfolioPermissionAdmin.MEMBER_TYPE_ADMIN}"
+        )
+        member_url = (
+            reverse("admin:registrar_userportfoliopermission_changelist")
+            + f"?portfolio={self.portfolio.id}&member_type={UserPortfolioPermissionAdmin.MEMBER_TYPE_BASIC}"
+        )
         user4_portfolio_perm_url = reverse(
             "admin:registrar_userportfoliopermission_change", args=[user_portfolo_perm_4.id]
         )
@@ -4294,8 +4827,8 @@ class TestPortfolioAdmin(TestCase):
         # copy all button appears on page
         self.assertContains(portfolio_change_form, "Copy all", count=2)
 
-        self.assertContains(portfolio_change_form, f'<a href="{url}">2 admins</a>')
-        self.assertContains(portfolio_change_form, f'<a href="{url}">2 basic members</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{admin_url}">2 admins</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{member_url}">2 basic members</a>')
 
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
@@ -4458,7 +4991,7 @@ class TestTransferUser(WebTest):
 
         user_portfolio_permission.refresh_from_db()
 
-        self.assertEquals(user_portfolio_permission.user, self.user1)
+        self.assertEqual(user_portfolio_permission.user, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles_no_error_when_duplicates(self):
@@ -4492,8 +5025,8 @@ class TestTransferUser(WebTest):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
 
-        self.assertEquals(domain_request.requester, self.user2)
-        self.assertEquals(domain_request.investigator, self.user2)
+        self.assertEqual(domain_request.requester, self.user2)
+        self.assertEqual(domain_request.investigator, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4501,15 +5034,15 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_request.refresh_from_db()
 
-        self.assertEquals(domain_request.requester, self.user1)
-        self.assertEquals(domain_request.investigator, self.user1)
+        self.assertEqual(domain_request.requester, self.user1)
+        self.assertEqual(domain_request.investigator, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_information_requester(self):
         """Assert that domain fields get transferred"""
         domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user2)
 
-        self.assertEquals(domain_information.requester, self.user2)
+        self.assertEqual(domain_information.requester, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4517,7 +5050,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_information.refresh_from_db()
 
-        self.assertEquals(domain_information.requester, self.user1)
+        self.assertEqual(domain_information.requester, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role(self):
@@ -4538,8 +5071,8 @@ class TestTransferUser(WebTest):
         user_domain_role1.refresh_from_db()
         user_domain_role2.refresh_from_db()
 
-        self.assertEquals(user_domain_role1.user, self.user1)
-        self.assertEquals(user_domain_role2.user, self.user1)
+        self.assertEqual(user_domain_role1.user, self.user1)
+        self.assertEqual(user_domain_role2.user, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role_no_error_when_duplicate(self):
@@ -4581,7 +5114,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         vip.refresh_from_db()
 
-        self.assertEquals(vip.requestor, self.user1)
+        self.assertEqual(vip.requestor, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_deletes_old_user(self):
@@ -4656,8 +5189,7 @@ class TestDomainAdminState(TestCase):
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
 
     def test_domain_state_remains_unknown_on_refresh(self):
         """
@@ -4687,3 +5219,194 @@ class TestDomainAdminState(TestCase):
         response = self.client.get(url)
         self.assertContains(response, "Unknown")
         self.assertNotContains(response, "dns needed")
+
+
+class TestSuborganizationAdmin(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.site = AdminSite()
+        self.admin = SuborganizationAdmin(model=Suborganization, admin_site=self.site)
+
+        self.portfolio = Portfolio.objects.create(organization_name="test portfolio", requester=self.superuser)
+
+        self.sub_orgs = [
+            Suborganization.objects.create(name="test_sub_org1", portfolio=self.portfolio),
+            Suborganization.objects.create(name="test_sub_org2", portfolio=self.portfolio),
+        ]
+
+        domain_1 = Domain.objects.create(name="test_suborg.gov")
+        domain_2 = Domain.objects.create(name="test_suborg2.gov")
+
+        self.domain_infos = [
+            DomainInformation.objects.create(domain=domain_1, requester=self.superuser),
+            DomainInformation.objects.create(domain=domain_2, requester=self.superuser),
+        ]
+
+        draft_domain_1 = DraftDomain.objects.create(name="testdomainrequest1.gov")
+        draft_domain_2 = DraftDomain.objects.create(name="testdomainrequest2.gov")
+
+        self.domain_reqs = [
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_1,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_2,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+        ]
+
+    def tearDown(self):
+        LogEntry.objects.all().delete()
+
+    def test_logs_delete_suborg_with_a_single_item(self):
+        """
+        Test deleting a suborg with a single domain request that has this suborg
+        A log should be generated that indicates the domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+        self.domain_req = self.domain_reqs[1]
+
+        self.domain_req.sub_organization = self.sub_orgs[0]
+        self.domain_req.save()
+
+        self.admin.delete_model(request, self.sub_orgs[0])
+
+        self.domain_req.refresh_from_db()
+
+        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id)).first()
+
+        self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
+        self.assertEqual(self.domain_req.sub_organization, None)
+        self.assertEqual(log.object_id, self.domain_req.id)
+        self.assertEqual(log.object_repr, str(self.domain_req))
+
+    def test_logs_delete_suborg_with_multiple_domains_and_domain_requests(self):
+        """
+        Test deleting a single suborg with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[1]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domain_infos[0].sub_organization = self.sub_orgs[1]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
+
+        self.admin.delete_model(request, self.sub_orgs[1])
+
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
+
+        for obj in all_domain_and_domain_requests:
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
+            self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
+            self.assertEqual(obj.sub_organization, None)
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))
+
+    def test_logs_delete_queryset_with_multiple_domains_and_domain_requests(self):
+        """
+        Test deleting via delete_queryset multiple suborgs with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[0]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domain_infos[0].sub_organization = self.sub_orgs[0]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
+
+        queryset = Suborganization.objects.filter(id__in=[self.sub_orgs[0].id, self.sub_orgs[1].id])
+        self.admin.delete_queryset(request, queryset)
+
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
+        sub_org_1_log = {"sub_organization": ["test_sub_org2", None]}
+        sub_org_2_log = {"sub_organization": ["test_sub_org1", None]}
+        for obj in all_domain_and_domain_requests:
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
+
+            was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
+            self.assertEqual(obj.sub_organization, None)
+            self.assertEqual(was_sub_org_deleted_log, True)
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))
+
+
+class TestAdminLogin(TestCase):
+    """Test /admin/login/ unauthenticated users are redirected to
+    Login.gov, staff go to the admin index, and non-staff see the admin login
+    page showing who they are authenticated as."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = create_superuser()
+
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_unauthenticated_redirects_to_login_gov(self):
+        response = self.client.get("/admin/login/")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("/openid/login"))
+
+    def test_staff_redirects_to_admin_index(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/login/")
+        self.assertRedirects(response, "/admin/")
+
+    def test_non_staff_sees_their_user_id(self):
+        user = create_test_user()
+        self.client.force_login(user)
+        response = self.client.get("/admin/login/")
+        self.assertContains(response, user.get_username(), status_code=200)
+
+
+class TestDnsRecordAdmin(TestCase):
+    """DNS Records in /admin are read-only"""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = DnsRecordAdmin(model=DnsRecord, admin_site=AdminSite())
+        self.request = RequestFactory().get("/admin/registrar/dnsrecord/")
+        self.mx_record = DnsRecord(type=DNSRecordTypes.MX, name="example.gov", priority=10)
+        self.a_record = DnsRecord(type=DNSRecordTypes.A, name="www")
+
+    def test_all_displayed_fields_are_read_only_success(self):
+        for record in (self.mx_record, self.a_record):
+            fields = self.admin.get_fields(self.request, record)
+            readonly = self.admin.get_readonly_fields(self.request, record)
+            self.assertEqual(set(fields) - set(readonly), set())
+
+    def test_mx_record_displays_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.mx_record)
+        self.assertIn("priority", fields)
+
+    def test_a_record_does_not_display_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.a_record)
+        self.assertNotIn("priority", fields)

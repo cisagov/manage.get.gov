@@ -55,7 +55,6 @@ for step, view in [
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
     (Step.TRIBAL_GOVERNMENT, views.TribalGovernment),
     (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
-    (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
     (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
     (Step.SENIOR_OFFICIAL, views.SeniorOfficial),
@@ -251,6 +250,7 @@ urlpatterns = [
         get_rejection_email_for_user_json,
         name="get-rejection-email-for-user-json",
     ),
+    path("admin/login/", views.admin_login, name="admin-login"),
     path("admin/", admin.site.urls),
     path(
         "reports/export_members_portfolio/",
@@ -378,6 +378,11 @@ urlpatterns = [
     ),
     path(
         "invitation/<int:domain_invitation_pk>/cancel",
+        views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
+        name="invitation-cancel",
+    ),
+    path(
+        "domain-role-invitation/<int:user_domain_role_pk>/cancel",
         views.DomainInvitationCancelView.as_view(http_method_names=["post"]),
         name="invitation-cancel",
     ),

@@ -1,34 +1,86 @@
-# Downtime Incident Management Runbook
+# Downtime & Incident Management Runbook
 
- Our team has agreed upon steps for handling incidents that cause our site to go offline or become unusable for users. For this document, an incident refers to one in which manage.get.gov is offline or displaying error 400/500 HTTP errors on all pages. However, for this document to apply the cause of the problem must be a critical bug in our code or one of our providers having an outage, not to be confused with a cyber security incident. This document should not be used in response to any type of cyber security incident.
+For the .gov registry and registrar, an incident is defined as an event that impacts the confidentiality, availability, or integrity of the registrar that isn’t expected. Some examples include:
 
-## Response management rules
+* When get.gov and/or manage.get.gov are completely offline/unavailable to users;  
+* The application is returning critical errors unexpectedly; or  
+* Data is able to be accessed by someone other than the intended audience.
 
-The following set of rules should be followed while an incident is in progress.
+This runbook is primarily designed to cover our response for incidents that are a result of critical bugs in the .gov codebase or an outage with one of our providers. However, since the root cause of a problem may not be immediately evident, following these procedures will assist in identifying and mitigating the issue, even if that source is an intentional, malign actor.
 
-- The person who first notices that the site is down is responsible for using @here and notifying in #dotgov-announce that production is down.
-  - This applies to any team member, including new team members and non-developers.
-- If no engineer has acknowledged the announcement within 10 minutes, whoever discovered the site was down should call each developer via the Slack DM huddle feature. If there is no response, this should escalate to a phone call.
-  - When calling, go down the [phone call list](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit) from top to bottom until someone answers who is available to help.
-  - If this incident occurs outside of regular working hours, choosing to help is on a volunteer basis, and answering a call doesn't mean an individual is truly available to assist.
-- Once an engineer is online, they should immediately start a huddle in the #dotgov-redalert channel to begin troubleshooting.
-- All available engineers should join the huddle once they see it.
-  - If downtime occurs outside of working hours, team members who are off for the day may still be pinged and called but are not required to join if unavailable to do so.
-- Uncomment the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9), so it is transparent to users that we know about the issue on manage.get.gov.
-  - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
-- Uncomment the [banner on manage.get.gov's base template](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/base.html#L78).
-  - Designers or Developers should be able to make this change; if designers are online and can help with this task, that will allow developers to focus on fixing the bug.
-- If the issue persists for three hours or more, follow the [instructions for enabling/disabling a redirect to get.gov](https://docs.google.com/document/d/1PiWXpjBzbiKsSYqEo9Rkl72HMytMp7zTte9CI-vvwYw/edit).
+Certain types of incidents, such as when the root cause is determined to be malware, ransomware, denial of service, and the like, may require additional measures and assessment, including coordination with CISA's incident response or privacy offices. Those are not detailed in this runbook.
 
-## Post Incident
+## Availability and developer support
 
-The following checklist should be followed after the site is back up and running.
+The .gov team's availability spans normal business hours for CONUS. The team also includes contract developers. 
 
-- [ ] Message in #dotgov-announce with an @here saying the issue is resolved.
-- [ ] If the redirect was used, refer to the [instructions for enabling/disabling a redirect to get.gov](https://docs.google.com/document/d/1PiWXpjBzbiKsSYqEo9Rkl72HMytMp7zTte9CI-vvwYw/edit) to turn off this redirect. Double-check in the browser that this redirect is no longer occurring (the change may take a few minutes to take full effect).
-- [ ] Remove the [banner on get.gov](https://github.com/cisagov/get.gov/blob/0365d3d34b041cc9353497b2b5f81b6ab7fe75a9/_includes/header.html#L9) by commenting it out.
-- [ ] Write up what happened and when; if the cause is already known, write that as well. This is a draft for internal communications and not for any public facing site and can be as simple as using bullet points.
-- [ ] If the cause is not known yet, developers should investigate the issue as the highest priority task.
-- [ ] As close to the event as possible, such as the next day, perform a team incident retro that is an hour long. The goal of this meeting should be to inform all team members what happened and what is being done now and to collect feedback on what could have been done better. This is where the draft write up of what happened will be useful.
-- [ ] After the retro and once the bug is fully identified, an engineer should assist in writing an incident report and may be as detailed as possible for future team members to refer to. That document should be places in the [Incidents folder](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu).
-- [ ] After creating the document above, the lead engineer make a draft of content that will go in the get.gov Incidents section. This Word document should be shared and reviewed by the product team before a developer adds it to get.gov.
+For incident management purposes, the following should be noted:
+
+* Engineers who are online should join the incident-related huddle as soon as practical. Engineers who are off may be pinged or invited to join, but are not obligated to assist.
+
+## Something’s wrong\! Now what?
+
+1. Announce incident using **@here** in \#dotgov-announce Slack channel  
+   1. Anyone can begin an incident, including new team members and non-developers.  
+2. If no developers have acknowledged the incident announcement within 10 minutes, the person who called the incident should initiate a Slack Huddle call in DMs with individual engineers.  
+   1. If there are no responses, escalate to a phone call, utilizing the [.gov emergency contact list document](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit?tab=t.0#heading=h.jzudhpsxyys2)  
+3. Start a huddle in \#dotgov-redalert to begin incident response  
+    * Identify **incident lead**, who will coordinate across *engineers and team* for necessary actions.  
+    * Identify any required participants for incident response (ie, if the incident requires specific engineers or leads because of its scope)  
+    * Designate **communication lead**  
+      * This will typically not be an engineer, but someone who will assist in drafting banner content; communicating outside of the .gov team; and updating the team and the incident document.  
+    * *Communication lead* creates a copy of our incident response template Google Doc and begins comms as detailed in the “Communications” section.  
+      * Template document to copy: : [0 - Template - Incident Dashboard + Report](https://docs.google.com/document/d/1cSRso-d71EafJKt8_3RXj37Oz_lPpM0n05leiyyHiLc/edit?usp=drive_link)  
+      * Location: [incidents \- .gov \- Google Drive](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu) folder  
+      * Name: `YYYY-MM-DD \- Incident \- {short description}`
+4. **Troubleshoot, patch, or resolve issue**   
+5. Make updates to the incident report document and status information on the Dashboard tab of the document  
+6. Schedule a team retrospective, typically within 24 hours of resolution  
+   1. Review “Incident Report” tab for a list of questions and areas to visit during the retrospective to create a complete incident report  
+7. Update incident report status in the incident document to indicate completion.
+
+### Communications
+
+#### As soon as possible once an incident is called
+
+1. Identify the issue sufficiently to have 1-3 sentences explaining what’s happening, to provide the following notifications:  
+   1. CISA incident response team  
+      1. Should be communicated by a federal employee, share what we know, and indicate we’ll offer regular updates as we can.  
+   2. .gov Analysts (via internal Teams channel)  
+      1. Be sure to include a description of what the Analysts and/or users may see, so they can triage any incoming questions  
+2. Determine if an [alert banner](https://designsystem.digital.gov/components/alert/) should be added to get.gov and/or manage.get.gov.   
+   1. Draft content, get review and approval from Program team  
+   2. Add banner(s)  
+      1. *For get.gov*: uncomment the desired banner in [header.html](https://github.com/cisagov/get.gov/blob/main/_includes/header.html) and edit that banner’s content in [\_includes](https://github.com/cisagov/get.gov/tree/main/_includes). ([Example](https://github.com/cisagov/get.gov/pull/370/files))  
+      2. *For manage.get.gov*: update [base.html](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/base.html#L78) and then edit that banner’s content in [includes](https://github.com/cisagov/manage.get.gov/tree/main/src/registrar/templates/includes). ([Example](https://github.com/cisagov/manage.get.gov/pull/3459/files#diff-24a19f8e02cf98f078ebc9fdcd0a18db8b32c29a52f5f366caf7b6a4eb083f71))  
+3. Program Manager and/or program team should determine if additional communications are needed within CISA, such as to CB, CSD, or CISA leadership
+
+#### Ongoing
+
+1. Approximately \~hourly, or if significant new information is determined, make updates:  
+   1. Incident response document Dashboard tab  
+   2. IRT   
+   3. Analysts  
+   4. Banners, if appropriate  
+   5. Inside CB, CSD, CISA, as appropriate  
+   6. Consider if it is appropriate to directly notify users via emails  
+2. Continue to monitor incident actions and communications to add to the timeline in the incident response document.
+
+#### On incident resolution
+
+1. Update the following to provide notice that the incident is resolved  
+   1. In \#dotgov-announce Slack channel  
+   2. IRT  
+   3. Analysts  
+   4. Banner(s) removed  
+   5. Any others that were notified inside, outside CISA  
+2. Anyone on the .gov team who participated in the incident should, as soon as practicable, add timeline events, logs, or other information about the incident to the incident report document, while the information is fresh.  
+3. If the issue is resolved, but cause unknown, developers should investigate as the highest priority task.  
+4. Program team or incident lead will schedule an hour-long retrospective session for the team. The retro is an opportunity to do the following:  
+   1. Review the timeline of the incident and ensure it’s accurate  
+   2. Identify anything that contributed to the incident \- not just causes, but conditions that worked together to create the incident, and escalate to the severity it was  
+   3. Identify anything that helped mitigate impacts of the incident
+   4. Review what we learned, and any risks that were uncovered  
+   5. Propose and agree on follow-up actions, including necessary GitHub issues, and owners for completion of follow-up activities
+
+After retrospective, the program team coordinates to finalize the Incident Report using the template in the incident report document. The incident report is a consolidated narrative, timeline, and assessment of the incident to share internally. The program team will also determine if any external notifications are warranted, such as emails to users, published to get.gov, etc.

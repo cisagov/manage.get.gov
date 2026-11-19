@@ -1,13 +1,12 @@
 import logging
 from faker import Faker
 
+from bao_client import BaoClient
+from django.conf import settings
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.models import Domain
-from registrar.models.dns.dns_record import DnsRecord
-from registrar.models.dns.dns_zone import DnsZone
-from registrar.models.dns.dns_account import DnsAccount
-from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.enums import DNSRecordTypes
+from registrar.tests.helpers.dns_data_generator import create_dns_record
 
 from bao_client import BaoClient
 
@@ -24,9 +23,16 @@ class DnsRecordFixture(DomainFixture):
     @classmethod
     def load(cls):
         """Create DNS zones and records for approved domains enrolled in DNS hosting."""
+        if not settings.DNS_MOCK_EXTERNAL_APIS:
+            logger.info(
+                "Skipping DNS record fixture — DNS_MOCK_EXTERNAL_APIS is False. "
+                "Enroll domains via the admin to provision real Cloudflare resources."
+            )
+            return
+
         try:
             # Get approved domains that are enrolled in DNS hosting
-            domains = Domain.objects.filter(is_enrolled_in_dns_hosting=True, dnszone__isnull=True)[:5]
+            domains = Domain.objects.filter(is_enrolled_in_dns_hosting=True)[:5]
 
             logger.info(f"Found {domains.count()} domains enrolled in DNS hosting (taking first 5)")
 
@@ -34,115 +40,108 @@ class DnsRecordFixture(DomainFixture):
                 logger.info("No domains available. Make sure domains have is_enrolled_in_dns_hosting=True")
                 return
 
-            dns_zones_to_create = []
-            dns_records_to_create = []
-
             bao = BaoClient()
-            bao.store_global_api_key("test_global-api-key")
+            bao.store_global_api_key("test_global_api_key")
 
-            for domain in domains:
-                # Create or get a DNS account for this domain
-                account_name = make_dns_account_name(domain.name)
-                dns_account, created = DnsAccount.objects.get_or_create(name=account_name)
-                if created:
-                    logger.info(f"Created DNS account: {account_name}")
+            zones = []
+            for d in domains:
+                zone = d.dnszone
+                zones.append(zone)
 
-                    account_key = dns_account.name.replace(" ", "-")
-
-                    bao.store_account_tokens(account_key, {
-                        "create_token": f"test-create-token-{dns_account.id}",
-                        "settings_write": f"test-settings-write-{dns_account.id}",
-                        "settings_read": f"test-settings-read-{dns_account.id}",
-                        "dns_write": f"test-dns_write-{dns_account.id}",
-                        "dns_read": f"test-dns-read-{dns_account.id}",
-                    })
-                    logger.info(f"Stored OpenBao tokens for account: {dns_account.name}")
-                else:
-                    logger.warning(f"No active vendor account for {dns_account.name}, skipping token storage")
-
-                # Create a DNS zone for each domain with the DNS account
-                dns_zone = DnsZone(
-                    domain=domain,
-                    dns_account=dns_account,
-                    name=domain.name,
-                    nameservers=["ns1.example.gov", "ns2.example.gov"],
-                )
-                dns_zones_to_create.append(dns_zone)
-
-            # Bulk create DNS zones
-            created_zones = DnsZone.objects.bulk_create(dns_zones_to_create)
-            logger.info(f"Successfully created {len(created_zones)} DNS zones.")
+            dns_account = zone.dns_account
+            account_key = dns_account.name.replace(" ", "-")
+            bao.store_account_tokens(account_key, {
+                "create_token": f"test-create-token-{dns_account.id}",
+                "settings_write": f"test-settings-write-{dns_account.id}",
+                "settings_read": f"test-settings-read-{dns_account.id}",
+                "dns_write": f"test-dns-write-{dns_account.id}",
+                "dns_read": f"test-dns-read-{dns_account.id}", 
+            })
+            logger.info(f"Stored OpenBao tokens for account: {dns_account.name}")
 
             # Create DNS records for each zone
-            for dns_zone in created_zones:
+            for dns_zone in zones:
                 # Root A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="@",
-                        ttl=3600,
-                        content=fake.ipv4(),
-                        comment="Root domain A record",
-                        tags=["production", "primary"],
-                    )
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-                # WWW subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="www",
-                        ttl=3600,
-                        content=fake.ipv4(),
-                        comment="WWW subdomain",
-                        tags=["production"],
-                    )
+                # A: WWW subdomain
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "www",
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "WWW subdomain",
+                    },
                 )
 
-                # Mail subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="mail",
-                        ttl=7200,
-                        content=fake.ipv4(),
-                        comment="Mail server",
-                        tags=["email", "production"],
-                    )
+                # A: API subdomain
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "api",
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "api endpoint",
+                    },
                 )
 
-                # API subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="api",
-                        ttl=1800,
-                        content=fake.ipv4(),
-                        comment="API endpoint",
-                        tags=["production", "api"],
-                    )
+                # AAAA
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.AAAA,
+                        "record_content": fake.ipv6(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-                # Dev subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="dev",
-                        ttl=300,
-                        content=fake.ipv4(),
-                        comment="Development environment",
-                        tags=["development", "non-production"],
-                    )
+                # PTR
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.PTR,
+                        "record_content": dns_zone.name,
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-            # Bulk create DNS records
-            created_records = DnsRecord.objects.bulk_create(dns_records_to_create)
-            logger.info(f"Successfully created {len(created_records)} DNS records.")
+                # CNAME
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "blog.something.gov",
+                        "record_type": DNSRecordTypes.CNAME,
+                        "record_content": "blog.something.com",
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
+                )
+
+                # MX: mail routing
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.MX,
+                        "record_content": f"mail.{dns_zone.name}",
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "Primary mail server",
+                    },
+                )
+
+            logger.info("Successfully created DNS records.")
 
         except Exception as e:
             logger.error(f"Error creating DNS record fixtures: {e}")

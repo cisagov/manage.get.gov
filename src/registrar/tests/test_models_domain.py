@@ -8,7 +8,6 @@ from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
-from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
 
@@ -18,8 +17,9 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
+from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
 from registrar.utility.enums import DefaultEmail
-from registrar.utility.errors import ActionNotAllowed, NameserverError
+from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 from registrar.utility import errors
@@ -33,7 +33,8 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib, MockSESClient, less_console_noise
+from registrar.utility.errors import DnsHostingError
+from .common import DEFAULT_EPP_CR_DATE, MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
 import copy
@@ -59,15 +60,15 @@ class TestDomainCache(MockEppLib):
             domain._get_property("contacts")
             # getter should set the domain cache with a InfoDomain object
             # (see InfoDomainResult)
-            self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
-            self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             self.assertFalse("avail" in domain._cache.keys())
 
             # using a setter should clear the cache
             domain.dnssecdata = []
-            self.assertEquals(domain._cache, {})
+            self.assertEqual(domain._cache, {})
 
             # send should have been called only once
             self.mockedSendFunction.assert_has_calls(
@@ -455,6 +456,7 @@ class TestDomainCreation(MockEppLib):
         """
         with less_console_noise():
             domain = Domain.objects.create(name="beef-tongue.gov")
+            self.mockDataInfoDomain.hosts = ["ns1.beef-tongue.gov"]
             # trigger getter
             _ = domain.statuses
 
@@ -549,6 +551,7 @@ class TestDomainCreation(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
@@ -566,7 +569,7 @@ class TestDomainStatuses(MockEppLib):
             # trigger getter
             _ = domain.statuses
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             # Called in _fetch_cache
             self.mockedSendFunction.assert_has_calls(
                 [
@@ -596,7 +599,7 @@ class TestDomainStatuses(MockEppLib):
 
             with self.assertRaises(KeyError):
                 _ = domain._cache["statuses"]
-            self.assertEquals(_, [])
+            self.assertEqual(_, [])
 
             patcher.stop()
 
@@ -610,31 +613,53 @@ class TestDomainStatuses(MockEppLib):
         """Domain 'revert_client_hold' method causes the registry to change statuses"""
         raise
 
+    @less_console_noise_decorator
     def test_first_ready(self):
         """
         first_ready is set when a domain is first transitioned to READY. It does not get overwritten
         in case the domain gets out of and back into READY.
         """
-        with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
-            self.assertEqual(domain.first_ready, None)
-            domain.ready()
-            # check that status is READY
-            self.assertTrue(domain.is_active())
-            self.assertNotEqual(domain.first_ready, None)
-            # Capture the value of first_ready
-            first_ready = domain.first_ready
-            # change domain status
-            domain.dns_needed()
-            self.assertFalse(domain.is_active())
-            # change  back to READY
-            domain.ready()
-            self.assertTrue(domain.is_active())
-            # assert that the value of first_ready has not changed
-            self.assertEqual(domain.first_ready, first_ready)
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+        self.assertEqual(domain.first_ready, None)
+
+        # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain.ready()
+
+        # check that status is READY
+        self.assertTrue(domain.is_active())
+        self.assertNotEqual(domain.first_ready, None)
+
+        # Capture the value of first_ready
+        first_ready = domain.first_ready
+
+        # change mock EPP hosts and then domain status
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        # domain._invalidate_cache()
+        domain.save()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
+        domain.dns_needed()
+        self.assertFalse(domain.is_active())
+
+        # change back to READY
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        # domain._invalidate_cache()
+        # domain.ready()
+        domain.nameservers = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain.ready()
+        self.assertTrue(domain.is_active())
+
+        # assert that the value of first_ready has not changed
+        self.assertEqual(domain.first_ready, first_ready)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        # domain._invalidate_cache()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
@@ -1733,6 +1758,9 @@ class TestRegistrantNameservers(MockEppLib):
             And domain.first_ready is not null
         """
         with less_console_noise():
+            # update mock EPP with same data as what I want new nameservers to be
+            self.mockDataInfoDomain.hosts = [self.nameserver1, self.nameserver2]
+
             # set 2 nameservers
             self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
             # when you create a host, you also have to update at same time
@@ -1754,10 +1782,16 @@ class TestRegistrantNameservers(MockEppLib):
                 call(update_domain_with_created, cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(4, self.mockedSendFunction.call_count)
+            # Extra EPP calls due to _invalidate_cache() in the nameserver setter
+            # 1. InfoDomain; 2. InfoHost (nameserver1); 3. InfoHost (nameserver2)
+            # The other four calls are above in expected_calls.
+            self.assertEqual(7, self.mockedSendFunction.call_count)
             # check that status is READY
             self.assertTrue(self.domain.is_active())
             self.assertNotEqual(self.domain.first_ready, None)
+
+            # reset to avoid test pollution
+            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2052,7 +2086,10 @@ class TestRegistrantNameservers(MockEppLib):
                 call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(self.mockedSendFunction.call_count, 4)
+
+            # Four extra EPP calls from _invalidate_cache() in the nameserver setter.
+            # See PR #5052 for full explanation if needed
+            self.assertEqual(self.mockedSendFunction.call_count, 8)
 
     def test_is_subdomain_with_no_ip(self):
         with less_console_noise():
@@ -2363,7 +2400,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # Assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithDsData),
             )
@@ -2397,7 +2434,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2437,6 +2474,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
+            self.mockDataInfoDomain.hosts = ["fake.host.com"]
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
             # set the dnssecdata once
             domain.dnssecdata = self.dnssecExtensionWithDsData
@@ -2483,7 +2521,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2526,7 +2564,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
             )
@@ -2552,7 +2590,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
             patcher.stop()
 
     # @less_console_noise_decorator
@@ -2609,7 +2647,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(
                     self.dnssecExtensionWithDsData,
@@ -2666,6 +2704,22 @@ class TestRegistrantDNSSEC(MockEppLib):
                 domain.dnssecdata = self.dnssecExtensionWithDsData
                 self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
 
+    @less_console_noise_decorator
+    def test_nameserver_bad_data_error_message_success(self):
+        """
+        Scenario: The registry returns an unsuccessful response code
+            When the nameserver setter raises NameserverError BAD_DATA
+            Then the error message matches the approved copy
+        """
+        err = NameserverError(code=NameserverErrorCodes.BAD_DATA)
+
+        expected = (
+            "There's something wrong with the name server information you provided. "
+            "Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+        )
+        self.assertEqual(str(err), expected)
+
 
 class TestExpirationDate(MockEppLib):
     """User may renew expiration date by a number of units of time"""
@@ -2698,8 +2752,8 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             self.domain.renew_domain()
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain._cache["ex_date"], test_date)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain._cache["ex_date"], test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
     def test_renew_domain_error(self):
         """assert that the renew_domain raises an exception when registry raises error"""
@@ -2755,7 +2809,7 @@ class TestExpirationDate(MockEppLib):
             # force fetch_cache to be called
             self.domain.statuses
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
 
 class TestCreationDate(MockEppLib):
@@ -2768,9 +2822,8 @@ class TestCreationDate(MockEppLib):
         super().setUp()
         # for the tests, need a domain with a creation date
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-        # creation_date returned from mockDataInfoDomain with creation date:
-        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
+        # creation_date returned from MockEppLib
+        self.creation_date = DEFAULT_EPP_CR_DATE
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2785,7 +2838,17 @@ class TestCreationDate(MockEppLib):
         """assert that creation date in db is updated on info domain call"""
         # force fetch_cache to be called
         self.domain.statuses
-        self.assertEquals(self.domain.created_at, self.creation_date)
+        self.assertEqual(self.domain.created_at, self.creation_date)
+
+    def test_x_registry_created_at_and_created_at(self):
+        """assert x_registry_created_at is set from EPP and created_at is preserved"""
+        # force fetch_cache to be called
+        self.domain.statuses
+        x_registry_created_at, created_at = (
+            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at").get()
+        )
+        self.assertEqual(x_registry_created_at, self.creation_date)
+        self.assertEqual(created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):
@@ -2836,7 +2899,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain.state, Domain.State.ON_HOLD)
 
     def test_analyst_places_client_hold_idempotent(self):
         """
@@ -2868,7 +2931,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.ON_HOLD)
 
     def test_analyst_removes_client_hold(self):
         """
@@ -2900,7 +2963,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.READY)
 
     def test_analyst_removes_client_hold_idempotent(self):
         """
@@ -2932,7 +2995,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.READY)
+            self.assertEqual(self.domain.state, Domain.State.READY)
 
     def test_update_is_unsuccessful(self):
         """
@@ -3031,6 +3094,8 @@ class TestAnalystDelete(MockEppLib):
             And a domain exists in the registry
         """
         super().setUp()
+        # Reset hosts to account for unit tests that modify them (e.g., deleting hosts to make domains EPP deletable)
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         self.domain_with_contacts, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.READY)
         self.domain_on_hold, _ = Domain.objects.get_or_create(name="fake-on-hold.gov", state=Domain.State.ON_HOLD)
@@ -3220,7 +3285,7 @@ class TestAnalystDelete(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        # Create a domain with DS data
+        # Create a domain with DNS data
         domain, _ = Domain.objects.get_or_create(name="dsdomain.gov", state=Domain.State.READY)
         # set domain to be on hold
         domain.place_client_hold()
@@ -3255,8 +3320,153 @@ class TestAnalystDelete(MockEppLib):
         # Check that the domain was deleted
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-        # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+    @less_console_noise_decorator
+    @patch("registrar.services.dns_host_service.DnsHostService.delete_account")
+    def test_delete_domain_in_epp_deletes_db_dns_data(self, mock_delete_account):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        mock_delete_account.return_value = "1"
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
+        self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+
+        # Delete the domain (with logging)
+        with capture_json_logs(logger_name="registrar.models.domain") as stream:
+            domain.deleteInEpp()
+            domain.save()
+
+        entries = json_log_entries(stream, containing="Deleting DNS data for")
+        self.assertTrue(entries, "Expected at least one 'Deleting DNS data for' log line")
+        self.assertEqual(entries[0]["domain_name"], "dns.gov")
+
+        self.assertFalse(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertFalse(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertFalse(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertFalse(DnsZone.objects.filter(domain=domain).exists())
+        self.assertFalse(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+    @less_console_noise_decorator
+    @patch("registrar.services.cloudflare_service.CloudflareService.delete_cf_account")
+    def test_delete_domain_in_epp_preserves_db_dns_data_on_cf_delete_failure(self, mock_delete_account):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        # CloudflareService delete account raises Error
+        mock_delete_account.side_effect = DnsHostingError
+
+        # Delete the domain (and check logs)
+        with capture_json_logs(logger_name="registrar.models.domain") as stream:
+            domain.deleteInEpp()
+            domain.save()
+
+        entries = json_log_entries(stream, containing="Error deleting DNS data for")
+        self.assertTrue(entries, "Expected an 'Error deleting DNS data for' log line")
+        self.assertEqual(entries[0]["domain_name"], "dns.gov")
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
+
+        self.assertTrue(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertTrue(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertTrue(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+        self.assertTrue(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertTrue(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+    @less_console_noise_decorator
+    def test_delete_domain_in_epp_deletes_cf_account(self):
+        """
+        Deleting a domain in EPP should successfully request to delete the CF
+        account associated with the domain.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
+
+        create_initial_dns_setup(domain=domain, x_account_id="12345")
+
+        with patch(
+            "registrar.services.cloudflare_service.CloudflareService.delete_cf_account"
+        ) as mock_delete_cf_account:
+            domain.deleteInEpp()
+            domain.save()
+
+            # EPP deletion calls CloudflareService delete account on the x_account_id
+            mock_delete_cf_account.assert_called_once_with("12345")
 
     def test_delete_related_objects_cleans_database(self):
         """

@@ -1,6 +1,8 @@
 import logging
 
 from enum import IntEnum
+from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +39,21 @@ class InvitationError(Exception):
     pass
 
 
-class AlreadyDomainManagerError(InvitationError):
-    """Raised when the user is already a manager for the domain."""
+class MultipleUsersWithEmailError(InvitationError):
+    """Raised when an email address cannot identify one user account."""
 
     def __init__(self, email):
-        super().__init__(f"{email} is already a manager for this domain.")
+        super().__init__(
+            f"More than one user account exists for {email}. "
+            "The invitation could not be created. Contact support to resolve the duplicate accounts."
+        )
+
+
+class AlreadyDomainManagerError(InvitationError):
+    """Raised when the user is already a manager of the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} is already a manager of this domain.")
 
 
 class AlreadyDomainInvitedError(InvitationError):
@@ -101,10 +113,11 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "We’re experiencing a system error. Please wait a few minutes "
-            "and try again. If you continue to get this error, "
-            "contact help@get.gov."
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: mark_safe(  # nosec
+            "We're experiencing a connection error. Please wait a few minutes "
+            "and try again. If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> "
+            "for assistance."
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
@@ -203,18 +216,23 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address."),
+        NameserverErrorCodes.MISSING_IP: (
+            "Enter an IP address for this name server. That's required because it uses the domain name."
+        ),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
-        NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can't have more than 13 nameservers."),
-        NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
+        NameserverErrorCodes.INVALID_IP: ("Enter an IP address in the required format for IPv4 or IPv6."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: (
+            "Domains can have no more than 13 name servers. Remove one before adding another."
+        ),
+        NameserverErrorCodes.MISSING_HOST: ("Enter a name server before entering an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
-            "You already entered this name server address. Name server addresses must be unique."
+            "This name server is already associated with this domain. Name servers must be unique."
         ),
-        NameserverErrorCodes.BAD_DATA: (
-            "There’s something wrong with the name server information you provided. "
-            "If you need help email us at help@get.gov."
+        NameserverErrorCodes.BAD_DATA: mark_safe(  # nosec
+            "There's something wrong with the name server information you provided. "
+            "Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
         ),
     }
 
@@ -261,14 +279,16 @@ class DsDataError(Exception):
     """
 
     _error_mapping = {
-        DsDataErrorCodes.BAD_DATA: (
-            "There’s something wrong with the DS data you provided. If you need help email us at help@get.gov."
+        DsDataErrorCodes.BAD_DATA: mark_safe(  # nosec
+            "There’s something wrong with the DS data you provided. If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
+            " for assistance."
         ),
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
-        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
-        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Enter a digest value using only numbers (0-9) and letters (a-f)."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a key tag number between 0 and 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Enter a key tag number between 0 and 65535."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
@@ -315,3 +335,177 @@ class APIError(Exception):
     """Custom exception for API-related errors"""
 
     pass
+
+
+class DnsHostingErrorCodes(IntEnum):
+    """Error codes for DNS-hosting failures."""
+
+    NOT_FOUND = 1
+    VALIDATION_FAILED = 2
+    RATE_LIMIT_EXCEEDED = 3
+    AUTH_FAILED = 4
+    UPSTREAM_TIMEOUT = 5
+    UPSTREAM_ERROR = 6
+    UNKNOWN = 7
+
+
+_DNS_WIRE_CODES = {
+    DnsHostingErrorCodes.NOT_FOUND: "DNS_NOT_FOUND",
+    DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
+    DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
+    DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
+    DnsHostingErrorCodes.UPSTREAM_TIMEOUT: "DNS_UPSTREAM_TIMEOUT",
+    DnsHostingErrorCodes.UPSTREAM_ERROR: "DNS_UPSTREAM_ERROR",
+    DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
+}
+
+_DNS_VALIDATION_MSG = {
+    # Map Cloudflare validation error code to registrar error message content
+    83011: "Combined content length of records with this name and type must not exceed 8192 characters."
+}
+
+
+def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
+    # Module-level rebuilder so __reduce__ stays picklable by name.
+    return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
+
+
+class DnsHostingError(Exception):
+    """Typed base exception for DNS-hosting failures."""
+
+    GENERIC_ERROR_MESSAGE = mark_safe(
+        "An unexpected error occurred: Please try again. If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
+    GENERIC_VALIDATION_ERROR_MESSAGE = mark_safe(
+        "There’s something wrong with the DNS record information you provided. Please try again. "
+        "If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
+        self._explicit_message = message
+        self.upstream_status = upstream_status
+        self.context = dict(context) if context else {}
+        super().__init__(self.message)
+
+    def _build_error_mapping(self, request_id):
+        validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
+        cf_error_code = self.context.get("cf_error_code")
+
+        if self.wire_code == _DNS_WIRE_CODES.get(DnsHostingErrorCodes.VALIDATION_FAILED) and cf_error_code:
+            validation_msg = _DNS_VALIDATION_MSG.get(cf_error_code) or validation_msg
+
+        error_msg = self.GENERIC_ERROR_MESSAGE
+        if request_id:
+            error_msg = format_html(
+                self.GENERIC_ERROR_MESSAGE[:-1] + " and share this ID {}.",
+                request_id,
+            )  # format_html also marks safe
+
+        return {
+            DnsHostingErrorCodes.NOT_FOUND: error_msg,
+            DnsHostingErrorCodes.VALIDATION_FAILED: validation_msg,
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: error_msg,
+            DnsHostingErrorCodes.AUTH_FAILED: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_ERROR: error_msg,
+            DnsHostingErrorCodes.UNKNOWN: error_msg,
+        }
+
+    @property
+    def message(self):
+        if self._explicit_message:
+            return self._explicit_message
+        request_id = self.context.get("request_id")
+        error_mapping = self._build_error_mapping(request_id)
+        return error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
+
+    @property
+    def wire_code(self):
+        """Stable wire name for this error's code (e.g. 'DNS_NOT_FOUND')."""
+        return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
+
+    def __str__(self):
+        return self.message
+
+    def __reduce__(self):
+        # Default Exception pickling only preserves self.args, so we need to explicitly
+        # copy our custom attributes into the args tuple and rebuild them.
+        return (
+            _rebuild_dns_hosting_error,
+            (type(self), self.code, self._explicit_message, self.upstream_status, self.context),
+        )
+
+
+class DnsNotFoundError(DnsHostingError):
+    """Upstream returned 404 for a zone or record."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.NOT_FOUND,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsValidationError(DnsHostingError):
+    """Upstream rejected the record as invalid (400) or conflicting (409)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.VALIDATION_FAILED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsRateLimitError(DnsHostingError):
+    """Upstream returned 429 (too many requests)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsAuthError(DnsHostingError):
+    """Upstream returned 401 / 403 (invalid auth token or scope)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.AUTH_FAILED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsTransportError(DnsHostingError):
+    """No HTTP response came back (connect failure, timeout, DNS lookup failed)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsUpstreamError(DnsHostingError):
+    """Upstream returned a 5xx (provider outage)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.UPSTREAM_ERROR,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )

@@ -13,11 +13,14 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   deploy-development:
     runs-on: ubuntu-latest
     steps:      
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Compile USWDS assets
         working-directory: ./src
@@ -30,7 +33,7 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Deploy to cloud.gov sandbox
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_BRANCH: ${{ github.ref_name }}
@@ -45,7 +48,7 @@ jobs:
             --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
             --strategy rolling
       - name: Run Django migrations
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         with:
           cf_username: ${{ secrets.CF_DEVELOPMENT_USERNAME }}
           cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}

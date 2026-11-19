@@ -2,7 +2,6 @@ from __future__ import annotations
 from django.db import transaction
 
 from registrar.models.utility.domain_helper import DomainHelper
-from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.constants import BranchChoices
 
 from .domain_request import DomainRequest
@@ -25,8 +24,8 @@ class DomainInformation(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Cache the original generic_org_type to detect changes on save
-        self._original_generic_org_type = self.generic_org_type
+        # Cache the original organization_type to detect changes on save
+        self._original_organization_type = self.organization_type
 
     class Meta:
         """Contains meta information about this class"""
@@ -34,6 +33,13 @@ class DomainInformation(TimeStampedModel):
         indexes = [
             models.Index(fields=["domain"]),
             models.Index(fields=["domain_request"]),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(state_tribe__isnull=True) | models.Q(federal_tribe__isnull=True),
+                name="domain_information_single_tribe_reference",
+            ),
         ]
 
         verbose_name_plural = "Domain information"
@@ -71,7 +77,7 @@ class DomainInformation(TimeStampedModel):
 
     sub_organization = models.ForeignKey(
         "registrar.Suborganization",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="information_sub_organization",
@@ -89,28 +95,12 @@ class DomainInformation(TimeStampedModel):
         unique=True,
     )
 
-    # ##### data fields from the initial form #####
-    generic_org_type = models.CharField(
+    organization_type = models.CharField(
         max_length=255,
-        choices=OrganizationChoices.choices,  # type: ignore[misc]
+        choices=OrganizationChoices.choices,
         null=True,
         blank=True,
         help_text="Type of organization",
-    )
-
-    # TODO - Ticket #1911: stub this data from DomainRequest
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
-    )
-
-    organization_type = models.CharField(
-        max_length=255,
-        choices=DomainRequest.OrgChoicesElectionOffice.choices,
-        null=True,
-        blank=True,
-        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -126,17 +116,29 @@ class DomainInformation(TimeStampedModel):
         blank=True,
     )
 
+    state_tribe = models.ForeignKey(
+        "registrar.StateTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_informations",
+        verbose_name="State recognized tribe",
+    )
+
+    federal_tribe = models.ForeignKey(
+        "registrar.FederalTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_informations",
+        verbose_name="Federally recognized tribe",
+    )
+
     federal_type = models.CharField(
         max_length=50,
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-    )
-
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
     )
 
     organization_name = models.CharField(
@@ -351,50 +353,18 @@ class DomainInformation(TimeStampedModel):
         if self.has_anything_else_text is not None:
             self.has_anything_else_text = self.anything_else != "" and self.anything_else is not None
 
-    def sync_organization_type(self):
-        """
-        Updates the organization_type (without saving) to match
-        the is_election_board and generic_organization_type fields.
-        """
-
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
-
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
-
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_election_to_org_generic()
-
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_office" and "generic_organization_type"
-        org_type_helper = CreateOrUpdateOrganizationTypeHelper(
-            sender=self.__class__,
-            instance=self,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
-        )
-
-        # Actually updates the organization_type field
-        org_type_helper.create_or_update_organization_type()
-
-        return self
-
     def clear_irrelevant_fields(self):
         """Clears fields that are no longer relevant when the organization type changes.
 
-        When generic_org_type changes, certain conditional fields become irrelevant:
+        When organization_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
-        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
-        - is_election_board: Not applicable to Federal, Interstate, or School District
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe, state_tribe,
+        federal_tribe: Only for Tribal orgs
         - about_your_organization: Only for Special District or Interstate orgs
         """
 
-        old_org_type = getattr(self, "_original_generic_org_type", None)
-        new_org_type = self.generic_org_type
+        old_org_type = getattr(self, "_original_organization_type", None)
+        new_org_type = self.organization_type
 
         # Only clear fields if the org type actually changed
         if old_org_type and new_org_type != old_org_type:
@@ -408,16 +378,8 @@ class DomainInformation(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
-
-            # Clear election board field if org type doesn't show election question
-            # Election question shows for all types except Federal, Interstate, and School District
-            excluded_from_election = [
-                DomainRequest.OrganizationChoices.FEDERAL,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-            ]
-            if new_org_type in excluded_from_election:
-                self.is_election_board = None
+                self.federal_tribe = None
+                self.state_tribe = None
 
             # Clear "about your organization" field if not special district or interstate
             about_org_types = [
@@ -430,7 +392,6 @@ class DomainInformation(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_yes_no_form_fields()
-        self.sync_organization_type()
         self.clear_irrelevant_fields()
         super().save(*args, **kwargs)
 
@@ -546,10 +507,10 @@ class DomainInformation(TimeStampedModel):
         return self.organization_name
 
     @property
-    def converted_generic_org_type(self):
+    def converted_organization_type(self):
         if self.portfolio:
             return self.portfolio.organization_type
-        return self.generic_org_type
+        return self.organization_type
 
     @property
     def converted_federal_agency(self):
@@ -609,10 +570,10 @@ class DomainInformation(TimeStampedModel):
 
     # ----- Portfolio Properties (display values)-----
     @property
-    def converted_generic_org_type_display(self):
+    def converted_organization_type_display(self):
         if self.portfolio:
             return self.portfolio.get_organization_type_display()
-        return self.get_generic_org_type_display()
+        return self.get_organization_type_display()
 
     @property
     def converted_federal_type_display(self):

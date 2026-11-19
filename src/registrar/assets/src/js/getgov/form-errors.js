@@ -5,7 +5,7 @@ export function initFormErrorHandling() {
     if (firstErrorField) {
       // Scroll to the first field in error
       firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  
+
       // Add focus to the first field in error
       setTimeout(() => {
         firstErrorField.focus();

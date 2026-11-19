@@ -109,7 +109,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(detail_page.status_code, 302)
         # You can access the 'Location' header to get the redirect URL
         redirect_url = detail_page.url
-        self.assertEqual(redirect_url, f"/request/{domain_request.id}/generic_org_type/")
+        self.assertEqual(redirect_url, f"/request/{domain_request.id}/organization_type/")
 
     @less_console_noise_decorator
     def test_domain_request_form_empty_submit(self):
@@ -172,8 +172,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         in the modal header on the submit page.
         """
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government
-        SKIPPED_PAGES = 3
+        # type_of_work, tribal_government
+        SKIPPED_PAGES = 2
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         intro_page = self.app.get(reverse("domain-request:start"))
@@ -194,45 +194,24 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "interstate"
         # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # should see results in db
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.generic_org_type, "federal")
+        self.assertEqual(domain_request.organization_type, "interstate")
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
-        num_pages_tested += 1
-
-        # ---- FEDERAL BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        federal_page = type_result.follow()
-        federal_form = federal_page.forms[0]
-        federal_form["organization_federal-federal_type"] = "executive"
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_form.submit()
-        # validate that data from this step are being saved
-        domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.federal_type, "executive")
-        # the post request should return a redirect to the next form in
-        # the domain request page
-        self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_page = federal_result.follow()
+        org_contact_page = type_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -256,13 +235,34 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/about_your_organization/")
+        num_pages_tested += 1
+
+        # ---- ABOUT YOUR ORGANIZATION PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_page = org_contact_result.follow()
+        about_your_org_form = about_your_org_page.forms[0]
+        about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_result = about_your_org_form.submit()
+
+        # validate the data from this step is being saved
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.about_your_organization, "We have a cool org")
+
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(about_your_org_result.status_code, 302)
+        self.assertEqual(about_your_org_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = org_contact_result.follow()
+        so_page = about_your_org_result.follow()
         so_form = so_page.forms[0]
         so_form["senior_official-first_name"] = "Testy ATO"
         so_form["senior_official-last_name"] = "Tester ATO"
@@ -441,8 +441,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Review page contains all the previously entered data
         # Let's make sure the long org name is displayed
-        self.assertContains(review_page, "Federal")
-        self.assertContains(review_page, "Executive")
+        self.assertContains(review_page, "Interstate")
         self.assertContains(review_page, "Testorg")
         self.assertContains(review_page, "address 1")
         self.assertContains(review_page, "address 2")
@@ -450,6 +449,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "NY")
         self.assertContains(review_page, "10002")
         self.assertContains(review_page, "URB Royal Oaks")
+        self.assertContains(review_page, "We have a cool org")
         self.assertContains(review_page, "Testy ATO")
         self.assertContains(review_page, "Tester ATO")
         self.assertContains(review_page, "Chief Tester")
@@ -498,7 +498,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_submission_incomplete(self):
         num_pages_tested = 0
-        # skipping elections, type_of_work, tribal_government
+        # skipping type_of_work, tribal_government
 
         intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -518,45 +518,24 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "interstate"
         # test next button and validate data
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # should see results in db
         domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.generic_org_type, "federal")
+        self.assertEqual(domain_request.organization_type, "interstate")
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(type_result.status_code, 302)
-        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_federal/")
-        num_pages_tested += 1
-
-        # ---- FEDERAL BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-
-        federal_page = type_result.follow()
-        federal_form = federal_page.forms[0]
-        federal_form["organization_federal-federal_type"] = "executive"
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_form.submit()
-        # validate that data from this step are being saved
-        domain_request = DomainRequest.objects.get()  # there's only one
-        self.assertEqual(domain_request.federal_type, "executive")
-        # the post request should return a redirect to the next form in
-        # the domain request page
-        self.assertEqual(federal_result.status_code, 302)
-        self.assertEqual(federal_result["Location"], f"/request/{domain_request.id}/organization_contact/")
+        self.assertEqual(type_result["Location"], f"/request/{domain_request.id}/organization_contact/")
         num_pages_tested += 1
 
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_page = federal_result.follow()
+        org_contact_page = type_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -580,13 +559,34 @@ class DomainRequestTests(TestWithUser, WebTest):
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(org_contact_result.status_code, 302)
-        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/senior_official/")
+        self.assertEqual(org_contact_result["Location"], f"/request/{domain_request.id}/about_your_organization/")
+        num_pages_tested += 1
+
+        # ---- ABOUT YOUR ORGANIZATION PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_page = org_contact_result.follow()
+        about_your_org_form = about_your_org_page.forms[0]
+        about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_result = about_your_org_form.submit()
+
+        # validate the data from this step is being saved
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.about_your_organization, "We have a cool org")
+
+        # the post request should return a redirect to the next form in
+        # the domain request page
+        self.assertEqual(about_your_org_result.status_code, 302)
+        self.assertEqual(about_your_org_result["Location"], f"/request/{domain_request.id}/senior_official/")
         num_pages_tested += 1
 
         # ---- SENIOR OFFICIAL PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = org_contact_result.follow()
+        so_page = about_your_org_result.follow()
         so_form = so_page.forms[0]
         so_form["senior_official-first_name"] = "Testy ATO"
         so_form["senior_official-last_name"] = "Tester ATO"
@@ -746,7 +746,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 
-        domain_request.generic_org_type = None
+        domain_request.organization_type = None
         domain_request.save()
 
         # Refresh the Requirements page so snapshot matches the new updated_at
@@ -795,8 +795,8 @@ class DomainRequestTests(TestWithUser, WebTest):
     @skip("WIP")
     def test_domain_request_form_started_allsteps(self):
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government
-        SKIPPED_PAGES = 3
+        # type_of_work, tribal_government
+        SKIPPED_PAGES = 2
         DASHBOARD_PAGE = 1
         num_pages = len(self.TITLES) - SKIPPED_PAGES + DASHBOARD_PAGE
 
@@ -847,9 +847,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # the conditional step titles shouldn't appear initially
         self.assertNotContains(type_page, self.TITLES["organization_federal"])
-        self.assertNotContains(type_page, self.TITLES["organization_election"])
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "federal"
 
         # set the session ID before .submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -860,80 +859,25 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(type_result.status_code, 302)
         self.assertIn("organization_federal", type_result["Location"])
 
-        # and the step label should appear in the sidebar of the resulting page
-        # but the step label for the elections page should not appear
+        # the sidebar should only show two steps
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         federal_page = type_result.follow()
         self.assertContains(federal_page, self.TITLES["organization_federal"])
-        self.assertNotContains(federal_page, self.TITLES["organization_election"])
+        self.assertContains(federal_page, self.TITLES["organization_type"])
 
-        # continuing on in the flow we need to see top-level agency on the
-        # contact page
-        federal_page.forms[0]["organization_federal-federal_type"] = "executive"
+        # Validating messaging
+        self.assertContains(federal_page, "You aren't authorized to continue")
+        self.assertContains(federal_page, "Exit request form")
+
+        # directly navigating to subsequent step fails
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_page.forms[0].submit()
-        # the post request should return a redirect to the contact
-        # question
-        self.assertEqual(federal_result.status_code, 302)
-        self.assertIn("organization_federal", type_result["Location"])
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        contact_page = federal_result.follow()
-        self.assertContains(contact_page, "Federal agency")
+        domain_request = DomainRequest.objects.get()
+        blocked_response = self.app.get(
+            reverse("domain-request:organization_contact", kwargs={"domain_request_pk": domain_request.id})
+        )
 
-    @less_console_noise_decorator
-    def test_domain_request_form_conditional_elections(self):
-        """Election question is shown for other organizations."""
-        intro_page = self.app.get(reverse("domain-request:start"))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit()
-
-        # follow first redirect
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_page = intro_result.follow()
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        # ---- TYPE PAGE  ----
-
-        # the conditional step titles shouldn't appear initially
-        self.assertNotContains(type_page, self.TITLES["organization_federal"])
-        self.assertNotContains(type_page, self.TITLES["organization_election"])
-        type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "county"
-
-        # set the session ID before .submit()
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_result = type_form.submit()
-
-        # the post request should return a redirect to the elections question
-        self.assertEqual(type_result.status_code, 302)
-        self.assertIn("organization_election", type_result["Location"])
-
-        # and the step label should appear in the sidebar of the resulting page
-        # but the step label for the elections page should not appear
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
-        self.assertContains(election_page, self.TITLES["organization_election"])
-        self.assertNotContains(election_page, self.TITLES["organization_federal"])
-
-        # continuing on in the flow we need to NOT see top-level agency on the
-        # contact page
-        election_page.forms[0]["organization_election-is_election_board"] = "True"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_result = election_page.forms[0].submit()
-        # the post request should return a redirect to the contact
-        # question
-        self.assertEqual(election_result.status_code, 302)
-        self.assertIn("organization_contact", election_result["Location"])
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        contact_page = election_result.follow()
-        self.assertNotContains(contact_page, "Federal agency")
+        self.assertEqual(blocked_response.status_code, 302)
+        self.assertIn("organization_federal", blocked_response["Location"])
 
     @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
@@ -957,30 +901,35 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # fill out the organization type section then submit
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "city"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
         # follow first redirect to the next section
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_page = type_result.follow()
+        contact_page = type_result.follow()
 
-        # we need to fill out the federal section so it stays unlocked
-        fed_branch_form = federal_page.forms[0]
-        fed_branch_form["organization_federal-federal_type"] = "executive"
+        # we need to fill out the organization contact section so it stays unlocked
+        org_contact_form = contact_page.forms[0]
+        # minimal fields that must be filled out
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        fed_branch_form.submit()
+        org_contact_form.submit()
 
         # Now click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        new_page = federal_page.click(str(self.TITLES["generic_org_type"]), index=0)
-        # Should be a link to the organization_federal page since it is now unlocked
+        new_page = contact_page.click(str(self.TITLES["organization_type"]), index=0)
+        # Should be a link to the organization_contact page since it is now unlocked
         all_domain_requests = DomainRequest.objects.all()
         self.assertEqual(all_domain_requests.count(), 1)
 
         new_request_id = all_domain_requests.first().id
         self.assertGreater(
-            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_federal/")),
+            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_contact/")),
             0,
         )
 
@@ -1004,7 +953,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
@@ -1049,7 +998,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_page.forms[0].submit()
         # follow first redirect
@@ -1059,60 +1008,12 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(contact_page, self.TITLES[Step.ABOUT_YOUR_ORGANIZATION])
 
     @less_console_noise_decorator
-    def test_federal_agency_dropdown_excludes_expected_values(self):
-        """The Federal Agency dropdown on a domain request form should not
-        include options for gov Administration and Non-Federal Agency"""
-        intro_page = self.app.get(reverse("domain-request:start"))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit()
-
-        # follow first redirect
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_page = intro_result.follow()
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        # ---- TYPE PAGE  ----
-        type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
-
-        # test next button
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_result = type_form.submit()
-
-        # ---- FEDERAL BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_page = type_result.follow()
-        federal_form = federal_page.forms[0]
-        federal_form["organization_federal-federal_type"] = "executive"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_form.submit()
-
-        # ---- ORG CONTACT PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_page = federal_result.follow()
-
-        # gov Administration and Non-Federal Agency should not be federal agency options
-        self.assertNotContains(org_contact_page, "gov Administration")
-        self.assertNotContains(org_contact_page, "Non-Federal Agency")
-        # make sure correct federal agency options still show up
-        self.assertContains(org_contact_page, "General Services Administration")
-
-    @less_console_noise_decorator
     def test_yes_no_contact_form_inits_blank_for_new_domain_request(self):
         """On the Other Contacts page, the yes/no form gets initialized with nothing selected for
         new domain requests"""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": 0}))
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
     @less_console_noise_decorator
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
@@ -1124,17 +1025,17 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_form = additional_details_page.forms[0]
 
         # Check the cisa representative yes/no field
-        self.assertEquals(additional_form["additional_details-has_cisa_representative"].value, None)
+        self.assertEqual(additional_form["additional_details-has_cisa_representative"].value, None)
 
         # Check the anything else yes/no field
-        self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
+        self.assertEqual(additional_form["additional_details-has_anything_else_text"].value, None)
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
         domain request has other contacts"""
         # Domain Request has other contacts by default
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, organization_type="city")
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -1150,7 +1051,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
@@ -1158,7 +1059,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         for both yes/no radios if the domain request has a values for cisa_representative_first_name and
         anything_else"""
 
-        domain_request = completed_domain_request(user=self.user, has_anything_else=True, has_cisa_representative=True)
+        domain_request = completed_domain_request(
+            user=self.user, has_anything_else=True, has_cisa_representative=True, organization_type="city"
+        )
         domain_request.anything_else = "1234"
         domain_request.save()
 
@@ -1180,18 +1083,18 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, "True")
+        self.assertEqual(yes_no_cisa, "True")
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "True")
+        self.assertEqual(yes_no_anything_else, "True")
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
         domain request has no other contacts"""
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user, has_other_contacts=False)
+        domain_request = completed_domain_request(user=self.user, has_other_contacts=False, organization_type="city")
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
@@ -1209,7 +1112,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
     @less_console_noise_decorator
     def test_yes_no_form_for_domain_request_with_no_cisa_representative_and_anything_else(self):
@@ -1217,7 +1120,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         and anything_else is no"""
 
         domain_request = completed_domain_request(
-            user=self.user, has_anything_else=False, has_cisa_representative=False
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            organization_type="city",
         )
 
         # Unlike the other contacts form, the no button is tracked with these boolean fields.
@@ -1243,17 +1149,17 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, None)
+        self.assertEqual(yes_no_cisa, None)
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "False")
+        self.assertEqual(yes_no_anything_else, "False")
 
     @less_console_noise_decorator
     def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
         """When a user submits the Additional Details form with no selected for all fields,
         the domain request's data gets wiped when submitted"""
-        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user)
+        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user, organization_type="city")
         domain_request.cisa_representative_first_name = "cisa-firstname1"
         domain_request.cisa_representative_last_name = "cisa-lastname1"
         domain_request.cisa_representative_email = "fake@faketown.gov"
@@ -1283,11 +1189,11 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, "True")
+        self.assertEqual(yes_no_cisa, "True")
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "True")
+        self.assertEqual(yes_no_anything_else, "True")
 
         # Set fields to false
         additional_details_form["additional_details-has_cisa_representative"] = "False"
@@ -1318,7 +1224,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Additional Details form,
         the domain request's data gets submitted"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            organization_type="city",
         )
 
         # Make sure we have the data we need for the test
@@ -1373,7 +1283,11 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_if_cisa_representative_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a cisa representative must provide a value"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            organization_type="city",
         )
 
         # prime the form by visiting /edit
@@ -1407,7 +1321,9 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a anything else must provide a value"""
-        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+        domain_request = completed_domain_request(
+            name="cisareps.gov", user=self.user, has_anything_else=False, organization_type="city"
+        )
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
@@ -1442,7 +1358,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Additional Details form without checking the
         has_cisa_representative and has_anything_else_text fields, the form should deny this action"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            organization_type="city",
         )
 
         self.assertEqual(domain_request.has_anything_else_text, None)
@@ -1469,16 +1389,24 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        # We expect to see this twice for both fields. This results in a count of 4
-        # due to screen reader information / html.
-        self.assertContains(response, "This question is required.", count=4)
+        # We expect to see this twice if the additional details question is unanswered.
+        self.assertContains(
+            response,
+            "Select “Yes” if there are additional details you’d like us to know. "
+            "Select “No” if you have nothing to add.",
+            count=2,
+        )
 
     @less_console_noise_decorator
     def test_submitting_other_contacts_deletes_no_other_contacts_rationale(self):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's
         no other contacts rationale gets deleted"""
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user, has_other_contacts=False)
+        domain_request = completed_domain_request(
+            user=self.user,
+            has_other_contacts=False,
+            organization_type="city",
+        )
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
@@ -1496,7 +1424,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
 
@@ -1519,7 +1447,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             1,
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             None,
         )
@@ -1530,7 +1458,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other contacts get deleted for other contacts that exist and are not joined to other objects
         """
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, organization_type="city")
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -1546,7 +1474,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
 
@@ -1564,7 +1492,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             0,
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             "Hello again!",
         )
@@ -1598,8 +1526,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(555) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1632,7 +1559,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
 
@@ -1661,7 +1588,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             "Testy2",
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             "Hello again!",
         )
@@ -1736,8 +1663,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1812,8 +1738,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1891,8 +1816,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1969,8 +1893,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2017,8 +1940,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # assert that the Other Contact is updated "in place"
         other_contact = domain_request.other_contacts.all()[0]
-        self.assertEquals(other_contact_pk, other_contact.id)
-        self.assertEquals("Testy3", other_contact.first_name)
+        self.assertEqual(other_contact_pk, other_contact.id)
+        self.assertEqual("Testy3", other_contact.first_name)
 
     @less_console_noise_decorator
     def test_edit_other_contact_creates_new(self):
@@ -2046,8 +1969,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5556",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2096,11 +2018,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         # assert that other contact info is updated, and that a new Contact
         # is created for the other contact
         other_contact = domain_request.other_contacts.all()[0]
-        self.assertNotEquals(other_contact_pk, other_contact.id)
-        self.assertEquals("Testy2", other_contact.first_name)
+        self.assertNotEqual(other_contact_pk, other_contact.id)
+        self.assertEqual("Testy2", other_contact.first_name)
         # assert that the senior official is not updated
         senior_official = domain_request.senior_official
-        self.assertEquals("Testy", senior_official.first_name)
+        self.assertEqual("Testy", senior_official.first_name)
 
     @less_console_noise_decorator
     def test_edit_senior_official_in_place(self):
@@ -2120,8 +2042,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5555",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2167,8 +2088,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # assert SO is updated "in place"
         updated_so = domain_request.senior_official
-        self.assertEquals(so_pk, updated_so.id)
-        self.assertEquals("Testy2", updated_so.first_name)
+        self.assertEqual(so_pk, updated_so.id)
+        self.assertEqual("Testy2", updated_so.first_name)
 
     @less_console_noise_decorator
     def test_edit_senior_official_creates_new(self):
@@ -2189,8 +2110,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5555",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2239,11 +2159,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         # assert that the other contact is not updated
         other_contacts = domain_request.other_contacts.all()
         other_contact = other_contacts[0]
-        self.assertEquals(so_pk, other_contact.id)
-        self.assertEquals("Testy", other_contact.first_name)
+        self.assertEqual(so_pk, other_contact.id)
+        self.assertEqual("Testy", other_contact.first_name)
         # assert that the senior official is updated
         senior_official = domain_request.senior_official
-        self.assertEquals("Testy2", senior_official.first_name)
+        self.assertEqual("Testy2", senior_official.first_name)
 
     @less_console_noise_decorator
     def test_edit_requester_in_place(self):
@@ -2254,8 +2174,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Populate the database with a domain request
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2295,8 +2214,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.refresh_from_db()
 
         updated_requester = domain_request.requester
-        self.assertEquals(requester_pk, updated_requester.id)
-        self.assertEquals("Testy2", updated_requester.first_name)
+        self.assertEqual(requester_pk, updated_requester.id)
+        self.assertEqual("Testy2", updated_requester.first_name)
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
@@ -2318,7 +2237,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.INTERSTATE
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.INTERSTATE
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # follow first redirect
@@ -2347,7 +2266,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.TRIBAL
+        type_form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.TRIBAL
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
         # the tribal government page comes immediately afterwards
@@ -2379,27 +2298,17 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "interstate"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
-        # ---- FEDERAL BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_page = type_result.follow()
-        federal_form = federal_page.forms[0]
-        federal_form["organization_federal-federal_type"] = "executive"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_form.submit()
-
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_page = federal_result.follow()
+        org_contact_page = type_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2411,23 +2320,31 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_result = org_contact_form.submit()
 
+        # ---- ABOUT YOUR ORGANIZATION PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_page = org_contact_result.follow()
+        about_your_org_form = about_your_org_page.forms[0]
+        about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_result = about_your_org_form.submit()
+
         # ---- SO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = org_contact_result.follow()
-        self.assertContains(so_page, "Executive branch federal agencies")
+        so_page = about_your_org_result.follow()
+        self.assertContains(so_page, "Interstate organizations")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_page = so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = so_page.click(str(self.TITLES["organization_type"]), index=0)
         type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form["generic_org_type-generic_org_type"] = "city"
+        type_form["organization_type-organization_type"] = "city"
         type_result = type_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
 
         # Navigate to the org page as that is the step right before senior_official
-        org_page = election_page.click(str(self.TITLES["organization_contact"]), index=0)
+        org_page = type_page.click(str(self.TITLES["organization_contact"]), index=0)
         org_contact_form = org_page.forms[0]
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
@@ -2464,27 +2381,17 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["organization_type-organization_type"] = "interstate"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_result = type_form.submit()
 
-        # ---- FEDERAL BRANCH PAGE  ----
-        # Follow the redirect to the next form page
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_page = type_result.follow()
-        federal_form = federal_page.forms[0]
-        federal_form["organization_federal-federal_type"] = "executive"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        federal_result = federal_form.submit()
-
         # ---- ORG CONTACT PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        org_contact_page = federal_result.follow()
+        org_contact_page = type_result.follow()
         org_contact_form = org_contact_page.forms[0]
-        org_contact_form["organization_contact-federal_agency"] = self.federal_agency.id
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
         org_contact_form["organization_contact-address_line2"] = "address 2"
@@ -2496,14 +2403,21 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         org_contact_result = org_contact_form.submit()
 
-        # ---- SO CONTACT PAGE  ----
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = org_contact_result.follow()
-
-        # ---- senior OFFICIAL PAGE  ----
+        # ---- ABOUT YOUR ORGANIZATION PAGE  ----
         # Follow the redirect to the next form page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page = org_contact_result.follow()
+        about_your_org_page = org_contact_result.follow()
+        about_your_org_form = about_your_org_page.forms[0]
+        about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        about_your_org_result = about_your_org_form.submit()
+
+        # ---- SENIOR OFFICIAL PAGE  ----
+        # Follow the redirect to the next form page
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        so_page = about_your_org_result.follow()
         so_form = so_page.forms[0]
         so_form["senior_official-first_name"] = "Testy ATO"
         so_form["senior_official-last_name"] = "Tester ATO"
@@ -2527,20 +2441,17 @@ class DomainRequestTests(TestWithUser, WebTest):
         # ---- DOTGOV DOMAIN PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
-
-        self.assertContains(dotgov_page, "Federal agencies may request generic domain names.")
+        self.assertContains(dotgov_page, "Naming requirements for interstate organizations")
 
         # Go back to organization type page and change type
-        type_page = dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = dotgov_page.click(str(self.TITLES["organization_type"]), index=0)
         type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_form["generic_org_type-generic_org_type"] = "city"
+        type_form["organization_type-organization_type"] = "city"
         type_result = type_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
 
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_websites = election_page.click(str(self.TITLES["current_sites"]), index=0)
+        current_websites = type_page.click(str(self.TITLES["current_sites"]), index=0)
         current_sites_form = current_websites.forms[0]
         current_sites_form["current_sites-0-website"] = "www.city.com"
         current_sites_result = current_sites_form.submit().follow()
@@ -2812,8 +2723,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(555) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            organization_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2840,10 +2750,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         # -- the best that can/should be done here is to ensure the correct values
         # are being passed to the templating engine
 
-        url = reverse("domain-request:generic_org_type")
+        url = reverse("domain-request:organization_type")
         response = self.client.get(url, follow=True)
         self.assertContains(response, "<input>")
-        # choices = response.context['wizard']['form']['generic_org_type'].subwidgets
+        # choices = response.context['wizard']['form']['organization_type'].subwidgets
         # radio = [ x for x in choices if x.data["value"] == "federal" ][0]
         # checked = radio.data["selected"]
         # self.assertTrue(checked)
@@ -3261,7 +3171,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, organization_type="city"
+        )
         domain_request.anything_else = False
         domain_request.has_anything_else_text = False
         domain_request.save()
@@ -3288,11 +3200,11 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
-            self.assertContains(detail_page, "#check_circle", count=9)
+            # 9 unlocked steps, one active step, the review step will have link_usa but not check_circle
+            self.assertContains(detail_page, "#check_circle", count=8)
             # Type of organization
             self.assertContains(detail_page, "usa-current", count=2)
-            self.assertContains(detail_page, "link_usa-checked", count=10)
+            self.assertContains(detail_page, "link_usa-checked", count=9)
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
@@ -3482,17 +3394,17 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
 
         # Visit the org type page and change to City
-        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        org_type_page = self.app.get(f"/request/{domain_request.id}/organization_type/")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         form = org_type_page.forms[0]
-        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.CITY
         form.submit()
 
         # Refresh from DB and verify federal_type was cleared
         domain_request.refresh_from_db()
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertIsNone(domain_request.federal_type)
 
         # Clean up
@@ -3513,17 +3425,17 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
 
         # Visit the org type page and change to City
-        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        org_type_page = self.app.get(f"/request/{domain_request.id}/organization_type/")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         form = org_type_page.forms[0]
-        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.CITY
         form.submit()
 
         # Refresh from DB and verify tribal fields were cleared
         domain_request.refresh_from_db()
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertIsNone(domain_request.tribe_name)
         self.assertIsNone(domain_request.federally_recognized_tribe)
         self.assertIsNone(domain_request.state_recognized_tribe)
@@ -3532,30 +3444,27 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request.delete()
 
     @less_console_noise_decorator
-    def test_org_type_change_clears_election_board_for_federal(self):
-        """Test that changing org type to federal clears is_election_board."""
-        # Create a domain request with city org type and election board set
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, is_election_board=True
-        )
+    def test_org_type_change_to_federal(self):
+        """Test changing org type to federal."""
+        # Create a domain request with city org type
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
         domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_request.save()
 
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
 
         # Visit the org type page and change to Federal
-        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        org_type_page = self.app.get(f"/request/{domain_request.id}/organization_type/")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         form = org_type_page.forms[0]
-        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.FEDERAL
+        form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.FEDERAL
         form.submit()
 
-        # Refresh from DB and verify is_election_board was cleared
+        # Refresh from DB
         domain_request.refresh_from_db()
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
-        self.assertIsNone(domain_request.is_election_board)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
         # Clean up
         domain_request.delete()
@@ -3573,17 +3482,17 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
 
         # Visit the org type page and change to City (which doesn't require about_your_organization)
-        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        org_type_page = self.app.get(f"/request/{domain_request.id}/organization_type/")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         form = org_type_page.forms[0]  # OrganizationTypeForm
-        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.CITY
         form.submit()
 
         # Refresh from DB and verify about_your_organization was cleared
         domain_request.refresh_from_db()
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertIsNone(domain_request.about_your_organization)
 
         # Clean up
@@ -3602,17 +3511,17 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
 
         # Visit the org type page and submit the same type
-        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        org_type_page = self.app.get(f"/request/{domain_request.id}/organization_type/")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         form = org_type_page.forms[0]
-        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.FEDERAL
+        form["organization_type-organization_type"] = DomainRequest.OrganizationChoices.FEDERAL
         form.submit()
 
         # Refresh from DB and verify federal_type was NOT cleared
         domain_request.refresh_from_db()
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
         self.assertEqual(domain_request.federal_type, BranchChoices.EXECUTIVE)
 
         # Clean up

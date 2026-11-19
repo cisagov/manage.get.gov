@@ -54,7 +54,12 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "userdomainrole",
-                "permissions": ["view_userdomainrole", "delete_userdomainrole"],
+                "permissions": [
+                    "add_userdomainrole",
+                    "change_userdomainrole",
+                    "delete_userdomainrole",
+                    "view_userdomainrole",
+                ],
             },
             {
                 "app_label": "registrar",
@@ -88,6 +93,7 @@ class UserGroup(Group):
                     "add_userportfoliopermission",
                     "change_userportfoliopermission",
                     "delete_userportfoliopermission",
+                    "view_userportfoliopermission",
                 ],
             },
             {
@@ -97,6 +103,16 @@ class UserGroup(Group):
                     "add_portfolioinvitation",
                     "view_portfolioinvitation",
                 ],
+            },
+            {
+                "app_label": "registrar",
+                "model": "federaltribe",
+                "permissions": ["view_federaltribe"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "statetribe",
+                "permissions": ["add_statetribe", "change_statetribe", "delete_statetribe", "view_statetribe"],
             },
         ]
 

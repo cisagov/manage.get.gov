@@ -82,7 +82,7 @@ open -a Docker
 cd src/
 ./build.sh
 cd ..
-cf push getgov-$1 -f ops/manifests/manifest-$1.yaml
+cf push getgov-$1 -f ops/manifests/manifest-$1.yaml --var GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" --var GIT_COMMIT_SHA="$(git rev-parse HEAD)"
 
 echo "Creating cache table..."
 cf run-task getgov-$1 --command 'python manage.py createcachetable' --name createcachetable
@@ -114,8 +114,8 @@ sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/deploy-manual.yaml
 
-sed -i '' "/startsWith(github.head_ref, \'backup/ {a\\
-        || startsWith(github.head_ref, '"$1"')
+sed -i '' "/startsWith(github.head_ref, 'product\/')/ {a\\
+        || startsWith(github.head_ref, '$1/')
 }" .github/workflows/deploy-sandbox.yaml
 
 sed -i '' '/          - backup/ {a\
@@ -129,6 +129,10 @@ sed -i '' '/          - backup/ {a\
 sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/load-fixtures.yaml
+
+sed -i '' '/          - backup/ {a\
+            - '"$1"'
+}' .github/workflows/clone-test-db.yaml
 
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account

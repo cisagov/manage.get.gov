@@ -20,7 +20,8 @@ import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
-import { initDynamicDNSRecordFormFields } from './domain-dns-record-content.js';
+import { initDynamicDNSRecordFormFields, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus, initDNSRecordCancelModal, initDeleteDnsRecord, initDNSRecordPreview } from './domain-dns-record-content.js';
+import { initializeTribalGovernmentToggle } from './tribal-govt-form.js';
 
 initDomainValidators();
 
@@ -71,9 +72,26 @@ domainDeletionEventListener();
 // Init the portfolios nav dropdown
 initOrganizationsNavDropdown();
 
-// Init the dynamic DNS content labels and ensure HTMX re-runs after POST
+// Init the dynamic DNS content labels and fields and ensure HTMX re-runs after POST
 initDynamicDNSRecordFormFields();
+commentCharacterEventListener()
+
+// Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
+initDNSRecordCancelModal()
+
+
+initDNSRecordTabOrder()
+initDNSRecordAlertFocus()
+initDNSRecordPreview()
+
+// Init the state/federal tribe dropdown
+initializeTribalGovernmentToggle();
 
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();
+    commentCharacterEventListener()
+    initDNSRecordPreview()
 });
+
+// Init modals
+initDeleteDnsRecord();

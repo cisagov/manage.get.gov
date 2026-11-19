@@ -1,3 +1,4 @@
+import { initAdminTribeSelection } from './tribe-select-admin.js';
 import { initModals } from './modals.js';
 import { initCopyToClipboard } from './copy-to-clipboard.js';
 import { initFilterHorizontalWidget } from './filter-horizontal.js';
@@ -17,6 +18,7 @@ import { initDynamicPortfolioFields } from './portfolio-form.js';
 import { initDynamicPortfolioPermissionFields } from './portfolio-permissions-form.js'
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
 import { initDynamicDomainFields } from './domain-form.js';
+import { initDomainRoleFields } from './domain-role-form.js';
 import { initAnalyticsDashboard } from './analytics.js';
 import { initButtonLinks } from './button-utils.js';
 import { initAriaInjectionsForSelect2Dropdowns } from './andi.js'
@@ -31,6 +33,7 @@ initAriaInjectionsForSelect2Dropdowns();
 initButtonLinks();
 
 // Domain request
+initAdminTribeSelection();
 initIneligibleModal();
 initAssignToMe();
 initActionNeededEmail();
@@ -43,6 +46,7 @@ initFilterFocusListeners();
 // Domain
 initDomainFormTargetBlankButtons();
 initDynamicDomainFields();
+initDomainRoleFields();
 
 // Portfolio
 initDynamicPortfolioFields();

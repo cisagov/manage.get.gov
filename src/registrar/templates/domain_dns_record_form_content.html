@@ -1,42 +1,70 @@
 {% load static field_helpers url_helpers %}
+{% load custom_filters %}
 
 {% csrf_token %}
-<h2>Add record</h2>
+<h3 class="margin-top-0 margin-bottom-0">Add record</h3>
 
 <div
     class="grid-row grid-gap"
-    x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
-    x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
 >
-    <div class="grid-col-3">
+    <div class="grid-col-12 tablet:grid-col-3">
         {% input_with_errors form.type %}
     </div>
 </div>
 
+<!-- RecordType number goes by this indices in this list ['-Select-', 'A', 'AAAA', 'CNAME', 'MX', 'PTR', 'TXT'] -->
+
 <div x-cloak x-show="recordType" x-cloak>
-  
-    <template x-if="recordType !== 'TXT' " >
-        <!-- Only show this for forms that are not txt -->
-        <div>
+
+    <div class="dns-record-preview margin-top-3" data-domain-name="{{ domain.name }}">
+        <span class="dns-record-preview-text"></span>
+        <span class="usa-sr-only dns-record-preview-announce" aria-live="polite"></span>
+    </div>
+
+    <template x-if="recordType !== 6 && recordType !== 4 ">
+        <!-- Only show this for forms that are not txt or mx -->
+        <div class="dns-record-fields">
               {% include "dns_record_forms/base_record_form.html" with form=form %}
         </div>
-    
     </template>
-    <template x-if="recordType === 'TXT' ">
-        <div>
+    <template x-if="recordType === 4 ">
+        <div class="dns-record-fields">
+              {% include "dns_record_forms/mx_record_form.html" with form=form %}
+        </div>
+    </template>
+    <template x-if="recordType === 6 ">
+        <div class="dns-record-fields">
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
-        </div> 
+        </div>
     </template>
-    {% input_with_errors form.comment %}
 
-    <button
-        type="reset"
-        class="usa-button usa-button--outline"
-        x-on:click="showFormId = null"
-    >
-        Cancel
-    </button>
-    <button type="submit" class="usa-button">
-            Save
-    </button>
+    <div class="margin-bottom-2">
+        {% with add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.comment %} 
+            <div class="usa-character-count__status usa-hint comment-character-count">
+            <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
+           
+            {{ 100|remaining_characters_text:form.comment.value }}
+            </div>
+    
+        {% endwith %}
+    </div>
+
+    <div class="grid-row">
+        <div class="grid-col-12 tablet:grid-col-auto tablet:margin-right-105">
+            <button
+                type="button"
+                id="dnsrecord-add-cancel-button"
+                class="usa-button usa-button--outline mobile-lg:width-full js-dnsrecord-add-cancel margin-right-105"
+            >
+                Cancel
+            </button>
+        </div>
+
+        <div class="grid-col-12 tablet:grid-col-auto">
+            <button type="submit" class="usa-button mobile-lg:width-full dns-space-between-buttons desktop:margin-top-5">
+                Save
+            </button>
+        </div>
+    </div>
 </div>

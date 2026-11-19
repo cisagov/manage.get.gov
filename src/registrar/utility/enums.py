@@ -2,9 +2,16 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
-from django.core.validators import validate_ipv4_address, validate_ipv6_address
+from registrar.validations import (
+    validate_ipv4_address,
+    validate_ipv6_address,
+    validate_mx_content,
+    validate_cname_content,
+    validate_ptr_content,
+    validate_txt_content,
+)
 from django.db.models import TextChoices
-from registrar.validations import validate_txt_content
+from registrar.cleaners import clean_hostname_content, clean_txt_content
 
 
 class ValidationReturnType(Enum):
@@ -75,10 +82,9 @@ class Step(StrEnum):
     """
 
     # Non-Portfolio
-    ORGANIZATION_TYPE = "generic_org_type"
+    ORGANIZATION_TYPE = "organization_type"
     TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
     ABOUT_YOUR_ORGANIZATION = "about_your_organization"
     SENIOR_OFFICIAL = "senior_official"
@@ -123,9 +129,10 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: " IPv4 address ",
             DNSRecordTypes.AAAA: " IPv6 address ",
-            # DNSRecordTypes.CNAME: " Target hostname ",
-            # DNSNRecordTypes.MX: " Mail server ",
+            DNSRecordTypes.CNAME: " Target ",
+            DNSRecordTypes.MX: " Mail server ",
             DNSRecordTypes.TXT: " Content ",
+            DNSRecordTypes.PTR: " Domain name ",
         }.get(self, "Content")
 
     @property
@@ -133,16 +140,59 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Example: 192.0.2.10",
             DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
-            # DNSRecordTypes.CNAME: "Example: example.com",
-            # DNSRecordTypes.MX: "Example: mail.example.com",
+            DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
+            DNSRecordTypes.MX: "Example: mail.example.gov",
+            DNSRecordTypes.PTR: "Example: example.gov, www.example.gov",
+            DNSRecordTypes.TXT: "Content cannot begin or end with quotation marks.",
         }.get(self, "")
+
+    @property
+    def preview_template(self) -> str:
+        """
+        Sentence template used to build the live text preview shown while a user
+        fills out a DNS record form.
+        """
+        return {
+            DNSRecordTypes.A: "{name} points to {content}.",
+            DNSRecordTypes.AAAA: "{name} points to {content}.",
+            DNSRecordTypes.CNAME: "{name} is an alias of {content}.",
+            DNSRecordTypes.MX: "{content} handles mail for {name}.",
+            DNSRecordTypes.PTR: "{content} points to {name} in a reverse lookup.",
+            DNSRecordTypes.TXT: "{name} has a record with content {content}.",
+        }.get(self, "{name} points to {content}.")
+
+    @property
+    def preview_content_placeholder(self) -> str:
+        """
+        Bracketed placeholder word for the content field in the preview sentence
+        above, e.g. "mail server" for MX. This is separate from field_label because
+        the Figma copy uses different casing/wording than the field_label
+        """
+        return {
+            DNSRecordTypes.A: "IPv4 address",
+            DNSRecordTypes.AAAA: "IPv6 address",
+            DNSRecordTypes.CNAME: "target",
+            DNSRecordTypes.MX: "mail server",
+            DNSRecordTypes.PTR: "domain name",
+            DNSRecordTypes.TXT: "content",
+        }.get(self, "content")
+
+    @property
+    def cleaner(self):
+        return {
+            DNSRecordTypes.CNAME: clean_hostname_content,
+            DNSRecordTypes.TXT: clean_txt_content,
+        }.get(self)
 
     @property
     def validator(self):
         return {
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
+            DNSRecordTypes.CNAME: validate_cname_content,
+            DNSRecordTypes.MX: validate_mx_content,
             DNSRecordTypes.TXT: validate_txt_content,
+            DNSRecordTypes.PTR: validate_ptr_content,
         }.get(self)
 
     @property
@@ -151,3 +201,23 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
         }.get(self, "")
+
+
+DNS_TTL_CHOICES = [
+    (60, "1 minute"),
+    (300, "5 minutes"),
+    (1800, "30 minutes"),
+    (3600, "1 hour"),
+    (7200, "2 hours"),
+    (18000, "5 hours"),
+    (43200, "12 hours"),
+    (86400, "1 day"),
+]
+
+
+def format_dns_ttl(ttl: int) -> str:
+    """Render a TTL value using the form's notation."""
+    # Cloudflare's "auto" value; stored as 300 (see DnsRecord._normalize_fields)
+    if ttl == 1:
+        ttl = 300
+    return dict(DNS_TTL_CHOICES).get(ttl, f"{ttl} seconds")

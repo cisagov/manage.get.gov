@@ -24,6 +24,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
+from registrar.utility.errors import MultipleUsersWithEmailError
 
 from .common import (
     MockSESClient,
@@ -122,6 +123,15 @@ class TestDomainInvitations(TestCase):
             self.invitation.retrieve()
 
     @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserDomainRole.objects.filter(domain=self.domain).exists())
+
+    @less_console_noise_decorator
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
@@ -191,6 +201,15 @@ class TestPortfolioInvitations(TestCase):
         User.objects.filter(email=self.email).delete()
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
+
+    @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserPortfolioPermission.objects.filter(portfolio=self.portfolio).exists())
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
@@ -297,7 +316,7 @@ class TestPortfolioInvitations(TestCase):
         test_permission_list.update([self.portfolio_permission_1, self.portfolio_permission_2])
         perm_list = list(test_permission_list)
         # Verify
-        self.assertEquals(self.invitation.get_portfolio_permissions(), perm_list)
+        self.assertEqual(self.invitation.get_portfolio_permissions(), perm_list)
 
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=False)
@@ -460,6 +479,12 @@ class TestPortfolioInvitations(TestCase):
             requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_1)
+        domain_role_invite, _ = UserDomainRole.objects.get_or_create(
+            email=email_with_no_user,
+            domain=domain_in_portfolio_1,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
 
         domain_in_portfolio_2, _ = Domain.objects.get_or_create(
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
@@ -498,6 +523,8 @@ class TestPortfolioInvitations(TestCase):
         # The domain invitations to the portfolio domains have been canceled
         self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.CANCELED)
         self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+        domain_role_invite.refresh_from_db()
+        self.assertEqual(domain_role_invite.status, UserDomainRole.Status.REJECTED)
 
         # Invite 3 is unaffected
         self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
@@ -733,6 +760,47 @@ class TestPortfolioInvitations(TestCase):
                 domain=domain_not_in_portfolio_2,
             ).exists()
         )
+
+
+class TestUserPortfolioPermissionInvitationsOnLogin(TestCase):
+    """Test retrieving new portfolio invitations on login."""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email)
+        self.requestor, _ = User.objects.get_or_create(email="requester@igorville.gov", username="requester")
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.requestor,
+            organization_name="Hotel California",
+        )
+        self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+
+    def tearDown(self):
+        super().tearDown()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_retrieves_new_model_portfolio_invitation_on_login(self):
+        permission = UserPortfolioPermission.objects.create(
+            user=None,
+            email=self.email,
+            portfolio=self.portfolio,
+            roles=[self.portfolio_role_base],
+            additional_permissions=[self.portfolio_permission_1],
+            status=UserPortfolioPermission.Status.INVITED,
+            invited_by=self.requestor,
+        )
+
+        self.user.check_portfolio_invitations_on_login()
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.user)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNotNone(permission.accepted_at)
 
 
 class TestUserPortfolioPermission(TestCase):
@@ -1246,6 +1314,34 @@ class TestUser(TestCase):
         self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_no_view_or_edit_member_permissions_can_view_self(self, mock_has_permission):
+        """User w neither NO view and NO edit permission -> True (self view only)"""
+        mock_has_permission.return_value = False
+
+        self.assertTrue(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH view permissions -> False (bc can view more than just self)"""
+        mock_has_permission.side_effect = [True, False]  # view=True, edit=False
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH edit permission -> False (not self only view)"""
+        mock_has_permission.side_effect = [False, True]  # view=False, edit=True
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_and_view_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH view and WITH edit permission -> False (not self only view)"""
+        mock_has_permission.return_value = True
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.
@@ -1305,83 +1401,100 @@ class TestUser(TestCase):
             save_mock.assert_called_once()
 
     @less_console_noise_decorator
+    def test_check_domain_invitations_on_login_accepts_user_domain_role_invitation(self):
+        """A pending UserDomainRole invitation should be accepted on login."""
+        domain_role = UserDomainRole.objects.create(
+            email="MAYOR@igorville.gov",
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        self.user.check_domain_invitations_on_login()
+
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.user, self.user)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertIsNotNone(domain_role.accepted_at)
+
+    @less_console_noise_decorator
     def test_approved_domains_count(self):
         """Test that the correct approved domain count is returned for a user"""
         # with no associated approved domains, expect this to return 0
-        self.assertEquals(self.user.get_approved_domains_count(), 0)
+        self.assertEqual(self.user.get_approved_domains_count(), 0)
         # with one approved domain, expect this to return 1
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        self.assertEqual(self.user.get_approved_domains_count(), 1)
         # with one approved domain, expect this to return 1 (domain2 is deleted, so not considered approved)
         domain2, _ = Domain.objects.get_or_create(name="igorville2.gov", state=Domain.State.DELETED)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain2, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        self.assertEqual(self.user.get_approved_domains_count(), 1)
         # with two approved domains, expect this to return 2
         domain3, _ = Domain.objects.get_or_create(name="igorville3.gov", state=Domain.State.DNS_NEEDED)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain3, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 2)
+        self.assertEqual(self.user.get_approved_domains_count(), 2)
         # with three approved domains, expect this to return 3
         domain4, _ = Domain.objects.get_or_create(name="igorville4.gov", state=Domain.State.ON_HOLD)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain4, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 3)
+        self.assertEqual(self.user.get_approved_domains_count(), 3)
         # with four approved domains, expect this to return 4
         domain5, _ = Domain.objects.get_or_create(name="igorville5.gov", state=Domain.State.READY)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain5, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 4)
+        self.assertEqual(self.user.get_approved_domains_count(), 4)
 
     @less_console_noise_decorator
     def test_active_requests_count(self):
         """Test that the correct active domain requests count is returned for a user"""
         # with no associated active requests, expect this to return 0
-        self.assertEquals(self.user.get_active_requests_count(), 0)
+        self.assertEqual(self.user.get_active_requests_count(), 0)
         # with one active request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 1)
+        self.assertEqual(self.user.get_active_requests_count(), 1)
         # with two active requests, expect this to return 2
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville2.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
-        self.assertEquals(self.user.get_active_requests_count(), 2)
+        self.assertEqual(self.user.get_active_requests_count(), 2)
         # with three active requests, expect this to return 3
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville3.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.ACTION_NEEDED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 3)
+        self.assertEqual(self.user.get_active_requests_count(), 3)
         # with three active requests, expect this to return 3 (STARTED is not considered active)
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville4.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.STARTED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 3)
+        self.assertEqual(self.user.get_active_requests_count(), 3)
 
     @less_console_noise_decorator
     def test_rejected_requests_count(self):
         """Test that the correct rejected domain requests count is returned for a user"""
         # with no associated rejected requests, expect this to return 0
-        self.assertEquals(self.user.get_rejected_requests_count(), 0)
+        self.assertEqual(self.user.get_rejected_requests_count(), 0)
         # with one rejected request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.REJECTED
         )
-        self.assertEquals(self.user.get_rejected_requests_count(), 1)
+        self.assertEqual(self.user.get_rejected_requests_count(), 1)
 
     @less_console_noise_decorator
     def test_ineligible_requests_count(self):
         """Test that the correct ineligible domain requests count is returned for a user"""
         # with no associated ineligible requests, expect this to return 0
-        self.assertEquals(self.user.get_ineligible_requests_count(), 0)
+        self.assertEqual(self.user.get_ineligible_requests_count(), 0)
         # with one ineligible request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.INELIGIBLE
         )
-        self.assertEquals(self.user.get_ineligible_requests_count(), 1)
+        self.assertEqual(self.user.get_ineligible_requests_count(), 1)
 
     @less_console_noise_decorator
     def test_has_contact_info(self):
@@ -1507,7 +1620,7 @@ class TestUser(TestCase):
     @less_console_noise_decorator
     def test_get_active_requests_count_in_portfolio_returns_count_if_portfolio(self):
         request = self.factory.get("/")
-        request.session = {"portfolio": self.portfolio}
+        request.session = {"portfolio": self.portfolio.id}
 
         # Create active requests
         domain_1, _ = DraftDomain.objects.get_or_create(name="meoward1.gov")
@@ -1543,6 +1656,68 @@ class TestUser(TestCase):
 
         count = self.user.get_active_requests_count_in_portfolio(request)
         self.assertEqual(count, 3)
+
+    @less_console_noise_decorator
+    def test_get_user_domain_ids_scoped_to_current_portfolio(self):
+        """A limited (vew managed domains only) user's domain ids should only include
+        domains they manage within the portfolio currently in session, not domains
+        they manage in other, unrelated portfolios"""
+        # Give the user limited permission on its own portfolio
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS],
+        )
+
+        # Domain managed by the user, inside the current portfolio
+        domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain-in-a-portfolio.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_portfolio, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Domain managed by the user, but in a DIFFERENT portfolio
+        other_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user, organization_name="A Different Organization"
+        )
+        domain_in_another_portfolio, _ = Domain.objects.get_or_create(name="domain-in-another-portfolio.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_another_portfolio, portfolio=other_portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_another_portfolio, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # View self.portfolio - should only see the domain scoped to it
+        request = self.factory.get("/")
+        request.session = {"portfolio": self.portfolio.id}
+
+        domain_ids = self.user.get_user_domain_ids(request)
+
+        self.assertIn(domain_in_portfolio.id, domain_ids)
+        self.assertNotIn(domain_in_another_portfolio.id, domain_ids)
+
+    @less_console_noise_decorator
+    def test_get_user_domain_ids_with_no_portfolio_in_session_returns_all_domains(self):
+        """When there's no active portfolio in session (a non org user hitting
+        a general page), get_user_domain_ids should fall back to returning all of
+        the user's UserDomainRole domains"""
+        domain1, _ = Domain.objects.get_or_create(name="domain1.gov")
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain1, role=UserDomainRole.Roles.MANAGER)
+
+        domain2, _ = Domain.objects.get_or_create(name="domain2.gov")
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain2, role=UserDomainRole.Roles.MANAGER)
+
+        request = self.factory.get("/")
+        request.session = {}
+
+        domain_ids = self.user.get_user_domain_ids(request)
+
+        self.assertIn(domain1.id, domain_ids)
+        self.assertIn(domain2.id, domain_ids)
 
     @less_console_noise_decorator
     def test_is_only_admin_of_portfolio_returns_true(self):
@@ -1641,165 +1816,53 @@ class TestDomainRequestCustomSave(TestCase):
         super().tearDown()
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_new_instance(self):
-        """Test create_or_update_organization_type when creating a new instance"""
+    def test_create_organization_type_new_instance(self):
+        """Test organization_type when creating a new instance"""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
         )
 
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
-        """Test if create_or_update_organization_type does nothing when creating a new instance for federal"""
+    def test_create_organization_type_new_instance_federal_does_nothing(self):
+        """Test if organization_type does nothing when creating a new instance for federal"""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
-        self.assertEqual(domain_request.is_election_board, None)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
-        """Test create_or_update_organization_type for an existing instance."""
+    def test_update_organization_type_existing_instance(self):
+        """Test update organization_type on an existing instance."""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_request.is_election_board = True
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, True)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_request.is_election_board = False
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, False)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_existing_instance_updates_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
-        Start our with is_election_board as none to simulate a situation where the request was started, but
-        only completed to the point of filling out the generic_org_type."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=None,
-        )
-        domain_request.is_election_board = True
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, True)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value.
-        domain_request.is_election_board = None
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, None)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
-        """Test create_or_update_organization_type when modifying generic_org_type on an existing instance."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
         )
 
-        domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
+        domain_request.organization_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_request.save()
 
-        # Election board should be None because interstate cannot have an election board.
-        self.assertEqual(domain_request.is_election_board, None)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.INTERSTATE)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.INTERSTATE)
 
-        # Try changing the org Type to something that CAN have an election board.
+        # Try changing the org Type to tribal.
         domain_request_tribal = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="startedTribal.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
-        self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
-        )
+        self.assertEqual(domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL)
 
         # Change the org type
-        domain_request_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
+        domain_request_tribal.organization_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         domain_request_tribal.save()
 
-        self.assertEqual(domain_request_tribal.is_election_board, True)
-        self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION
-        )
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_no_update(self):
-        """Test create_or_update_organization_type when there are no values to update."""
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both non-election board
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_request.save()
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_request.is_election_board, False)
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both election board
-        domain_request_election = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="startedElection.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-            organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
-        )
-
-        self.assertEqual(
-            domain_request_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_request_election.is_election_board, True)
-        self.assertEqual(domain_request_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Modify an unrelated existing value for both, and ensure that everything is still consistent
-        domain_request.city = "Fudge"
-        domain_request_election.city = "Caramel"
-        domain_request.save()
-        domain_request_election.save()
-
-        self.assertEqual(domain_request.city, "Fudge")
-        self.assertEqual(domain_request_election.city, "Caramel")
-
-        # Test for non-election
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_request.is_election_board, False)
-        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for election
-        self.assertEqual(
-            domain_request_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_request_election.is_election_board, True)
-        self.assertEqual(domain_request_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY)
 
 
 class TestDomainInformationCustomSave(TestCase):
@@ -1812,177 +1875,61 @@ class TestDomainInformationCustomSave(TestCase):
         super().tearDown()
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_new_instance(self):
-        """Test create_or_update_organization_type when creating a new instance"""
+    def test_create_organization_type_new_instance(self):
+        """Test organization_type when creating a new instance"""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
         )
 
         domain_information = DomainInformation.create_from_dr(domain_request)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
-        """Test if create_or_update_organization_type does nothing when creating a new instance for federal"""
+    def test_create_organization_type_new_instance_federal_does_nothing(self):
+        """Test if organization_type does nothing when creating a new instance for federal"""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
 
         domain_information = DomainInformation.create_from_dr(domain_request)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
-        self.assertEqual(domain_information.is_election_board, None)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
     @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
-        """Test create_or_update_organization_type for an existing instance."""
+    def test_update_organization_type_existing_instance(self):
+        """Test update organization_type on an existing instance."""
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-        domain_information.is_election_board = True
-        domain_information.save()
-
-        self.assertEqual(domain_information.is_election_board, True)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_information.is_election_board = False
-        domain_information.save()
-        domain_information.refresh_from_db()
-
-        self.assertEqual(domain_information.is_election_board, False)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_existing_instance_update_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
-        Start our with is_election_board as none to simulate a situation where the request was started, but
-        only completed to the point of filling out the generic_org_type."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=None,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-        domain_information.is_election_board = True
-        domain_information.save()
-
-        self.assertEqual(domain_information.is_election_board, True)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_information.is_election_board = None
-        domain_information.save()
-        domain_information.refresh_from_db()
-
-        self.assertEqual(domain_information.is_election_board, None)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
-        """Test create_or_update_organization_type when modifying generic_org_type on an existing instance."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.CITY,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
+        domain_information.organization_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_information.save()
 
-        # Election board should be None because interstate cannot have an election board.
-        self.assertEqual(domain_information.is_election_board, None)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.INTERSTATE)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.INTERSTATE)
 
-        # Try changing the org Type to something that CAN have an election board.
+        # Try changing the org Type to tribal.
         domain_request_tribal = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="startedTribal.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            is_election_board=True,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
         domain_information_tribal = DomainInformation.create_from_dr(domain_request_tribal)
-        self.assertEqual(
-            domain_information_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
-        )
+        self.assertEqual(domain_information_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL)
 
         # Change the org type
-        domain_information_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
+        domain_information_tribal.organization_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         domain_information_tribal.save()
 
-        self.assertEqual(domain_information_tribal.is_election_board, True)
         self.assertEqual(
             domain_information_tribal.organization_type,
-            DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION,
+            DomainRequest.OrganizationChoices.STATE_OR_TERRITORY,
         )
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_no_update(self):
-        """Test create_or_update_organization_type when there are no values to update."""
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both non-election board
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-        domain_information.save()
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_information.is_election_board, False)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both election board
-        domain_request_election = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="startedElection.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-            organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
-        )
-        domain_information_election = DomainInformation.create_from_dr(domain_request_election)
-
-        self.assertEqual(
-            domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_information_election.is_election_board, True)
-        self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Modify an unrelated existing value for both, and ensure that everything is still consistent
-        domain_information.city = "Fudge"
-        domain_information_election.city = "Caramel"
-        domain_information.save()
-        domain_information_election.save()
-
-        self.assertEqual(domain_information.city, "Fudge")
-        self.assertEqual(domain_information_election.city, "Caramel")
-
-        # Test for non-election
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_information.is_election_board, False)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for election
-        self.assertEqual(
-            domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_information_election.is_election_board, True)
-        self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_federal_to_city(self):
@@ -1990,7 +1937,7 @@ class TestDomainInformationCustomSave(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="federal-to-city.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
@@ -2005,13 +1952,13 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information.federal_type, "executive")
 
         # Change org type to city
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_information.save()
 
         # Verify federal fields were cleared
         self.assertIsNone(domain_information.federal_agency)
         self.assertIsNone(domain_information.federal_type)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_tribal_to_city(self):
@@ -2019,7 +1966,7 @@ class TestDomainInformationCustomSave(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="tribal-to-city.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
@@ -2035,36 +1982,14 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertFalse(domain_information.state_recognized_tribe)
 
         # Change org type to city
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_information.save()
 
         # Verify tribal fields were cleared
         self.assertIsNone(domain_information.tribe_name)
         self.assertIsNone(domain_information.federally_recognized_tribe)
         self.assertIsNone(domain_information.state_recognized_tribe)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-    @less_console_noise_decorator
-    def test_clear_irrelevant_fields_city_to_federal_clears_election_board(self):
-        """Test that changing org type to federal clears is_election_board."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="city-to-federal.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-
-        # Verify election board is set
-        self.assertTrue(domain_information.is_election_board)
-
-        # Change org type to federal
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
-        domain_information.save()
-
-        # Verify is_election_board was cleared
-        self.assertIsNone(domain_information.is_election_board)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_special_district_to_city_clears_about_org(self):
@@ -2072,7 +1997,7 @@ class TestDomainInformationCustomSave(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="special-to-city.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+            organization_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
@@ -2084,12 +2009,12 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information.about_your_organization, "Test description for special district")
 
         # Change org type to city
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_information.save()
 
         # Verify about_your_organization was cleared
         self.assertIsNone(domain_information.about_your_organization)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_same_org_type_no_clearing(self):
@@ -2097,7 +2022,7 @@ class TestDomainInformationCustomSave(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="federal-same.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
@@ -2158,11 +2083,10 @@ class TestDomainRequestIncomplete(TestCase):
         current, _ = Website.objects.get_or_create(website="MeowardMeowardMeoward.com")
         self.amtrak, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
         self.domain_request = DomainRequest.objects.create(
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_type="executive",
             federal_agency=FederalAgency.objects.get(agency="AMTRAK"),
             about_your_organization="Some description",
-            is_election_board=True,
             tribe_name="Some tribe name",
             organization_name="Some organization",
             address_line1="address 1",
@@ -2209,7 +2133,7 @@ class TestDomainRequestIncomplete(TestCase):
 
     @less_console_noise_decorator
     def test_is_interstate_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.INTERSTATE
         self.domain_request.about_your_organization = "Something something about your organization"
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
@@ -2219,58 +2143,38 @@ class TestDomainRequestIncomplete(TestCase):
 
     @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
-        self.domain_request.is_election_board = True
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.is_election_board = None
-        self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_tribal_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.TRIBAL
         self.domain_request.tribe_name = "Tribe Name"
-        self.domain_request.is_election_board = False
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.is_election_board = None
-        self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.tribe_name = None
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_county_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
-        self.domain_request.is_election_board = False
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.COUNTY
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.is_election_board = None
-        self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
-        self.domain_request.is_election_board = False
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.is_election_board = None
-        self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_special_district_complete(self):
-        self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
+        self.domain_request.organization_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.domain_request.about_your_organization = "Something something about your organization"
-        self.domain_request.is_election_board = False
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.is_election_board = None
-        self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())
@@ -2554,7 +2458,7 @@ class TestDomainRequestIncomplete(TestCase):
         request.user = self.user
 
         self.assertTrue(self.wizard.form_is_complete())
-        self.domain_request.generic_org_type = None
+        self.domain_request.organization_type = None
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())
 

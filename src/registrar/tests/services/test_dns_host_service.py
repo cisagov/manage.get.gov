@@ -1,7 +1,9 @@
-from unittest.mock import patch, Mock
-from django.test import TestCase
+from unittest.mock import patch, Mock, ANY, PropertyMock
+from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from httpx import HTTPStatusError
+import copy
+
 
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
@@ -21,6 +23,7 @@ from registrar.models import (
     DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
@@ -29,6 +32,7 @@ from registrar.tests.helpers.dns_data_generator import (
     delete_all_dns_data,
     create_dns_zone,
 )
+from epplibwrapper import RegistryError
 
 
 class TestDnsHostService(TestCase):
@@ -81,12 +85,12 @@ class TestDnsHostService(TestCase):
         for case in account_test_cases:
             with self.subTest(msg=case["test_name"]):
                 mock_find_existing_account_in_db.return_value = case["db_account_id"]
-
                 mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
                 mock_create_db_account.return_value = case["expected_account_id"]
                 mock_create_and_save_account.return_value = case["expected_account_id"]
 
-                x_account_id = self.service.dns_account_setup(case["domain_name"])
+                with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                    x_account_id = self.service.dns_account_setup(case["domain_name"])
 
                 self.assertEqual(x_account_id, case["expected_account_id"])
 
@@ -101,6 +105,12 @@ class TestDnsHostService(TestCase):
                 else:
                     mock_create_and_save_account.assert_called_once()
                     mock_create_db_account.assert_called_once()
+
+                log_entries = json_log_entries(stream)
+                self.assertTrue(log_entries, "Expected at least one log line")
+
+                for entry in log_entries:
+                    self.assertEqual(entry.get("domain_name"), case["domain_name"])
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
@@ -128,6 +138,7 @@ class TestDnsHostService(TestCase):
                     "account": {"name": "test.gov"},
                     "name_servers": ["ns1.test.gov", "ns2.test.gov"],
                     "created_on": "2024-01-01 00:00:00+00:00",
+                    "vanity_name_servers": ["vanity1.test.gov", "vanity2.test.gov"],
                 },
             },
             # Case B: DB empty, but has zone in CF
@@ -143,6 +154,7 @@ class TestDnsHostService(TestCase):
                     "account": {"name": "exists.gov"},
                     "name_servers": ["ns1.exists.gov", "ns2.exists.gov"],
                     "created_on": "2024-01-01 00:00:00+00:00",
+                    "vanity_name_servers": ["vanity1.test.gov", "vanity2.test.gov"],
                 },
             },
             # Case C: Both DB and CF empty
@@ -171,7 +183,8 @@ class TestDnsHostService(TestCase):
 
                 mock_find_existing_zone_in_cf.return_value = case["cf_zone_data"]
 
-                self.service.dns_zone_setup(case["domain_name"], case["x_account_id"])
+                with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                    self.service.dns_zone_setup(case["domain_name"], case["x_account_id"])
 
                 # Behavioral assertions
                 if case["db_zone"]:
@@ -184,6 +197,93 @@ class TestDnsHostService(TestCase):
                 else:
                     mock_create_and_save_zone.assert_called_once()
                     mock_create_db_zone.assert_called_once()
+
+            log_entries = json_log_entries(stream)
+            self.assertTrue(log_entries, "Expected at least one log line")
+            for entry in log_entries:
+                self.assertEqual(entry.get("domain_name"), case["domain_name"])
+
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    def test_create_and_save_account_configures_dns_settings(self, mock_create_cf_account, mock_create_db_account):
+        """After creating a new CF account, DNS settings must be configured before saving to DB.
+
+        Verifies that zone_defaults are set with zone_mode=dns_only and nameservers.type=custom.tenant.
+        """
+        account_name = make_dns_account_name("test.gov")
+        account_id = "new-account-id"
+        expected_zone_settings = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+
+        mock_create_cf_account.return_value = {
+            "result": {"id": account_id, "name": account_name, "created_on": "2026-01-01T00:00:00Z"}
+        }
+        mock_create_db_account.return_value = account_id
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(return_value=expected_zone_settings)
+
+        returned_id = self.service.create_and_save_account(account_name)
+
+        self.service.dns_vendor_service.update_account_dns_settings.assert_called_once_with(account_id)
+        self.assertEqual(returned_id, account_id)
+        settings_response = self.service.dns_vendor_service.update_account_dns_settings.return_value
+        self.assertEqual(settings_response.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(settings_response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_get_all_accounts_success(self, mock_get_tenant_accounts):
+        mock_accounts = [
+            {
+                "account_tag": "54345",
+                "account_pubname": "Account for stream.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "54346",
+                "account_pubname": "Account for river.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "98765",
+                "account_pubname": "Account for sea.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+        ]
+        mock_get_tenant_accounts.return_value = mock_accounts
+
+        accounts = self.service.get_all_accounts()
+        self.assertEqual(accounts, mock_accounts)
+
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
+    @patch("registrar.services.dns_host_service.DnsHostService._configure_new_account_dns_settings")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    def test_create_and_save_account_raises_if_dns_settings_configuration_fails(
+        self, mock_create_cf_account, mock_configure_dns_settings, mock_create_db_account
+    ):
+        """If DNS settings configuration fails, create_and_save_account raises and does not save to DB."""
+        account_name = make_dns_account_name("test.gov")
+        account_id = "new-account-id"
+
+        mock_create_cf_account.return_value = {
+            "result": {"id": account_id, "name": account_name, "created_on": "2024-01-01T00:00:00Z"}
+        }
+        mock_configure_dns_settings.side_effect = Exception("DNS settings configuration failed")
+
+        with self.assertRaises(Exception):
+            self.service.create_and_save_account(account_name)
+
+        mock_create_db_account.assert_not_called()
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
@@ -214,22 +314,29 @@ class TestDnsHostService(TestCase):
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_cf_zone(self, mock_create_cf_account, mock_get_page_accounts):
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
+    def test_dns_setup_failure_from_create_cf_zone(
+        self,
+        mock_find_existing_account_in_db,
+        mock_find_existing_zone_in_cf,
+        mock_create_cf_zone,
+    ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
         account_id = "12345"
-        mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_cf_account.return_value = {"result": {"id": account_id}}
-        mock_create_cf_account.side_effect = APIError("DNS setup failed to create zone")
+        mock_find_existing_account_in_db.return_value = account_id
+        mock_find_existing_zone_in_cf.return_value = None
+        mock_create_cf_zone.side_effect = APIError("DNS setup failed to create zone")
 
         with self.assertRaises(APIError) as context:
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-        mock_create_cf_account.assert_called_once_with(account_name)
-        # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
+        mock_find_existing_account_in_db.assert_called_once_with(account_name)
+        mock_find_existing_zone_in_cf.assert_called_once_with(domain_name, account_id)
+        mock_create_cf_zone.assert_called_once_with(domain_name, account_id)
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
     @patch("registrar.models.dns.dns_record.DnsRecord.get_by_x_record_id")
@@ -290,6 +397,21 @@ class TestDnsHostService(TestCase):
         self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
         self.assertEqual(response.errors, [])
 
+    @patch("registrar.services.dns_host_service.CloudflareService.get_zone_records")
+    def test_get_records_by_zone_success(self, mock_get_zone_records):
+        x_zone_id = "1357"
+        mock_records = [
+            {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+            {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+            {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+            {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+            {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+        ]
+
+        mock_get_zone_records.return_value = mock_records
+        records = self.service.get_records_for_zone(x_zone_id)
+        self.assertEqual(records, mock_records)
+
     def test_update_account_dns_settings_failure(self):
         x_account_id = "12345"
         self.service.dns_vendor_service.update_account_dns_settings = Mock(
@@ -314,7 +436,7 @@ class TestDnsHostService(TestCase):
 
         response = self.service.update_zone_dns_settings(x_zone_id)
 
-        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id)
+        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id, ns_set=ANY)
         self.assertTrue(response.success)
         self.assertEqual(response.result["zone_mode"], "dns_only")
         self.assertEqual(response.result["nameservers"]["ns_set"], 2)
@@ -329,6 +451,162 @@ class TestDnsHostService(TestCase):
 
         with self.assertRaises(HTTPStatusError):
             self.service.update_zone_dns_settings(x_zone_id)
+
+    @override_settings(IS_LOCAL=False, IS_PRODUCTION=False)
+    def test_enroll_domain_success(self):
+        domain_name = "test.gov"
+        domain = create_domain(**{"domain_name": domain_name})
+
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
+        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
+        self.service.dns_account_setup = Mock(return_value="12345")
+        self.service.dns_zone_setup = Mock()
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
+        self.service.register_nameservers = Mock()
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
+            with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                self.service.enroll_domain(domain)
+
+        self.service.dns_account_setup.assert_called_once_with(domain_name)
+        self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
+        self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.rainbow.gov", "ns2.rainbow.gov"])
+
+        self.assertEqual(domain.state, Domain.State.READY)
+        log_entries = json_log_entries(stream, containing="Successfully enrolled")
+        self.assertTrue(log_entries, "Expected a 'Successfully enrolled' log line")
+        for entry in log_entries:
+            self.assertEqual(entry.get("domain_name"), domain_name)
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_enroll_domain_enrollment_in_production_succeeds(self):
+        allowed_domain = create_domain(**{"domain_name": "notigorville.gov"})
+
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
+        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
+        self.service.dns_account_setup = Mock(return_value="12345")
+        self.service.dns_zone_setup = Mock()
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
+
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
+            self.service.enroll_domain(allowed_domain)
+
+        self.service.dns_account_setup.assert_called()
+
+    @override_settings(IS_LOCAL=False)
+    def test_logging_for_registry_error_for_register_nameservers(self):
+        """
+        Tests that the RegistryError is raised when it occurs on the register_nameservers method
+        MockEppLib(Registry) is not setup for this test. It should always throw a RegistryError.
+        """
+        domain = create_domain(**{"domain_name": "not-igorville.gov"})
+        create_initial_dns_setup(domain=domain)
+        nameservers = DnsZone.objects.get(domain=domain).nameservers
+
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+            with self.assertRaises(RegistryError):
+                self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
+
+        log_entries = json_log_entries(stream, containing="Registry Error")
+        self.assertTrue(log_entries, "Expected a 'Registry Error' log line")
+        for entry in log_entries:
+            self.assertIn(
+                "Registry Error: an error occurred when registering nameservers for",
+                entry.get("message", ""),
+            )
+            self.assertEqual(entry.get("domain_name"), domain.name)
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts(self, mock_get_tenant_accounts, mock_get_account_zones):
+        # Create data with scenarios:
+        # all good: vendor account, db account, vendor zone, db zone
+        # has vendor account, has vendor zone, missing account and zone db
+        # only vendor account, no vendor zone (no account/zone db)
+        # multiple accounts with same name: one with  vendor/db zone, the other with only acccount, no db
+        # has db account, no vendor account
+
+        def cf_account(domain_name, x_account_id):
+            return {
+                "account_tag": x_account_id,
+                "account_pubname": make_dns_account_name(domain_name),
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            }
+
+        def cf_zone(domain_name, x_zone_id):
+            return {"id": x_zone_id, "name": domain_name}
+
+        # --- DB data: account + zone, linked to the vendor ids ---
+        for domain_name, x_account_id, x_zone_id in [
+            ("easypeezy.gov", "5", "zone-easypeezy"),
+            ("pieceofcake.gov", "6", "zone-pieceofcake"),
+            ("haunted.gov", "1", "zone-haunted-1"),
+            ("no-vendor.gov", "4", "zone-no-vendor"),
+        ]:
+            create_initial_dns_setup(
+                domain=create_domain(domain_name=domain_name),
+                x_account_id=x_account_id,
+                x_zone_id=x_zone_id,
+            )
+
+        # --- Vendor (Cloudflare) data ---
+        mock_get_tenant_accounts.return_value = [
+            cf_account("easypeezy.gov", "5"),
+            cf_account("pieceofcake.gov", "6"),
+            cf_account("haunted.gov", "1"),
+            cf_account("haunted.gov", "2"),  # duplicate name, never made it to the db or zone creation
+            cf_account("vendoronly.gov", "3"),
+            cf_account("vendoronly2.gov", "7"),
+            # no-vendor.gov ("4") intentionally missing from cf
+        ]
+
+        zones_by_x_account_id = {
+            "5": [cf_zone("easypeezy.gov", "zone-easypeezy")],
+            "6": [cf_zone("pieceofcake.gov", "zone-pieceofcake")],
+            "1": [cf_zone("haunted.gov", "zone-haunted-1")],
+            "2": [],
+            "3": [cf_zone("vendoronly.gov", "zone-vendoronly-1")],
+            "7": [],
+        }
+        mock_get_account_zones.side_effect = lambda x_account_id: {"result": zones_by_x_account_id[x_account_id]}
+
+        expected_result = {
+            "duplicate_account_names": ["Account for haunted.gov"],
+            "vendor_only": [
+                ("Account for haunted.gov", "2"),
+                ("Account for vendoronly.gov", "3"),
+                ("Account for vendoronly2.gov", "7"),
+            ],
+            "db_only": [("Account for no-vendor.gov", "4")],
+            "vendor_accounts_with_zone_no_db": [
+                ("Account for vendoronly.gov", "3"),
+            ],
+            "synced_accounts": [
+                ("Account for easypeezy.gov", "5"),
+                ("Account for haunted.gov", "1"),
+                ("Account for pieceofcake.gov", "6"),
+            ],
+        }
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result, expected_result)
 
 
 class TestDnsHostServiceDB(TestCase):
@@ -381,21 +659,6 @@ class TestDnsHostServiceDB(TestCase):
         delete_all_dns_data()
         User.objects.all().delete()
         DomainInformation.objects.all().delete()
-
-    def test_find_existing_account_success(self):
-        domain = create_domain(domain_name="democracy.gov")
-        test_x_account_id = "12345"
-        account_name = make_dns_account_name(domain.name)
-
-        # Paginated endpoint returns the above dictionary
-        self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
-
-        self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
-
-        create_dns_account(domain=domain, x_account_id=test_x_account_id)
-
-        found_id = self.service._find_existing_account_in_db(account_name)
-        self.assertEqual(found_id, test_x_account_id)
 
     def test_find_existing_account_in_db_does_not_exist_returns_none(self):
         account_name = "Account for nonexistent.gov"
@@ -497,20 +760,52 @@ class TestDnsHostServiceDB(TestCase):
             domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
         )
 
-        found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
+        found_x_zone_id = self.service.get_x_zone_id_if_zone_exists(zone_name)
 
         self.assertEqual(found_x_zone_id, x_zone_id)
-        self.assertEqual(found_nameservers, expected_nameservers)
 
     def test_find_existing_zone_in_db_does_not_exist_returns_none(self):
         zone_name = "missing.gov"
 
-        x_zone_id, nameservers = self.service.get_x_zone_id_if_zone_exists(
-            zone_name,
-        )
+        x_zone_id = self.service.get_x_zone_id_if_zone_exists(zone_name)
 
         self.assertIsNone(x_zone_id)
-        self.assertIsNone(nameservers)
+
+    def test_get_nameservers_from_zone_success(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        domain = create_domain(domain_name=zone_name)
+        create_initial_dns_setup(
+            domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+        )
+
+        nameservers = self.service.get_nameservers_from_zone(zone_name)
+
+        self.assertEqual(expected_nameservers, nameservers)
+
+    def test_get_nameservers_from_zone_failure(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        domain = create_domain(domain_name=zone_name)
+        create_initial_dns_setup(
+            domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+        )
+        DnsZone.objects.get(name="example.gov").delete()
+
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+            with self.assertRaises(DnsZone.DoesNotExist):
+                self.service.get_nameservers_from_zone(zone_name)
+
+        log_entries = json_log_entries(stream)
+        self.assertTrue(log_entries, "Expected a 'does not exist' log line")
+        for entry in log_entries:
+            self.assertEqual(entry.get("domain_name"), zone_name)
 
     def test_create_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
@@ -535,6 +830,7 @@ class TestDnsHostServiceDB(TestCase):
         zone = dns_zones.first()
         self.assertEqual(dns_zones.count(), 1)
         self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["vanity_name_servers"])
+        self.assertEqual(zone.zone_mode, DnsZone.ZoneModes.DNS_ONLY)
 
         # DnsZone_VendorDnsZone object exists for registrar zone and vendor zone
         dns_zone = dns_zones.first()
@@ -762,6 +1058,23 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
         self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
 
+    def update_db_record_ignores_fields_not_in_allow_list(self):
+        """Only allow-listed fields are copied from the Cloudflare response"""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+
+        payload = {"result": {**self.updated_record_data["result"], "type": "TXT"}}
+        DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, payload)
+
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.type, "A")
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+
     def test_update_db_record_with_error_fails(self):
         """Preserve original DNS record data when update fails."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
@@ -783,7 +1096,8 @@ class TestDnsHostServiceDB(TestCase):
         # Record data should still preserve original vendor record data on failed update
         self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
         self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        # Cloudflare "auto" (1) will be stored as 300 in our DB
+        self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):
@@ -814,3 +1128,118 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
                     self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
                     self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def test_create_and_save_zone_assigns_custom_nameservers(self):
+        """
+        After creating a new CF zone, custom nameservers are also assigned to DB zone object.
+        """
+        domain_name = "test.gov"
+        account_id = self.vendor_account_data["result"]["id"]
+        zone_id = "new-zone-id"
+        # Create account and domain object referenced in zone
+        domain = create_domain(domain_name=domain_name)
+        create_dns_account(domain, x_account_id=account_id, account_name=self.vendor_account_data["result"]["name"])
+
+        initial_zone_data = {
+            "name": domain_name,
+            "id": zone_id,
+            "created_on": "2026-01-01T00:00:00Z",
+            "account": {"name": self.vendor_account_data["result"]["name"]},
+            "name_servers": ["ns1.test.gov", "ns2.test.gov"],
+        }
+        updated_zone_data = copy.deepcopy(initial_zone_data)
+        updated_zone_data["vanity_name_servers"] = ["vanity1.test.gov", "vanity2.test.gov"]
+
+        self.service.dns_vendor_service.create_cf_zone = Mock(return_value={"result": {**initial_zone_data}})
+        # zone response with updated custom nameservers
+        self.service.dns_vendor_service.get_zone_by_id = Mock(return_value={"result": {**updated_zone_data}})
+        expected_zone_settings = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+        self.service.dns_vendor_service.update_zone_dns_settings = Mock(return_value=expected_zone_settings)
+
+        response = self.service.create_and_save_zone(domain_name, account_id)
+
+        dns_zone = DnsZone.objects.filter(name=domain_name).first()
+        self.assertNotEqual(initial_zone_data, updated_zone_data)
+        self.assertEqual(updated_zone_data["vanity_name_servers"], dns_zone.nameservers)
+        self.assertEqual(response["result"], updated_zone_data)
+
+    def test_delete_db_record_success(self):
+        """DnsHostService delete_dns_record successfully deletes DnsRecord,
+        VendorDnsRecord, and DnsRecordVendorDnsRecord from database."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+        record_db = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name"))
+        vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
+
+        self.service.delete_dns_record(x_zone_id, record_db)
+
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
+        self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(id=record_db.id).exists())
+        self.assertFalse(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
+        )
+
+    def test_delete_db_record_with_db_error_fails(self):
+        """Preserve original DnsRecord when db delete fails."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+        record_db = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name"))
+        vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
+
+        with patch("registrar.models.DnsRecord.delete", side_effect=IntegrityError("simulated failure")):
+            self.service.dns_vendor_service.delete_dns_record = Mock(return_value="1234")
+            with self.assertRaises(Exception):
+                self.service.delete_dns_record(x_zone_id, record_db)
+            # Vendor service deletion not called on database deletion failure
+            self.service.dns_vendor_service.delete_dns_record.assert_not_called()
+
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
+        self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(id=record_db.id).exists())
+        self.assertTrue(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
+        )
+
+    def test_delete_db_record_with_vendor_error_fails(self):
+        """Preserve original DnsRecord when vendor service fails to delete record."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"]["id"]
+        create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+        record_db = DnsRecord.get_by_x_record_id(x_record_id)
+        vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
+        self.service.dns_vendor_service.delete_dns_record = Mock(side_effect=APIError("simulated error"))
+
+        with self.assertRaises(APIError):
+            self.service.delete_dns_record(x_zone_id, record_db)
+
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
+        self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(id=record_db.id).exists())
+        self.assertTrue(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
+        )

@@ -1,9 +1,14 @@
+from collections import Counter
 import logging
+import random
+from typing import List, Optional
 
-from registrar.config import settings
+from django.conf import settings
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import APIError, RegistrySystemError
+from registrar.services.dns_http_client import build_dns_client
+from registrar.logging_context import set_dns_log_context
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -16,8 +21,8 @@ from registrar.models import (
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
-from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client, HTTPStatusError
+from registrar.services.utility.dns_helper import get_dns_zone_name_from_account_name, make_dns_account_name
+from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +36,7 @@ class DnsHostService:
     """
 
     def __init__(self, client=None):
-        self.client = client or Client()
+        self.client = client or build_dns_client()
         self.dns_vendor_service = CloudflareService(self.client)
 
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
@@ -40,6 +45,9 @@ class DnsHostService:
 
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
+        if settings.DNS_NS_SET_RANGE:
+            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE)  # nosec
+            return self.dns_vendor_service.update_zone_dns_settings(x_zone_id, ns_set=ns_set)
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
     def _find_account_tag_by_pubname(self, items, name):
@@ -65,26 +73,45 @@ class DnsHostService:
         Ensure a DNS Vendor account exists for this domain and is saved to the database.
         Returns x_account_id.
         """
-        logger.info(f"Setting up DNS hosting account for domain {domain_name} . . .")
-        account_name = make_dns_account_name(domain_name)
-        logger.debug(f"Derived account name {account_name} from domain name {domain_name}")
+        with set_dns_log_context(domain_name):
+            logger.info(
+                "Setting up DNS hosting account for domain %s",
+                domain_name,
+            )
+            account_name = make_dns_account_name(domain_name)
+            logger.info(
+                "Derived account name %s from domain name %s",
+                account_name,
+                domain_name,
+                extra={"account_name": account_name},
+            )
 
-        # Check if account exists in DB
-        x_account_id = self._find_existing_account_in_db(account_name)
-        if x_account_id:
-            logger.info("Already has an existing vendor account")
-            return x_account_id
+            # Check if account exists in DB
+            x_account_id = self._find_existing_account_in_db(account_name)
+            if x_account_id:
+                logger.info(
+                    "Domain %s already has an existing vendor account %s in our database",
+                    domain_name,
+                    account_name,
+                    extra={"account_name": account_name},
+                )
+                return x_account_id
 
-        # If not in DB, check if account exists in vendor (CF) service
-        cf_account_response = self._find_existing_account_in_cf(account_name)
-        if cf_account_response:
-            logger.info("Found existing account in Cloudflare")
-            normalized_account = self._normalize_cf_account_response(cf_account_response)
-            return self.create_db_account({"result": normalized_account})
+            # If not in DB, check if account exists in vendor (CF) service
+            cf_account_response = self._find_existing_account_in_cf(account_name)
+            if cf_account_response:
+                logger.info(
+                    "Domain %s has an existing account in Cloudflare: %s",
+                    domain_name,
+                    account_name,
+                    extra={"account_name": account_name},
+                )
+                normalized_account = self._normalize_cf_account_response(cf_account_response)
+                return self.create_db_account({"result": normalized_account})
 
-        # Create new vendor account
-        logger.info(f"No existing account found. Creating new account for {domain_name}")
-        return self.create_and_save_account(account_name)
+            # Create new vendor account
+            logger.info("No existing account found. Creating new account for %s", domain_name)
+            return self.create_and_save_account(account_name)
 
     def _normalize_cf_account_response(self, cf_account_response: dict) -> dict:
         """
@@ -103,65 +130,112 @@ class DnsHostService:
         """
         Ensure a DNS Vendor zone exists for this domain and is saved to the database.
         """
-        has_zone = DnsZone.objects.filter(name=domain_name).exists()
-        if has_zone:
-            logger.info("Already has an existing zone and nameservers")
+        with set_dns_log_context(domain_name):
+            has_zone = DnsZone.objects.filter(name=domain_name).exists()
+            if has_zone:
+                logger.info(
+                    "Already has an existing zone and nameservers for %s",
+                    domain_name,
+                )
+                return
+
+            zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
+
+            if zone_data:
+                self.create_db_zone({"result": zone_data}, domain_name)
+            else:
+                self.create_and_save_zone(domain_name, x_account_id)
+
+            logger.info(
+                "Zone setup completed successfully for domain %s",
+                domain_name,
+            )
             return
 
-        try:
-            zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
-        except APIError as e:
-            logger.error(e)
-            raise
-
-        if zone_data:
-            self.create_db_zone({"result": zone_data}, domain_name)
-        else:
-            try:
-                self.create_and_save_zone(domain_name, x_account_id)
-            except Exception as e:
-                logger.error(f"dnsSetup for zone failed {e}")
-                raise
-
-        logger.info(f"Zone setup completed successfully for domain {domain_name}")
-        return
-
     def create_and_save_account(self, account_name) -> str:
-        try:
-            account_data = self.dns_vendor_service.create_cf_account(account_name)
-            logger.info("Successfully created account at vendor")
-            x_account_id = account_data["result"]["id"]
-        except APIError as e:
-            logger.error(f"Failed to create account: {str(e)}")
-            raise
+
+        account_data = self.dns_vendor_service.create_cf_account(account_name)
+        logger.info(
+            "Successfully created account %s at vendor",
+            account_name,
+            extra={"account_name": account_name},
+        )
+        x_account_id = account_data["result"]["id"]
+
+        self._configure_new_account_dns_settings(x_account_id, account_name)
 
         try:
             self.create_db_account(account_data)
-            logger.info(f"Successfully saved account '{account_name}' to database")
-        except Exception as e:
-            logger.error(f"Failed to save {account_name} to database: {str(e)}")
+            logger.info(
+                "Successfully saved account '%s' to database",
+                account_name,
+                extra={"account_name": account_name},
+            )
+        except Exception:
+            logger.error(
+                "Failed to save %s to database",
+                account_name,
+                extra={"account_name": account_name},
+                exc_info=True,
+            )
             raise
 
         return x_account_id
 
+    def delete_account(self, x_account_id) -> str:
+        """
+        For now, we only delete an account on Cloudflare and handle db DNS data deletion separately.
+        Consider refactoring if we scope db DNS data deletion beyond EPP deletion.
+        If we do introduce dns db deletion in DnsHostService, consider:
+        1. moving db cleanup logic from EPP deletion to Domain model class method.
+        2. changing params from account to domain/zone.
+        3. adding/modifying tests to verify DnsHostService deletes DNS data in db.
+        """
+        account_data = self.dns_vendor_service.delete_cf_account(x_account_id)
+        x_account_id = account_data["result"]["id"]
+        return x_account_id
+
+    def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
+        """Apply required DNS settings to a newly created account.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        Must be called after account creation and before zone creation.
+        """
+        self.update_account_dns_settings(x_account_id)
+
+    def get_all_accounts(self) -> List[dict]:
+        """Calls the vendor service's list accounts method"""
+        per_page_max = 50
+        return self.dns_vendor_service.get_tenant_accounts(per_page_max)
+
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
-        try:
-            zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
-            zone_name = zone_data["result"].get("name")
-            logger.info(f"Successfully created zone {domain_name}.")
+        zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
+        zone_name = zone_data["result"].get("name")
+        logger.info(
+            "Successfully created zone %s",
+            zone_name,
+            extra={"zone_name": zone_name, "x_account_id": x_account_id},
+        )
+        x_zone_id = zone_data["result"]["id"]
 
-        except APIError as e:
-            logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
-            raise
+        # Update zone to use and assign custom nameservers
+        self._configure_new_zone_dns_settings(x_zone_id, zone_name)
+        # Get updated zone data with custom nameservers
+        zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
-        try:
-            self.create_db_zone(zone_data, domain_name)
-            logger.info(f"Successfully saved zone '{domain_name}' to database")
-        except Exception as e:
-            logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
-            raise
+        self.create_db_zone(zone_data, domain_name)
+        logger.info("Successfully saved zone '%s' to database", domain_name)
+
+        return zone_data
+
+    def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
+        """Apply required DNS settings to a newly created zone.
+
+        Sets nameservers type to custom.tenant and assigns nameserver set to zone.
+        """
+        self.update_zone_dns_settings(x_zone_id)
 
     def create_dns_record(self, x_zone_id, form_record_data) -> "DnsRecord | None":
         """Calls create method of vendor service to create a DNS record.
@@ -169,33 +243,29 @@ class DnsHostService:
         Returns the newly created DnsRecord instance, or None if the lookup fails.
         """
         # Create record in vendor service
-        try:
-            vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
-            logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
-        except (APIError, HTTPStatusError) as e:
-            logger.error(f"Error creating DNS record: {str(e)}")
-            raise APIError(str(e)) from e
+        vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
+        x_record_id = vendor_record_data["result"].get("id")
 
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
-        except Exception as e:
-            logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
+        except Exception:
+            logger.error(
+                "Failed to save record %s in database.",
+                form_record_data,
+                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id, "x_record_id": x_record_id},
+                exc_info=True,
+            )
             raise
 
-        x_record_id = vendor_record_data["result"].get("id")
         return DnsRecord.get_by_x_record_id(x_record_id) if x_record_id else None
 
-    def update_dns_record(self, x_zone_id: str, record_id: int, form_record_data: dict) -> DnsRecord:
-        """Look up the record by pk and update it via the vendor service.
+    def update_dns_record(self, x_zone_id: str, dns_record: DnsRecord, form_record_data: dict) -> DnsRecord:
+        """Update the DNSRecord via the vendor service.
 
         Returns the updated DnsRecord.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        try:
-            dns_record = DnsRecord.objects.get(pk=record_id)
-        except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record to update.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
@@ -207,88 +277,112 @@ class DnsHostService:
     def update_and_save_dns_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
         """Push updated record data to the vendor and persist the changes in the local database."""
         # Update record in vendor service
-        try:
-            vendor_record_data = self.dns_vendor_service.update_dns_record(x_zone_id, x_record_id, form_record_data)
-            record_name = vendor_record_data["result"].get("name")
-            logger.info(f"Successfully updated record {record_name}.")
 
-        except (APIError, HTTPStatusError) as e:
-            logger.error(f"DNS setup failed to update record {record_name}: {str(e)}")
-            raise APIError(str(e)) from e
+        vendor_record_data = self.dns_vendor_service.update_dns_record(x_zone_id, x_record_id, form_record_data)
 
         # Update and save dns record in registrar db
         try:
             DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, vendor_record_data)
-        except Exception as e:
-            logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
+        except Exception:
+            logger.error(
+                "Failed to save record %s in database.",
+                form_record_data,
+                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id, "x_record_id": x_record_id},
+                exc_info=True,
+            )
             raise
         return vendor_record_data
 
+    def delete_dns_record(self, x_zone_id: str, dns_record: DnsRecord) -> str:
+        """Delete the DnsRecord via the vendor service.
+
+        Returns the deleted DnsRecord's vendor id.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
+
+        with transaction.atomic():
+            DnsRecord.delete_by_record(dns_record=dns_record)
+            self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+
+        return x_record_id
+
+    def get_records_for_zone(self, x_zone_id) -> List[dict]:
+        """Calls the vendor service's list zone records method"""
+        return self.dns_vendor_service.get_zone_records(x_zone_id)
+
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
-        per_page = 50
-        page = 0
-        is_last_page = False
-        while is_last_page is False:
-            page += 1
-            try:
-                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                accounts = page_accounts_data["result"]
-                account_data = self._find_account_json_by_pubname(accounts, account_name)
-                if account_data:
-                    break
-                total_count = page_accounts_data["result_info"].get("total_count")
-                is_last_page = total_count <= page * per_page
-
-            except APIError as e:
-                logger.error(f"Error fetching accounts: {str(e)}")
-                raise
-
-        return account_data
+        return self.dns_vendor_service.get_account_by_name(account_name)
 
     def _find_existing_account_in_db(self, account_name) -> str | None:
         try:
             dns_account = DnsAccount.objects.get(name=account_name)
         except DnsAccount.DoesNotExist:
-            logger.debug(f"No db account found by name {account_name}")
+            logger.debug(
+                "No db account found by name %s",
+                account_name,
+                extra={"account_name": account_name},
+            )
             return None
 
         return dns_account.get_active_x_account_id()
 
     def _find_existing_zone_in_cf(self, zone_name, x_account_id) -> dict | None:
-        try:
-            all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
-            zones = all_zones_data["result"]
-            zone_data = self._find_zone_json_by_name(zones, zone_name)
-        except APIError as e:
-            logger.error(f"Error fetching zones: {str(e)}")
-            raise
+        """Finds zone within an account by zone (domain) name"""
+        all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
+        zones = all_zones_data["result"]
+        zone_data = self._find_zone_json_by_name(zones, zone_name)
 
         return zone_data
 
-    def get_x_zone_id_if_zone_exists(self, domain_name) -> tuple[str | None, list[str] | None]:
-        # returns x_zone_id (and temporarily returns nameservers)
-        try:
-            zone = DnsZone.objects.get(name=domain_name)
-        except DnsZone.DoesNotExist:
-            logger.debug(f"Zone for domain {domain_name} does not exist")
-            return None, None
+    def get_x_zone_id_if_zone_exists(self, domain_name) -> str | None:
+        with set_dns_log_context(domain_name):
+            try:
+                zone = DnsZone.objects.get(name=domain_name)
+            except DnsZone.DoesNotExist:
+                logger.debug(
+                    "Zone for domain %s does not exist",
+                    domain_name,
+                )
+                return None
 
         x_zone_id = zone.get_active_x_zone_id()
-        nameservers = zone.nameservers or []
 
-        # temporarily returning nameservers until we retrieve nameservers directly
-        return x_zone_id, nameservers
+        return x_zone_id
+
+    def get_nameservers_from_zone(self, domain_name) -> list[str] | None:
+        with set_dns_log_context(domain_name):
+            try:
+                zone = DnsZone.objects.get(name=domain_name)
+            except DnsZone.DoesNotExist:
+                logger.debug(
+                    "Zone for domain %s does not exist",
+                    domain_name,
+                )
+                raise
+            return zone.nameservers or []
 
     def register_nameservers(self, domain_name, nameservers):
-        domain = Domain.objects.get(name=domain_name)
-        # TODO: first check domain state? or status? to ensure it's in the registry?
-        nameserver_tups = [tuple([n]) for n in nameservers]
+        with set_dns_log_context(domain_name):
+            domain = Domain.objects.get(name=domain_name)
+            nameserver_tups = [tuple([n]) for n in nameservers]
 
-        try:
-            logger.info("Attempting to register nameservers. . .")
-            domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
-        except (RegistrySystemError, Exception):
-            raise
+            try:
+                logger.info(
+                    "Attempting to register nameservers for domain %s",
+                    domain_name,
+                    extra={"nameservers": nameservers},
+                )
+                domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
+            except RegistryError as e:
+                logger.error(
+                    "Registry Error: an error occurred when registering nameservers for %s",
+                    domain_name,
+                    extra={"nameservers": nameservers, "exc_class": type(e).__name__},
+                )
+                raise
 
     def create_db_account(self, vendor_account_data):
         """
@@ -317,7 +411,6 @@ class DnsHostService:
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_acc = VendorDnsAccount.objects.create(
@@ -335,8 +428,12 @@ class DnsHostService:
                 )
                 return x_account_id
 
-        except Exception as e:
-            logger.error(f"Failed to create and save account to database: {str(e)}.")
+        except Exception:
+            logger.error(
+                "Failed to create and save account to database.",
+                extra={"x_account_id": x_account_id},
+                exc_info=True,
+            )
             raise
 
     def create_db_zone(self, vendor_zone_data, domain_name):
@@ -346,7 +443,6 @@ class DnsHostService:
         zone_account_name = zone_data["account"]["name"]
         nameservers = zone_data["vanity_name_servers"] or zone_data["name_servers"]
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_dns_zone = VendorDnsZone.objects.create(
@@ -359,12 +455,20 @@ class DnsHostService:
                 dns_domain = Domain.objects.get(name=domain_name)
 
                 dns_zone = DnsZone.objects.create(
-                    dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
+                    dns_account=dns_account,
+                    domain=dns_domain,
+                    name=zone_name,
+                    nameservers=nameservers,
+                    zone_mode=DnsZone.ZoneModes.DNS_ONLY,
                 )
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
-        except Exception as e:
-            logger.error(f"Failed to create and save zone to database: {str(e)}.")
+        except Exception:
+            logger.error(
+                "Failed to create and save zone for domain %s to database.",
+                domain_name,
+                exc_info=True,
+            )
             raise
 
     def enroll_domain(self, domain: Domain):
@@ -379,35 +483,104 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
-
-        if domain.is_enrolled_in_dns_hosting:
-            logger.info("Domain already enrolled in DNS hosting")
-            return
-
         domain_name = domain.name
+        with set_dns_log_context(domain_name):
+            if domain.is_enrolled_in_dns_hosting:
+                logger.info("Domain %s already enrolled in DNS hosting.", domain_name)
+                return
+
+            try:
+                with transaction.atomic():
+                    # Save Account
+                    x_account_id = self.dns_account_setup(domain_name)
+
+                    # Save Zone
+                    self.dns_zone_setup(domain_name, x_account_id)
+
+                    # Fetch nameservers from DB zone
+                    nameservers = self.get_nameservers_from_zone(domain_name)
+                    if not nameservers:
+                        raise RuntimeError("Zone exists but nameservers not found")
+
+                    # Register nameservers with registry
+                    if not settings.IS_LOCAL:
+                        self.register_nameservers(domain_name, nameservers)
+
+                    # Mark domain as enrolled
+                    domain.is_enrolled_in_dns_hosting = True
+                    domain.ready()
+                    domain.save()
+
+            except Exception:
+                logger.exception(
+                    "DNS enrollment failed for %s",
+                    domain_name,
+                )
+                # Domain remains unenrolled because transaction rolls back
+                raise
+            logger.info(
+                "Successfully enrolled %s in DNS hosting",
+                domain_name,
+            )
+
+    def compare_vendor_and_db_accounts(self):
+        # get all the CF accounts and convert data to tuples (name, id). Used for sync status report.
+        vendor_accounts = self.get_all_accounts()
+        vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
+
+        duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
+
+        # Get all the db DNS accounts (name and x_account_id)
+        # Only get db accounts for the current active vendor
+        db_accounts_data = list(
+            DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
+                "dns_account__name", "vendor_dns_account__x_account_id"
+            )
+        )
+
+        # Compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only
+        # since the db account name must be unique, so can't be duplicated.
+        vendor_only = set(vendor_accounts_data) - set(db_accounts_data)
+        db_only = set(db_accounts_data) - set(vendor_accounts_data)
+
+        synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
+        vendor_accounts_with_zone = set()
+
+        # which vendor-only accounts have corresponding zone
+        for name, account_id in sorted(vendor_only):
+            # Check if a vendor zone exists for vendor_only accounts.
+            # Because the account and zone creation are inside of a transaction,
+            # failures would result in rolling back db account/zone, but not the cf account/zone
+            try:
+                vendor_zone_data = self._get_existing_zone_data(name, account_id)
+            except ValueError:
+                continue
+            if vendor_zone_data:
+                vendor_accounts_with_zone.add((name, account_id))
+
+        # Return each as a sorted list
+        return {
+            "duplicate_account_names": sorted(duplicate_account_names),
+            "vendor_only": sorted(vendor_only),
+            "db_only": sorted(db_only),
+            "vendor_accounts_with_zone_no_db": sorted(vendor_accounts_with_zone),
+            "synced_accounts": sorted(synced_accounts),
+        }
+
+    def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
+        """Returns a list of names of vendor accounts that are duplicated"""
+        vendor_account_names = [a["account_pubname"] for a in vendor_accounts]
+        name_counts = Counter(vendor_account_names)
+        duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
+        return duplicate_account_names
+
+    def _get_existing_zone_data(self, name, account_id) -> Optional[tuple]:
+        # get vendor zone data (name, id)
         try:
-            with transaction.atomic():
-                # Save Account
-                x_account_id = self.dns_account_setup(domain_name)
+            domain_name = get_dns_zone_name_from_account_name(name)
+        except ValueError:
+            logger.error(f"Cannot extract domain name from the account name {name}")
+        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
+        vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
-                # Save Zone
-                self.dns_zone_setup(domain_name, x_account_id)
-
-                # Fetch nameservers from DB zone
-                _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
-                if not nameservers:
-                    raise RuntimeError("Zone exists but nameservers not found")
-
-                # Register nameservers with registry
-                if not settings.IS_LOCAL:
-                    self.register_nameservers(domain_name, nameservers)
-
-                # Mark domain as enrolled
-                domain.is_enrolled_in_dns_hosting = True
-                domain.save(update_fields=["is_enrolled_in_dns_hosting"])
-
-        except Exception:
-            logger.exception("DNS enrollment failed for %s", domain_name)
-            # Domain remains unenrolled because transaction rolls back
-            raise
-        logger.info("Successfully enrolled %s in DNS hosting", domain_name)
+        return vendor_zone_data

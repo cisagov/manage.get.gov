@@ -1,4 +1,5 @@
 import logging
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -20,10 +21,23 @@ from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
     InvitationError,
+    MultipleUsersWithEmailError,
 )
-from registrar.views.utility.invitation_helper import get_requested_user
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
+
+
+def get_requested_user(email):
+    """Retrieve a user by email or return None if the user doesn't exist."""
+    if not email:
+        return None
+
+    users = list(User.objects.filter(email__iexact=email).order_by("pk")[:2])
+    if len(users) > 1:
+        raise MultipleUsersWithEmailError(email)
+
+    return users[0] if users else None
 
 
 def invite_to_portfolio(
@@ -35,7 +49,10 @@ def invite_to_portfolio(
 ):
     """
     Invite a user to a portfolio.
-    Creates invitation in new model (UserPortfolioPermission).
+    Uses the invitation backend selected by the
+    `user_portfolio_permission_invitations` waffle flag.
+    While the new backend is active, a legacy PortfolioInvitation is
+    still created for compatibility.
 
     Args:
         email: Email address of the invitee
@@ -45,51 +62,353 @@ def invite_to_portfolio(
         additional_permissions: Optional list of additional permissions
 
     Returns:
-        UserPortfolioPermission object
+        Tuple of the saved invitation object and whether follow-up
+        notifications to existing portfolio admins were sent
 
     Raises:
         InvitationError: If invitation cannot be created
     """
-    email = email.lower()
-    requested_user = get_requested_user(email)
-    additional_permissions = additional_permissions or []
+    if flag_is_active_for_user(requestor, "user_portfolio_permission_invitations"):
+        return create_portfolio_permission_or_invitation(
+            email=email,
+            portfolio=portfolio,
+            requestor=requestor,
+            roles=roles,
+            additional_permissions=additional_permissions,
+            send_email=True,
+        )
 
-    if check_duplicate_portfolio_invitation(email, portfolio):
-        raise InvitationError(f"{email} has already been invited to this portfolio " "or is already a member.")
+    return _create_legacy_portfolio_invitation(
+        email=email,
+        portfolio=portfolio,
+        requestor=requestor,
+        roles=roles,
+        additional_permissions=additional_permissions,
+    )
 
-    is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles
+
+def create_portfolio_permission_or_invitation(
+    email: str,
+    portfolio: Portfolio,
+    requestor: User,
+    roles: list,
+    additional_permissions: list = None,
+    send_email: bool = True,
+    permission: UserPortfolioPermission = None,
+):
+    """
+    Create a UserPortfolioPermission for an existing user or an invitation with a new email.
+    While the compatibility path exists, this also mirrors a legacy
+    PortfolioInvitation record.
+
+    Returns the saved permission and whether follow-up notifications
+    to existing portfolio admins were sent.
+    """
+    email = _get_portfolio_permission_email(email, permission)
+    requested_user = _get_portfolio_permission_user(email, permission)
+
+    try:
+        validate_portfolio_permission_or_invitation(
+            email=email,
+            portfolio=portfolio,
+        )
+    except ValidationError as error:
+        raise InvitationError(error.messages[0]) from error
 
     try:
         with transaction.atomic():
-            # Create new model invitation
-            permission = UserPortfolioPermission.objects.create(
-                user=requested_user,
+            permission = _save_portfolio_permission(
+                permission=permission,
+                email=email,
                 portfolio=portfolio,
+                user=requested_user,
                 roles=roles,
                 additional_permissions=additional_permissions,
-                status=UserPortfolioPermission.Status.INVITED,
-                email=email,
-                invited_by=requestor,
-                invited_at=timezone.now(),
             )
+            # Temporary support for legacy email invitation flows.
+            if flag_is_active_for_user(requestor, "legacy_invitations"):
+                _save_legacy_portfolio_invitation(
+                    email=email,
+                    portfolio=portfolio,
+                    user=requested_user,
+                    roles=roles,
+                    additional_permissions=additional_permissions,
+                )
+            send_invitation_email = _must_send_portfolio_permission_email(requested_user, send_email)
+            portfolio_admin_notifications_sent = True
+            if send_invitation_email:
+                portfolio_admin_notifications_sent = _send_portfolio_permission_email(
+                    email=email,
+                    requestor=requestor,
+                    portfolio=portfolio,
+                    roles=roles,
+                )
+                _set_portfolio_invitation_details(permission, requestor)
 
-            # Send invitation email
-            send_portfolio_invitation_email(
-                email=email,
-                requestor=requestor,
-                portfolio=portfolio,
-                is_admin_invitation=is_admin_invitation,
-            )
-
-            logger.info(f"Created portfolio invitation for {email} " f"to portfolio {portfolio.id}")
-            return permission
+            logger.info(f"Created portfolio permission or invitation for {email} to portfolio {portfolio.id}")
+            return permission, portfolio_admin_notifications_sent
 
     except Exception as e:
         logger.error(
-            f"Failed to create portfolio invitation for {email}: {e}",
+            f"Failed to create portfolio permission or invitation for {email}: {e}",
             exc_info=True,
         )
         raise
+
+
+def _get_portfolio_permission_email(email, permission):
+    requested_email = None
+
+    # Once an invitation is accepted, always prefer the user record.
+    if permission:
+        if permission.user:
+            if permission.user.email:
+                requested_email = permission.user.email
+
+    if not requested_email:
+        if email:
+            requested_email = email
+
+    if not requested_email:
+        if permission:
+            if permission.email:
+                requested_email = permission.email
+
+    if not requested_email:
+        raise InvitationError("An email address is required.")
+
+    return requested_email.lower()
+
+
+def _get_portfolio_permission_user(email, permission):
+    # If the email belongs to a current user, the permission should point at that user.
+    requested_user = get_requested_user(email)
+    if requested_user:
+        return requested_user
+
+    if permission:
+        if permission.user:
+            return permission.user
+
+    return None
+
+
+def validate_portfolio_permission_or_invitation(email, portfolio):
+    if check_duplicate_portfolio_invitation(email, portfolio):
+        raise ValidationError(f"{email} has an existing invitation or is already a member of this portfolio.")
+
+
+def _save_portfolio_permission(
+    permission,
+    email,
+    portfolio,
+    user,
+    roles,
+    additional_permissions,
+):
+    if permission is None:
+        permission = UserPortfolioPermission()
+
+    permission.email = email
+    permission.portfolio = portfolio
+    permission.user = user
+    permission.roles = roles
+    permission.additional_permissions = additional_permissions
+    permission.status = get_portfolio_permission_status(user)
+    permission.save()
+
+    return permission
+
+
+def _save_legacy_portfolio_invitation(
+    email,
+    portfolio,
+    user,
+    roles,
+    additional_permissions,
+):
+
+    legacy_invitation = PortfolioInvitation(
+        email=email,
+        portfolio=portfolio,
+        roles=roles,
+        additional_permissions=additional_permissions,
+    )
+    legacy_invitation.save()
+
+    if user:
+        legacy_invitation.retrieve(user=user)
+        legacy_invitation.save()
+
+    return legacy_invitation
+
+
+def _create_legacy_portfolio_invitation(
+    email,
+    portfolio,
+    requestor,
+    roles,
+    additional_permissions,
+):
+    requested_user = get_requested_user(email)
+    portfolio_admin_notifications_sent = send_portfolio_invitation_email(
+        email=email,
+        requestor=requestor,
+        portfolio=portfolio,
+        is_admin_invitation=_is_portfolio_admin_invitation(roles),
+    )
+    legacy_invitation = _save_legacy_portfolio_invitation(
+        email=email,
+        portfolio=portfolio,
+        user=requested_user,
+        roles=roles,
+        additional_permissions=additional_permissions,
+    )
+    return legacy_invitation, portfolio_admin_notifications_sent
+
+
+def get_portfolio_permission_status(user):
+    if user is None:
+        return UserPortfolioPermission.Status.INVITED
+
+    return UserPortfolioPermission.Status.ACCEPTED
+
+
+def _set_portfolio_invitation_details(permission, requestor):
+    # invited_by and invited_at mean the invitation email path completed without
+    # raising an exception.
+    permission.invited_by = requestor
+    permission.invited_at = timezone.now()
+    permission.save(update_fields=["invited_by", "invited_at"])
+
+
+def _send_portfolio_permission_email(email, requestor, portfolio, roles):
+    return send_portfolio_invitation_email(
+        email=email,
+        requestor=requestor,
+        portfolio=portfolio,
+        is_admin_invitation=_is_portfolio_admin_invitation(roles),
+    )
+
+
+def _must_send_portfolio_permission_email(user, send_email):
+    if user is None:
+        return True
+
+    if send_email:
+        return True
+
+    return False
+
+
+def _is_portfolio_admin_invitation(roles):
+    if not roles:
+        return False
+
+    if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles:
+        return True
+
+    return False
+
+
+def create_domain_role_or_invitation(
+    email: str,
+    domain: Domain,
+    requestor: User,
+    role: str,
+    send_email: bool = True,
+    is_member_of_different_org: bool = False,
+    domain_role: UserDomainRole = None,
+):
+    """
+    Create a UserDomainRole for an existing user or an invitation with a new email.
+
+    Returns the saved domain role and whether emails were sent.
+    """
+    email = _get_domain_role_email(email, domain_role)
+    requested_user = _get_domain_role_user(email, domain_role)
+
+    _check_existing_domain_invitation(email, domain, requested_user)
+    send_invitation_email = _must_send_domain_role_email(requested_user, send_email)
+    email_sent = True
+
+    try:
+        if send_invitation_email:
+            # Send before saving either invitation model so legacy duplicate
+            # validation does not reject the invitation we are creating here.
+            email_sent = _send_domain_role_email(
+                email=email,
+                requestor=requestor,
+                domain=domain,
+                is_member_of_different_org=is_member_of_different_org,
+                requested_user=requested_user,
+            )
+
+        with transaction.atomic():
+            domain_role = _save_domain_role(
+                domain_role=domain_role,
+                email=email,
+                domain=domain,
+                user=requested_user,
+                role=role,
+            )
+
+            # Temporary support for legacy invitations
+            if flag_is_active_for_user(requestor, "legacy_invitations"):
+                _save_legacy_domain_invitation(
+                    email=email,
+                    domain=domain,
+                    user=requested_user,
+                )
+            if send_invitation_email:
+                _set_domain_invitation_details(domain_role, requestor)
+
+            logger.info(f"Created domain role or invitation for {email} to domain {domain.id}")
+            return domain_role, email_sent
+
+    except Exception as e:
+        logger.error(
+            f"Failed to create domain role or invitation for {email}: {e}",
+            exc_info=True,
+        )
+        raise
+
+
+def _get_domain_role_email(email, domain_role):
+    requested_email = None
+
+    # Once an invitation is accepted, always prefer the user record.
+    if domain_role:
+        if domain_role.user:
+            if domain_role.user.email:
+                requested_email = domain_role.user.email
+
+    if not requested_email:
+        if email:
+            requested_email = email
+
+    if not requested_email:
+        if domain_role:
+            if domain_role.email:
+                requested_email = domain_role.email
+
+    if not requested_email:
+        raise InvitationError("An email address is required.")
+
+    return requested_email.lower()
+
+
+def _get_domain_role_user(email, domain_role):
+    # If the email belongs to a current user, the role should point at that user.
+    requested_user = get_requested_user(email)
+    if requested_user:
+        return requested_user
+
+    if domain_role:
+        if domain_role.user:
+            return domain_role.user
+
+    return None
 
 
 def _check_existing_domain_invitation(email: str, domain: Domain, requested_user):
@@ -106,19 +425,105 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
         if existing_role:
             raise AlreadyDomainManagerError(email)
 
-    invited = UserDomainRole.objects.filter(email=email, domain=domain, status=UserDomainRole.Status.INVITED).exists()
+    invited = UserDomainRole.objects.filter(
+        email__iexact=email, domain=domain, status=UserDomainRole.Status.INVITED
+    ).exists()
     if invited:
         raise AlreadyDomainInvitedError(email)
 
     # Check for duplicates in legacy model
-    try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
-        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-            raise AlreadyDomainManagerError(email)
-        elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
-            raise AlreadyDomainInvitedError(email)
-    except DomainInvitation.DoesNotExist:
+    invite = DomainInvitation.objects.filter(email__iexact=email, domain=domain).order_by("-created_at").first()
+
+    if not invite:
         pass
+    elif invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+        raise AlreadyDomainManagerError(email)
+    elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
+        raise AlreadyDomainInvitedError(email)
+
+
+def validate_domain_role_or_invitation(email, domain):
+    try:
+        requested_user = get_requested_user(email)
+        _check_existing_domain_invitation(email, domain, requested_user)
+    except (AlreadyDomainManagerError, AlreadyDomainInvitedError, MultipleUsersWithEmailError) as error:
+        raise ValidationError(str(error)) from error
+
+
+def _save_domain_role(
+    domain_role,
+    email,
+    domain,
+    user,
+    role,
+):
+    if domain_role is None:
+        domain_role = UserDomainRole()
+
+    domain_role.email = email
+    domain_role.domain = domain
+    domain_role.user = user
+    domain_role.role = role
+    domain_role.status = get_domain_role_status(user)
+    domain_role.save()
+
+    return domain_role
+
+
+def _save_legacy_domain_invitation(
+    email,
+    domain,
+    user,
+):
+    legacy_invitation = DomainInvitation(
+        email=email,
+        domain=domain,
+    )
+    legacy_invitation.save()
+
+    if user:
+        legacy_invitation.retrieve(user=user)
+        legacy_invitation.save()
+
+    return legacy_invitation
+
+
+def get_domain_role_status(user):
+    if user is None:
+        return UserDomainRole.Status.INVITED
+
+    return UserDomainRole.Status.ACCEPTED
+
+
+def _set_domain_invitation_details(domain_role, requestor):
+    # invited_by and invited_at mean the invitation email path completed without
+    # raising an exception.
+    domain_role.invited_by = requestor
+    domain_role.invited_at = timezone.now()
+    domain_role.save(update_fields=["invited_by", "invited_at"])
+
+
+def _send_domain_role_email(email, requestor, domain, is_member_of_different_org, requested_user):
+    return send_domain_invitation_email(
+        email=email,
+        requestor=requestor,
+        domains=domain,
+        is_member_of_different_org=is_member_of_different_org,
+        requested_user=requested_user,
+        # TODO: Remove this once the legacy DomainInvitation path is
+        # removed and UserDomainRole invitations are the permanent admin flow.
+        skip_existing_invitation_check=True,
+    )
+
+
+def _must_send_domain_role_email(user, send_email):
+    if user is None:
+        return True
+
+    if send_email:
+        return True
+
+    return False
 
 
 def invite_to_domain(
@@ -146,54 +551,15 @@ def invite_to_domain(
         AlreadyDomainManagerError: If user is already a domain manager
         AlreadyDomainInvitedError: If user has already been invited
     """
-    email = email.lower()
-    requested_user = get_requested_user(email)
-
-    _check_existing_domain_invitation(email, domain, requested_user)
-
-    try:
-        with transaction.atomic():
-            if requested_user:
-                # User exists - create UserDomainRole directly
-                domain_role = UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=domain,
-                    role=role,
-                    status=UserDomainRole.Status.INVITED,
-                    email=email,
-                    invited_by=requestor,
-                    invited_at=timezone.now(),
-                )
-            else:
-                # User doesn't exist - create invitation in UserDomainRole
-                domain_role = UserDomainRole.objects.create(
-                    user=None,
-                    domain=domain,
-                    role=role,
-                    status=UserDomainRole.Status.INVITED,
-                    email=email,
-                    invited_by=requestor,
-                    invited_at=timezone.now(),
-                )
-
-            # Send invitation email
-            send_domain_invitation_email(
-                email=email,
-                requestor=requestor,
-                domains=domain,
-                is_member_of_different_org=is_member_of_different_org,
-                requested_user=requested_user,
-            )
-
-            logger.info(f"Created domain invitation for {email} " f"to domain {domain.id}")
-            return domain_role
-
-    except Exception as e:
-        logger.error(
-            f"Failed to create domain invitation for {email}: {e}",
-            exc_info=True,
-        )
-        raise
+    domain_role_and_email_status = create_domain_role_or_invitation(
+        email=email,
+        domain=domain,
+        requestor=requestor,
+        role=role,
+        send_email=True,
+        is_member_of_different_org=is_member_of_different_org,
+    )
+    return domain_role_and_email_status[0]
 
 
 def invite_to_domains_bulk(
@@ -237,7 +603,8 @@ def invite_to_domains_bulk(
             # Fetch existing roles in bulk to avoid N+1 queries
             domain_ids = [d.id for d in domain_list]
             existing_roles = {
-                role.domain_id: role for role in UserDomainRole.objects.filter(email=email, domain_id__in=domain_ids)
+                role.domain_id: role
+                for role in UserDomainRole.objects.filter(email__iexact=email, domain_id__in=domain_ids)
             }
 
             for domain in domain_list:
@@ -310,21 +677,21 @@ def get_pending_invitations(user: User):
 
     # Get new model invitations with related objects
     portfolio_permissions = UserPortfolioPermission.objects.filter(
-        email=email, status=UserPortfolioPermission.Status.INVITED
+        email__iexact=email, status=UserPortfolioPermission.Status.INVITED
     ).select_related("portfolio", "invited_by")
 
-    domain_roles = UserDomainRole.objects.filter(email=email, status=UserDomainRole.Status.INVITED).select_related(
-        "domain", "invited_by"
-    )
+    domain_roles = UserDomainRole.objects.filter(
+        email__iexact=email, status=UserDomainRole.Status.INVITED
+    ).select_related("domain", "invited_by")
 
     # Get legacy model invitations with related objects
     legacy_portfolio_invitations = PortfolioInvitation.objects.filter(
-        email=email,
+        email__iexact=email,
         status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
     ).select_related("portfolio")
 
     legacy_domain_invitations = DomainInvitation.objects.filter(
-        email=email, status=DomainInvitation.DomainInvitationStatus.INVITED
+        email__iexact=email, status=DomainInvitation.DomainInvitationStatus.INVITED
     ).select_related("domain")
 
     return {
@@ -355,7 +722,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
         with transaction.atomic():
             # Accept new model invitation
             permission = UserPortfolioPermission.objects.filter(
-                email=email,
+                email__iexact=email,
                 portfolio=portfolio,
                 status=UserPortfolioPermission.Status.INVITED,
             ).first()
@@ -368,14 +735,16 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
 
             # Accept legacy model invitation
             legacy_invitation = PortfolioInvitation.objects.filter(
-                email=email,
+                email__iexact=email,
                 portfolio=portfolio,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                permission_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
+                if not permission:
+                    permission = permission_legacy
 
             logger.info(f"User {user.id} accepted portfolio invitation " f"for {portfolio.id}")
             return permission
@@ -407,7 +776,7 @@ def accept_domain_invitation(user: User, domain: Domain):
         with transaction.atomic():
             # Accept new model invitation
             domain_role = UserDomainRole.objects.filter(
-                email=email,
+                email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.INVITED,
             ).first()
@@ -420,14 +789,16 @@ def accept_domain_invitation(user: User, domain: Domain):
 
             # Accept legacy model invitation
             legacy_invitation = DomainInvitation.objects.filter(
-                email=email,
+                email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                domain_role_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
+                if not domain_role:
+                    domain_role = domain_role_legacy
 
             logger.info(f"User {user.id} accepted domain invitation for {domain.id}")
             return domain_role
@@ -459,26 +830,26 @@ def cancel_domain_invitation(email: str, domain: Domain):
             canceled = False
 
             # Cancel new model invitation
-            domain_role = UserDomainRole.objects.filter(
-                email=email,
+            domain_roles = UserDomainRole.objects.filter(
+                email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.INVITED,
-            ).first()
+            )
 
-            if domain_role:
+            for domain_role in domain_roles:
                 domain_role.status = UserDomainRole.Status.REJECTED
                 domain_role.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = DomainInvitation.objects.filter(
-                email=email,
+            legacy_invitations = DomainInvitation.objects.filter(
+                email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
-                legacy_invitation.status = DomainInvitation.DomainInvitationStatus.CANCELED
+            for legacy_invitation in legacy_invitations:
+                legacy_invitation.cancel_invitation()
                 legacy_invitation.save()
                 canceled = True
 
@@ -514,25 +885,25 @@ def cancel_portfolio_invitation(email: str, portfolio: Portfolio):
             canceled = False
 
             # Cancel new model invitation
-            permission = UserPortfolioPermission.objects.filter(
-                email=email,
+            permissions = UserPortfolioPermission.objects.filter(
+                email__iexact=email,
                 portfolio=portfolio,
                 status=UserPortfolioPermission.Status.INVITED,
-            ).first()
+            )
 
-            if permission:
+            for permission in permissions:
                 permission.status = UserPortfolioPermission.Status.REJECTED
                 permission.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = PortfolioInvitation.objects.filter(
-                email=email,
+            legacy_invitations = PortfolioInvitation.objects.filter(
+                email__iexact=email,
                 portfolio=portfolio,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 # Note: PortfolioInvitation doesn't have CANCELED status
                 # so we delete the invitation instead
                 legacy_invitation.delete()
@@ -571,7 +942,7 @@ def reactivate_domain_invitation(email: str, domain: Domain):
 
             # Reactivate new model invitation
             domain_role = UserDomainRole.objects.filter(
-                email=email,
+                email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.REJECTED,
             ).first()
@@ -583,7 +954,7 @@ def reactivate_domain_invitation(email: str, domain: Domain):
 
             # Reactivate legacy model invitation
             legacy_invitation = DomainInvitation.objects.filter(
-                email=email,
+                email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.CANCELED,
             ).first()
@@ -611,12 +982,12 @@ def check_duplicate_domain_invitation(email: str, domain: Domain):
     email = email.lower()
 
     # Check new model
-    if UserDomainRole.objects.filter(email=email, domain=domain).exists():
+    if UserDomainRole.objects.filter(email__iexact=email, domain=domain).exists():
         return True
 
     # Check legacy model for active invitations
     if (
-        DomainInvitation.objects.filter(email=email, domain=domain)
+        DomainInvitation.objects.filter(email__iexact=email, domain=domain)
         .exclude(
             status__in=[
                 DomainInvitation.DomainInvitationStatus.RETRIEVED,
@@ -635,12 +1006,15 @@ def check_duplicate_portfolio_invitation(email: str, portfolio: Portfolio):
     email = email.lower()
 
     # Check new model
-    if UserPortfolioPermission.objects.filter(email=email, portfolio=portfolio).exists():
+    if UserPortfolioPermission.objects.filter(email__iexact=email, portfolio=portfolio).exists():
+        return True
+
+    if UserPortfolioPermission.objects.filter(user__email__iexact=email, portfolio=portfolio).exists():
         return True
 
     # Check legacy model for active invitations
     if (
-        PortfolioInvitation.objects.filter(email=email, portfolio=portfolio)
+        PortfolioInvitation.objects.filter(email__iexact=email, portfolio=portfolio)
         .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         .exists()
     ):

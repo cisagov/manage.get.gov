@@ -1,4 +1,10 @@
 import { hideElement, showElement } from './helpers-admin.js';
+import { setUpUserInvitationFields } from './user-invitation-form.js';
+
+/**
+ * Admin behavior for UserPortfolioPermission and PortfolioInvitation forms.
+ * Shared invitation behavior lives in user-invitation-form.js.
+ */
 
 /**
  * A function for dynamically changing fields on the UserPortfolioPermissions
@@ -7,13 +13,15 @@ import { hideElement, showElement } from './helpers-admin.js';
 function handlePortfolioPermissionFields(){
 
     const roleDropdown = document.getElementById("id_role");
+    const userField = document.getElementById("id_user");
     const domainPermissionsField = document.querySelector(".field-domain_permissions");
     const domainRequestPermissionsField = document.querySelector(".field-request_permissions");
     const memberPermissionsField = document.querySelector(".field-member_permissions");
-    
+    const sendEmailCheckbox = document.getElementById("id_send_email");
+
     /**
      * Updates the visibility of portfolio permissions fields based on the selected role.
-     * 
+     *
      * This function checks the value of the role dropdown (`roleDropdown`):
      * - If the selected role is "organization_member":
      *     - Shows the domain permissions field (`domainPermissionsField`).
@@ -21,7 +29,7 @@ function handlePortfolioPermissionFields(){
      *     - Shows the member permissions field (`memberPermissionsField`).
      * - Otherwise:
      *     - Hides all the above fields.
-     * 
+     *
      * The function ensures that the appropriate fields are dynamically displayed
      * or hidden depending on the role selection in the form.
      */
@@ -39,7 +47,6 @@ function handlePortfolioPermissionFields(){
         }
     }
 
-
     /**
      * Sets event listeners for key UI elements.
      */
@@ -49,17 +56,19 @@ function handlePortfolioPermissionFields(){
                 updatePortfolioPermissionsFormVisibility();
             })
         }
+
     }
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
+    setUpUserInvitationFields(userField, sendEmailCheckbox);
     setEventListeners();
 }
 
 export function initDynamicPortfolioPermissionFields() {
     document.addEventListener('DOMContentLoaded', function() {
         let isPortfolioPermissionPage = document.getElementById("userportfoliopermission_form");
-        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form")
+        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form");
         if (isPortfolioPermissionPage || isPortfolioInvitationPage) {
             handlePortfolioPermissionFields();
         }

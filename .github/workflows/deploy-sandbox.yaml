@@ -6,26 +6,31 @@ run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   variables: 
-    if: | 
-      startsWith(github.head_ref, 'ap/')
-        || startsWith(github.head_ref, 'cw/')
+    if: |
+      startsWith(github.head_ref, 'cw/')
         || startsWith(github.head_ref, 'product/')
+        || startsWith(github.head_ref, 'tjh/')
+        || startsWith(github.head_ref, 'cp/')
         || startsWith(github.head_ref, 'bl/')
         || startsWith(github.head_ref, 'rh/')
-        || startsWith(github.head_ref, 'nl/')
+        || startsWith(github.head_ref, 'sm/')
         || startsWith(github.head_ref, 'kma/')
-        || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'el/')
         || startsWith(github.head_ref, 'aa/')
+        || startsWith(github.head_ref, 'ab/')
+        || startsWith(github.head_ref, 'amt/')
 
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"
     steps:
       - name: Setting global variables
-        uses: actions/github-script@v6
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: var
         with:
           script: |
@@ -34,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
@@ -46,7 +51,7 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
@@ -69,7 +74,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
         with:

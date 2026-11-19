@@ -127,6 +127,16 @@ Analysts are a variant of the admin role with limited permissions. The process f
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 
+## Adding `Standard` Users & what they are
+
+Standard users are non-staff, non-admin test accounts used for user research. Each is pre-loaded with domain requests in every `DomainRequestStatus` and domains in every `Domain.State`.
+
+These users load automatically on sandboxes when `./manage.py load` runs (such as via `reset-db.yml`). They do **not** load locally, as if emails are turned on locally it could interfer with user testing.
+
+To add or update a standard user, edit the `STANDARD_USERS` list in [fixtures_users](../../src/registrar/fixtures/fixtures_users.py). The `username` field must be the UUID from the user's login.gov identity sandbox account.
+
+These users are added to the email whitelist by default.
+
 ## Adding an email address to the email whitelist (sandboxes only)
 On all non-production environments, we use an email whitelist table (called `Allowed emails`). This whitelist is not case sensitive, and it provides an inclusion for +1 emails (like example.person+1@igorville.gov). The content after the `+` can be any _digit_. The whitelist checks for the "base" email (example.person) so even if you only have the +1 email defined, an email will still be sent assuming that it follows those conventions.
 
@@ -395,7 +405,7 @@ Before we can send data to cloudflare, you will need these values in your .env f
 ```
 DNS_TENANT_KEY = {tenant key}
 DNS_SERVICE_EMAIL = {An email address}
-DNS_TEST_TENANT_ID = {id of the test tenant (as opposed to the prod tenant)}
+DNS_TENANT_ID = {id of the test tenant (as opposed to the prod tenant)}
 ```
 You can obtain these by going to cloud.gov and looking at the variables in the getgov-kma application (for now)
 Alternatively, if you are testing on a sandbox, you will need to add those to getgov-credentials.
@@ -438,21 +448,21 @@ To manually test locally (if not mocking cloudflare):
   - The doc will list roles with a description of permissions. Collect the id that you would like to use.
 
 
-  **Note**:The 'Administrator' role id is `05784afa30c1afe1440e79d9351c7430`. For our purposes, we will primarily be adding members under that role. 
-  
+  **Note**:The 'Administrator' role id is `05784afa30c1afe1440e79d9351c7430`. For our purposes, we will primarily be adding members under that role.
+
 
 #### Second, send a post request to add a new account:
 
   To add a member to an existing account to access the CF UI. You can do it one of two ways:
 
   **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
-    
+
   ##### Postman
 
-  1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
-  2. Select the body tab, and the following with the appropiate info:  
+  1. Enter **ADD MEMBER URL** in the post with the appropiate account id.
+  2. Select the body tab, and the following with the appropiate info:
 
-  ``` 
+  ```
     {
           "email": "test@email.com",
           "auto_accept": true,
@@ -460,17 +470,17 @@ To manually test locally (if not mocking cloudflare):
           "status": "accepted"
     }
   ```
-  
+
   3. Go to the header tab
   4. Add the X-Auth-Email with the email on the account to the header
-  5. Add X-Auth-Key with the api key value  to the header 
+  5. Add X-Auth-Key with the api key value  to the header
   6. Add 'Content-Type: application/json' to the header
 
   ##### curl
 
   In order to add members via terminal, you can enter the following:
 
-    ``` 
+    ```
       curl ADD_MEMBER_URL \
       -H 'Content-Type: application/json' \
       -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
@@ -483,4 +493,3 @@ To manually test locally (if not mocking cloudflare):
             "status": "accepted",
           }'
     ```
-

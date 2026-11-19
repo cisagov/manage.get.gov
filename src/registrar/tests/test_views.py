@@ -56,13 +56,27 @@ class TestViews(TestCase):
         self.assertIn("/login?next=/request/start/", response.headers["Location"])
 
 
-class TestHealthPageView(TestCase):
+class TestVersionPageView(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = create_test_user()
+        cls.user.is_staff = True
+        cls.user.save()
+
     def setUp(self):
         self.client = Client()
+        self.client.force_login(self.user)
         return super().setUp()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        User.objects.all().delete()
+
     @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT_SHA": "abcdef123456", "GIT_TAG": "v1.0.0"})
-    def test_health_contains_git_info(self):
+    def test_version_contains_git_info(self):
         response = self.client.get("/version")
 
         self.assertEqual(response.status_code, 200)
@@ -77,7 +91,7 @@ class TestHealthPageView(TestCase):
             "GIT_COMMIT_SHA": "bcdefg234567",
         },
     )
-    def test_healh_contains_git_info_without_tag(self):
+    def test_version_contains_git_info_without_tag(self):
         response = self.client.get("/version")
 
         self.assertEqual(response.status_code, 200)
@@ -899,7 +913,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.client.force_login(user)
         # simulate buggy state: portfolio present in session during setup
         session = self.client.session
-        session["portfolio"] = portfolio
+        session["portfolio"] = portfolio.id
         session.save()
 
         with override_flag("multiple_portfolios", active=True):
@@ -930,7 +944,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.client.force_login(unfinished_user)
 
         session = self.client.session
-        session["portfolio"] = portfolio
+        session["portfolio"] = portfolio.id
         session.save()
 
         with override_flag("multiple_portfolios", active=True):

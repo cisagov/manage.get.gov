@@ -213,9 +213,8 @@ class TestDomainRequest(TestCase):
         domain_request = DomainRequest.objects.create(
             requester=user,
             investigator=user,
-            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_type=BranchChoices.EXECUTIVE,
-            is_election_board=False,
             organization_name="Test",
             address_line1="100 Main St.",
             address_line2="APT 1A",
@@ -240,9 +239,8 @@ class TestDomainRequest(TestCase):
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         information = DomainInformation.objects.create(
             requester=user,
-            generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
+            organization_type=DomainInformation.OrganizationChoices.FEDERAL,
             federal_type=BranchChoices.EXECUTIVE,
-            is_election_board=False,
             organization_name="Test",
             address_line1="100 Main St.",
             address_line2="APT 1A",
@@ -1117,18 +1115,18 @@ class TestDomainRequest(TestCase):
         """has_rationale() returns true when a domain request has no_other_contacts_rationale"""
         self.started_domain_request.no_other_contacts_rationale = "You talkin' to me?"
         self.started_domain_request.save()
-        self.assertEquals(self.started_domain_request.has_rationale(), True)
+        self.assertEqual(self.started_domain_request.has_rationale(), True)
 
     @less_console_noise_decorator
     def test_has_rationale_returns_false(self):
         """has_rationale() returns false when a domain request has no no_other_contacts_rationale"""
-        self.assertEquals(self.started_domain_request.has_rationale(), False)
+        self.assertEqual(self.started_domain_request.has_rationale(), False)
 
     @less_console_noise_decorator
     def test_has_other_contacts_returns_true(self):
         """has_other_contacts() returns true when a domain request has other_contacts"""
         # completed_domain_request has other contacts by default
-        self.assertEquals(self.started_domain_request.has_other_contacts(), True)
+        self.assertEqual(self.started_domain_request.has_other_contacts(), True)
 
     @less_console_noise_decorator
     def test_has_other_contacts_returns_false(self):
@@ -1136,12 +1134,12 @@ class TestDomainRequest(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
         )
-        self.assertEquals(domain_request.has_other_contacts(), False)
+        self.assertEqual(domain_request.has_other_contacts(), False)
 
     @less_console_noise_decorator
     def test_converted_type(self):
         """test that new property fields works as expected to pull domain req info such as fed agency,
-        generic org type, and others from portfolio"""
+        organization type, and others from portfolio"""
         fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
         portfolio = Portfolio.objects.create(
             organization_name="Test Portfolio",
@@ -1152,13 +1150,13 @@ class TestDomainRequest(TestCase):
 
         domain_request = completed_domain_request(name="domainre1.gov", portfolio=portfolio)
 
-        self.assertEqual(portfolio.organization_type, domain_request.converted_generic_org_type)
+        self.assertEqual(portfolio.organization_type, domain_request.converted_organization_type)
         self.assertEqual(portfolio.federal_agency, domain_request.converted_federal_agency)
 
         domain_request2 = completed_domain_request(
-            name="domainreq2.gov", federal_agency=fed_agency, generic_org_type=DomainRequest.OrganizationChoices.TRIBAL
+            name="domainreq2.gov", federal_agency=fed_agency, organization_type=DomainRequest.OrganizationChoices.TRIBAL
         )
-        self.assertEqual(domain_request2.generic_org_type, domain_request2.converted_generic_org_type)
+        self.assertEqual(domain_request2.organization_type, domain_request2.converted_organization_type)
         self.assertEqual(domain_request2.federal_agency, domain_request2.converted_federal_agency)
 
     @less_console_noise_decorator

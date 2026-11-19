@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.urls import reverse
+from registrar.utility.db_helpers import get_portfolio_from_session
+
 from waffle import flag_is_active
 
 
@@ -79,7 +81,8 @@ def portfolio_permissions(request):
         if not user.is_authenticated:
             return portfolio_context
 
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
+
         num_portfolios = user.get_num_portfolios()
 
         # Legacy domains?

@@ -64,7 +64,7 @@ services:
       - DNS_TENANT_KEY
       - DNS_SERVICE_EMAIL
       - DNS_TENANT_NAME
-      - DNS_TEST_TENANT_ID
+      - DNS_TENANT_ID
       - DNS_MOCK_EXTERNAL_APIS
       - VAULT_ADDR=http://openbao:8200
       - VAULT_TOKEN=dev-root-token

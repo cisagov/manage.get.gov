@@ -7,6 +7,7 @@ from django.contrib import admin
 from django.db.models import Avg, F, Q
 
 from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
+from registrar.utility.db_helpers import get_portfolio_from_session
 from .. import models
 import datetime
 from django.utils import timezone
@@ -26,6 +27,8 @@ class AnalyticsView(View):
         last_30_days_approved_applications = models.DomainRequest.objects.filter(
             created_at__gt=thirty_days_ago, status=models.DomainRequest.DomainRequestStatus.APPROVED
         )
+        # created_at is when the domain record was created, which is the approval moment.
+        # FYSA: x_registry_created_at is null until a domain reaches the registry.
         avg_approval_time = last_30_days_approved_applications.annotate(
             approval_time=F("approved_domain__created_at") - F("last_submitted_date")
         ).aggregate(Avg("approval_time"))["approval_time__avg"]
@@ -119,7 +122,7 @@ class AnalyticsView(View):
         )
 
         query_fed_domains_no_port = Q(portfolio__isnull=True) & Q(
-            generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
+            organization_type=models.DomainRequest.OrganizationChoices.FEDERAL
         )
 
         query_fed_domains_port = Q(portfolio__organization_type=models.DomainRequest.OrganizationChoices.FEDERAL)
@@ -145,7 +148,6 @@ class AnalyticsView(View):
                     "City",
                     "Special District",
                     "School District",
-                    "Election Board",
                 ],
                 "user_count": models.User.objects.all().count(),
                 "domain_count": models.Domain.objects.all().count(),
@@ -213,7 +215,7 @@ class ExportMembersPortfolio(View):
 
     def get(self, request, *args, **kwargs):
         """Returns the members report"""
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
 
         # Check if the user has organization access
         if not request.user.is_org_user(request):
