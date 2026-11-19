@@ -29,8 +29,6 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainRequest,
-    DnsAccount,
-    DnsZone,
     FederalAgency,
     DomainInvitation,
     Portfolio,
@@ -39,7 +37,6 @@ from registrar.models import (
     TransitionDomain,
     User,
     UserDomainRole,
-    VendorDnsAccount,
     VerifiedByStaff,
     Website,
 )
