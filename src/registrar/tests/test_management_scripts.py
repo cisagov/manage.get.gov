@@ -1,54 +1,58 @@
 import copy
 import boto3_mocking  # type: ignore
-from datetime import date, datetime, time, timezone as dt_timezone
-from django.utils import timezone
-from django.core.management import call_command
-from django.test import TestCase, override_settings
-from registrar.models.domain_group import DomainGroup
-from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.models.public_contact import get_id
-from registrar.models.senior_official import SeniorOfficial
-from registrar.models.user_portfolio_permission import UserPortfolioPermission
-from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.utility.constants import BranchChoices
-
-from django.utils.module_loading import import_string
 import logging
 import pyzipper
-from django.core.management.base import CommandError
-from registrar.management.commands.clean_tables import Command as CleanTablesCommand
-from registrar.management.commands.export_tables import Command as ExportTablesCommand
-from registrar.models import (
-    User,
-    Domain,
-    DomainRequest,
-    Contact,
-    Website,
-    DomainInvitation,
-    TransitionDomain,
-    DomainInformation,
-    UserDomainRole,
-    VerifiedByStaff,
-    PublicContact,
-    FederalAgency,
-    Portfolio,
-    Suborganization,
-    AllowedEmail,
-)
-from registrar.utility.enums import DefaultEmail
 import tablib
-from unittest.mock import patch, call, MagicMock, mock_open
-from epplibwrapper import commands, common
-from datetime import timedelta
 
+from api.tests.common import less_console_noise_decorator
 from .common import (
     MockEppLib,
     completed_domain_request,
     MockSESClient,
     MockDbForIndividualTests,
 )
-from api.tests.common import less_console_noise_decorator
+from epplibwrapper import commands, common
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db.models import ProtectedError
+from django.utils import timezone
+from django.utils.module_loading import import_string
+from django.test import TestCase, override_settings
+from io import StringIO
+
+from registrar.management.commands.clean_tables import Command as CleanTablesCommand
+from registrar.management.commands.export_tables import Command as ExportTablesCommand
+from registrar.models import (
+    AllowedEmail,
+    Contact,
+    Domain,
+    DomainInformation,
+    DomainRequest,
+    DnsAccount,
+    DnsZone,
+    FederalAgency,
+    DomainInvitation,
+    Portfolio,
+    PublicContact,
+    Suborganization,
+    TransitionDomain,
+    User,
+    UserDomainRole,
+    VendorDnsAccount,
+    VerifiedByStaff,
+    Website,
+)
+from registrar.models.domain_group import DomainGroup
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.public_contact import get_id
+from registrar.models.senior_official import SeniorOfficial
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.tests.helpers.dns_data_generator import create_domain
+from registrar.utility.constants import BranchChoices
+from registrar.utility.enums import DefaultEmail
+from unittest.mock import patch, call, MagicMock, mock_open
 
 logger = logging.getLogger(__name__)
 
@@ -2570,3 +2574,71 @@ class TestDeleteDomainNotSetup(MockEppLib):
         Domain.objects.all().delete()
         AllowedEmail.objects.all().delete()
         super().tearDown()
+
+
+class TestCfDbSyncReport(TestCase):
+    """Tests for read-only cf_db_sync_report command."""
+
+    COMPARE = "registrar.management.commands.cf_db_sync_report.DnsHostService.compare_vendor_and_db_accounts"
+    CLIENT = "registrar.services.dns_host_service.build_dns_client"
+    LOGGER_NAME = "registrar.management.commands.cf_db_sync_report"
+
+    def tearDown(self):
+        super().tearDown()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+
+    def _report(self, **comparison):
+        """Run the command with the comparison patched to return `comparison` (missing keys are empty)"""
+        results = {
+            "duplicate_account_names": [],
+            "vendor_only": [],
+            "db_only": [],
+            "vendor_accounts_with_zone_no_db": [],
+            "synced_accounts": [],
+        }
+        results.update(comparison)
+
+        out = StringIO()
+        with patch(self.CLIENT), patch(self.COMPARE, return_value=results):
+            call_command("cf_db_sync_report", stdout=out)
+        return out.getvalue()
+
+    def test_report_shows_each_kind_of_mismatch_success(self):
+        create_domain(domain_name="indb.gov")
+
+        vendor_only_data = [
+            ("Account for haunted.gov", "1"),
+            ("Account for haunted.gov", "2"),
+            ("Account for vendoronly.gov", "3"),
+            ("Account for withzone.gov", "4"),
+            ("Test account for something.gov", "5"),
+            ("Account for indb.gov", "6"),
+        ]
+
+        output = self._report(
+            vendor_only=vendor_only_data,
+            vendor_accounts_with_zone_no_db=[("Account for withzone.gov", "4")],
+            db_only=[("Account for dbonly.gov", "7")],
+            duplicate_account_names=["Account for haunted.gov"],
+        )
+
+        # each kind of mismatch should get its own section
+        self.assertIn("VENDOR_ONLY (5)", output)
+        self.assertIn("VENDOR_ONLY_WITH_ZONE (1)", output)
+        self.assertIn("DB_ONLY (1)", output)
+
+        # Assert that each account is there, including bad account name and duplicates
+        self.assertEqual(output.count("Account for haunted.gov"), 2)
+        self.assertIn("Account for vendoronly.gov", output)
+        self.assertIn("Account for withzone.gov", output)
+        self.assertIn("Test account for something.gov", output)
+        self.assertIn("Account for indb.gov", output)
+        self.assertIn("Account for dbonly.gov", output)
+
+        # "yes" should only appear for domain_in_db (indb.gov) and duplicate_name (haunted.gov)
+        self.assertEqual(output.count("yes"), 3)
+
+    def test_no_mismatches_success(self):
+        output = self._report(synced_accounts=[("Account for ok.gov", "5")])
+        self.assertIn("No mismatches", output)
