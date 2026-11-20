@@ -14,7 +14,7 @@ defusedxml==0.7.1; python_version >= '2.7' and python_version != '3.0' and pytho
 diff-match-patch==20241021; python_version >= '3.7'
 dj-database-url==3.1.2; python_version >= '3.10'
 dj-email-url==1.0.6
-django==5.2.18; python_version >= '3.10'
+django==5.2.19; python_version >= '3.10'
 django-admin-multiple-choice-list-filter==0.1.1
 django-allow-cidr==0.8.0
 django-auditlog==3.4.1; python_version >= '3.10'
@@ -67,7 +67,7 @@ requests==2.34.2; python_version >= '3.10'
 respx==0.23.1; python_version >= '3.8'
 s3transfer==0.19.3; python_version >= '3.10'
 six==1.17.0; python_version >= '2.7' and python_version != '3.0' and python_version != '3.1' and python_version != '3.2'
-sqlparse==0.6.0; python_version >= '3.10'
+sqlparse==0.6.1; python_version >= '3.10'
 tablib==3.10.0; python_version >= '3.10'
 tblib==3.2.2; python_version >= '3.9'
 typing-extensions==4.16.0; python_version >= '3.9'

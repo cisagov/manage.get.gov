@@ -7,7 +7,7 @@ name = "pypi"
 python_version = "3.14"
 
 [packages]
-django = "~=5.2.0"
+django = "~=5.2.19"
 cfenv = "*"
 django-cors-headers = "*"
 pycryptodomex = "*"

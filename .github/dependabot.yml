@@ -24,6 +24,8 @@ updates:
     directory: "/src"
     patterns: ["*"]
     multi-ecosystem-group: "weekly-dependencies"
+    allow:
+      - dependency-type: "all"
     ignore:
       # USWDS upgrades change markup/visuals; handle in a dedicated ticket
       - dependency-name: "@uswds/uswds"
