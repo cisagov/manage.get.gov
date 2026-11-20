@@ -13,7 +13,7 @@ from django.utils import timezone
 from functools import cached_property
 from django.core.exceptions import ValidationError
 from typing import Any
-from registrar.logging_context import set_dns_log_context
+from registrar.logging_context import set_domain_log_context, set_domain_log_context_for_class
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
@@ -53,6 +53,7 @@ from registrar.utility.waffle import flag_is_active_for_user
 logger = logging.getLogger(__name__)
 
 
+@set_domain_log_context_for_class
 class Domain(TimeStampedModel, DomainHelper):
     """
     Manage the lifecycle of domain names.
@@ -279,70 +280,73 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
-        if settings.IS_LOCAL:
-            logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
-            return True
-        if not cls.string_could_be_domain(domain):
-            logger.warning("Not a valid domain: %s" % str(domain))
-            # throw invalid domain error so that it can be caught in
-            # validate_and_handle_errors in domain_helper
-            raise errors.InvalidDomainError()
+        with set_domain_log_context(domain.lower()):
+            if settings.IS_LOCAL:
+                logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
+                return True
+            if not cls.string_could_be_domain(domain):
+                logger.warning("Not a valid domain: %s" % str(domain))
+                # throw invalid domain error so that it can be caught in
+                # validate_and_handle_errors in domain_helper
+                raise errors.InvalidDomainError()
 
-        domain_name = domain.lower()
-        req = commands.CheckDomain([domain_name])
-        return registry.send(req, cleaned=True).res_data[0].avail
+            domain_name = domain.lower()
+            req = commands.CheckDomain([domain_name])
+            return registry.send(req, cleaned=True).res_data[0].avail
 
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
         """Check if domain is pendingDelete state via response from registry."""
-        if settings.IS_LOCAL:
-            logger.info(
-                "IS_LOCAL is true, so skipping registry check for pending delete. "
-                "This enables 'approve' of domain requests locally."
-            )
-            return False
-
-        domain_name = domain.lower()
-
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
-            # Ensure res_data exists and is not empty
-            if info_response and info_response.res_data:
-                # Use _extract_data_from_response bc it's same thing but jsonified
-                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
-                domain_status_state = domain_response.get("statuses")
-                if "pendingDelete" in str(domain_status_state):
-                    return True
-        except RegistryError as err:
-            if not err.is_connection_error():
-                logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
+        with set_domain_log_context(domain.lower()):
+            if settings.IS_LOCAL:
+                logger.info(
+                    "IS_LOCAL is true, so skipping registry check for pending delete. "
+                    "This enables 'approve' of domain requests locally."
+                )
                 return False
-            else:
-                raise err
-        return False
+
+            domain_name = domain.lower()
+
+            try:
+                info_req = commands.InfoDomain(domain_name)
+                info_response = registry.send(info_req, cleaned=True)
+                # Ensure res_data exists and is not empty
+                if info_response and info_response.res_data:
+                    # Use _extract_data_from_response bc it's same thing but jsonified
+                    domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
+                    domain_status_state = domain_response.get("statuses")
+                    if "pendingDelete" in str(domain_status_state):
+                        return True
+            except RegistryError as err:
+                if not err.is_connection_error():
+                    logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
+                    return False
+                else:
+                    raise err
+            return False
 
     @classmethod
     def is_not_deleted(cls, domain: str) -> bool:
         """Check if the domain is NOT DELETED."""
         domain_name = domain.lower()
 
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
-            if info_response and info_response.res_data:
-                return True
-            # No res_data implies likely deleted
-            return False
-        except RegistryError as err:
-            if not err.is_connection_error():
-                # 2303 = Object does not exist -> Domain is deleted
-                if err.code == 2303:
-                    return False
-                logger.info(f"Unexpected registry error while checking domain -- {err}")
-                return True
-            else:
-                raise err
+        with set_domain_log_context(domain_name):
+            try:
+                info_req = commands.InfoDomain(domain_name)
+                info_response = registry.send(info_req, cleaned=True)
+                if info_response and info_response.res_data:
+                    return True
+                # No res_data implies likely deleted
+                return False
+            except RegistryError as err:
+                if not err.is_connection_error():
+                    # 2303 = Object does not exist -> Domain is deleted
+                    if err.code == 2303:
+                        return False
+                    logger.info(f"Unexpected registry error while checking domain -- {err}")
+                    return True
+                else:
+                    raise err
 
     @classmethod
     def registered(cls, domain: str) -> bool:
@@ -1297,48 +1301,47 @@ class Domain(TimeStampedModel, DomainHelper):
                 VendorDnsRecord,
             )
 
-            with set_dns_log_context(self.name):
-                logger.debug("Deleting DNS data for %s.", self.name)
-                try:
-                    with transaction.atomic():
-                        dns_zone = DnsZone.objects.get(domain_id=self.id)
-                        logger.info("Removing db DNS records associated with %s.", self.name)
-                        records = DnsRecord.objects.filter(dns_zone=dns_zone)
-                        logger.info("Removing %s db DNS records: %s.", self.name, str(records))
-                        # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
-                        # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
-                        for record in records:
-                            vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(
-                                dns_record=record
-                            ).values_list("vendor_dns_record_id", flat=True)
-                            vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
-                            if vendor_records:
-                                vendor_records.delete()
-                        records.delete()
-                        logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
-                        logger.info("Removing db DNS zone data for domain %s.", self.name)
-                        vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
-                        dns_zone.delete()
-                        vendor_zone.delete()
-                        logger.info("Removed db DNS zone data for domain %s.", self.name)
-                        logger.info("Removing db DNS account data for %s.", self.name)
-                        dns_account = dns_zone.dns_account
-                        vendor_account = DnsAccount_VendorDnsAccount.objects.get(
-                            dns_account=dns_account
-                        ).vendor_dns_account
-                        x_account_id = vendor_account.x_account_id
-                        dns_account.delete()
-                        vendor_account.delete()
-                        logger.info("Removed db DNS account data for domain %s.", self.name)
+            logger.debug("Deleting DNS data for %s.", self.name)
+            try:
+                with transaction.atomic():
+                    dns_zone = DnsZone.objects.get(domain_id=self.id)
+                    logger.info("Removing db DNS records associated with %s.", self.name)
+                    records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    logger.info("Removing %s db DNS records: %s.", self.name, str(records))
+                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
+                    # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
+                    for record in records:
+                        vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(
+                            dns_record=record
+                        ).values_list("vendor_dns_record_id", flat=True)
+                        vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
+                        if vendor_records:
+                            vendor_records.delete()
+                    records.delete()
+                    logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
+                    logger.info("Removing db DNS zone data for domain %s.", self.name)
+                    vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
+                    dns_zone.delete()
+                    vendor_zone.delete()
+                    logger.info("Removed db DNS zone data for domain %s.", self.name)
+                    logger.info("Removing db DNS account data for %s.", self.name)
+                    dns_account = dns_zone.dns_account
+                    vendor_account = DnsAccount_VendorDnsAccount.objects.get(
+                        dns_account=dns_account
+                    ).vendor_dns_account
+                    x_account_id = vendor_account.x_account_id
+                    dns_account.delete()
+                    vendor_account.delete()
+                    logger.info("Removed db DNS account data for domain %s.", self.name)
 
-                        logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
-                        from registrar.services.dns_host_service import DnsHostService
+                    logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
+                    from registrar.services.dns_host_service import DnsHostService
 
-                        dns_host_service = DnsHostService()
-                        dns_host_service.delete_account(x_account_id)  # deletes account from vendor
-                except Exception as e:
-                    logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
-                    raise e
+                    dns_host_service = DnsHostService()
+                    dns_host_service.delete_account(x_account_id)  # deletes account from vendor
+            except Exception as e:
+                logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
+                raise e
 
     def _delete_related_objects_from_db(self):
         """

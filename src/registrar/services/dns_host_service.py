@@ -8,7 +8,7 @@ from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_Vendo
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_http_client import build_dns_client
-from registrar.logging_context import set_dns_log_context
+from registrar.logging_context import set_domain_log_context
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -73,7 +73,7 @@ class DnsHostService:
         Ensure a DNS Vendor account exists for this domain and is saved to the database.
         Returns x_account_id.
         """
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             logger.info(
                 "Setting up DNS hosting account for domain %s",
                 domain_name,
@@ -130,7 +130,7 @@ class DnsHostService:
         """
         Ensure a DNS Vendor zone exists for this domain and is saved to the database.
         """
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             has_zone = DnsZone.objects.filter(name=domain_name).exists()
             if has_zone:
                 logger.info(
@@ -338,7 +338,7 @@ class DnsHostService:
         return zone_data
 
     def get_x_zone_id_if_zone_exists(self, domain_name) -> str | None:
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             try:
                 zone = DnsZone.objects.get(name=domain_name)
             except DnsZone.DoesNotExist:
@@ -353,7 +353,7 @@ class DnsHostService:
         return x_zone_id
 
     def get_nameservers_from_zone(self, domain_name) -> list[str] | None:
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             try:
                 zone = DnsZone.objects.get(name=domain_name)
             except DnsZone.DoesNotExist:
@@ -365,7 +365,7 @@ class DnsHostService:
             return zone.nameservers or []
 
     def register_nameservers(self, domain_name, nameservers):
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             domain = Domain.objects.get(name=domain_name)
             nameserver_tups = [tuple([n]) for n in nameservers]
 
@@ -484,7 +484,7 @@ class DnsHostService:
         The enrollment flag is only set if the entire operation succeeds.
         """
         domain_name = domain.name
-        with set_dns_log_context(domain_name):
+        with set_domain_log_context(domain_name):
             if domain.is_enrolled_in_dns_hosting:
                 logger.info("Domain %s already enrolled in DNS hosting.", domain_name)
                 return

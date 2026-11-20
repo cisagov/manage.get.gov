@@ -65,7 +65,7 @@ from registrar.services.invitation_service import (
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
-from registrar.logging_context import set_dns_log_context
+from registrar.logging_context import set_domain_log_context
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -304,6 +304,13 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
 
     def get_breadcrumb_aria_label(self):
         return "Domain breadcrumb" if self.in_portfolio_context() else "Domain manager breadcrumb"
+
+    def dispatch(self, request, **args, **kwargs):
+        # Same pattern the DNS view already uses: load the domain, then tag
+        # everything that happens for the rest of this request.
+        self._get_domain(request)
+        with set_domain_log_context(self.object.name.lower()):
+            return super().dispatch(request, *args, **kwargs)
 
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
@@ -876,7 +883,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
-        with set_dns_log_context(self.object.name):
+        with set_domain_log_context(self.object.name):
             return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
