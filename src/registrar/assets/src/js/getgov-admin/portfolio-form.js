@@ -18,6 +18,7 @@ function handlePortfolioFields(){
     const organizationTypeReadonly = organizationTypeField.querySelector(".readonly");
     const organizationTypeDropdown = document.getElementById("id_organization_type");
     const organizationNameField = document.querySelector(".field-organization_name");
+    const organizationNameInput = document.getElementById("id_organization_name");
     const federalTypeField = document.querySelector(".field-federal_type");
     const urbanizationField = document.querySelector(".field-urbanization");
     const stateTerritoryDropdown = document.getElementById("id_state_territory");
@@ -26,6 +27,15 @@ function handlePortfolioFields(){
     const seniorOfficialAddUrl = document.getElementById("senior-official-add-url").value;
     const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
     const federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
+    const tribeDetailsApi = document.getElementById("tribe_details_json_url").value;
+    const tribeDropdown = document.getElementById("id_tribe");
+    const tribeField = document.querySelector(".field-tribe");
+    // Mailing address fields (for tribes)
+    const addressLine1Input = document.getElementById("id_address_line1");
+    const addressLine2Input = document.getElementById("id_address_line2");
+    const cityInput = document.getElementById("id_city");
+    const zipcodeInput = document.getElementById("id_zipcode");
+    const urbanizationInput = document.getElementById("id_urbanization");
 
     /**
      * Fetches federal type data based on a selected agency using an AJAX call.
@@ -79,10 +89,45 @@ function handlePortfolioFields(){
                 throw error; // Re-throw for external handling
             });
     }
-    
+
+    /**
+     * Fetches tribe details based on the selected federal or state tribe using an AJAX call.
+     *
+     * @param {string} selectedTribe - The selection, such as "federal:12" or "state:34".
+     * @returns {Promise<Object>} - The tribe details, or a rejected promise when the lookup fails.
+     */
+    function getTribeDetails(selectedTribe) {
+        const [tribeType, tribeId] = selectedTribe.split(":", 2);
+        const params = new URLSearchParams({
+            tribe_type: tribeType,
+            tribe_id: tribeId,
+        });
+
+        return fetch(`${tribeDetailsApi}?${params}`)
+            .then(response => {
+                const statusCode = response.status;
+                return response.json().then(data => ({ statusCode, data }));
+            })
+            .then(({ statusCode, data }) => {
+                if (data.error) {
+                    throw { statusCode, message: data.error };
+                }
+                return data;
+            });
+    }
+
+    /** Return the selected tribe */
+    function getSelectedTribe() {
+        let selectedTribe = "";
+        if (tribeDropdown) {
+            selectedTribe = tribeDropdown.value;
+        }
+        return selectedTribe;
+    }
+
     /**
      * Handles the side effects of change on the organization type field
-     * 
+     *
      * 1. If selection is federal, hide org name, show federal agency, show federal type if applicable
      * 2. else show org name, hide federal agency, hide federal type if applicable
      */
@@ -103,11 +148,82 @@ function handlePortfolioFields(){
                 }
             }
         }
+        if (tribeField) {
+            let organizationType = "";
+            if (organizationTypeDropdown) {
+                organizationType = organizationTypeDropdown.value;
+            } else if (organizationTypeReadonly) {
+                organizationType = organizationTypeReadonly.innerText;
+            }
+            organizationType = organizationType.trim().toLowerCase();
+            if (organizationType === "tribal") {
+                showElement(tribeField);
+            } else {
+                hideElement(tribeField);
+            }
+        }
+        handleTribalMailingAddress();
+    }
+
+    /** Keep the address present when switching away from a tribe. */
+    function handleTribalMailingAddress() {
+        let organizationType = "";
+        if (organizationTypeDropdown) {
+            organizationType = organizationTypeDropdown.value;
+        } else if (organizationTypeReadonly) {
+            organizationType = organizationTypeReadonly.innerText;
+        }
+        organizationType = organizationType.trim().toLowerCase();
+
+        const selectedTribe = getSelectedTribe();
+        let useTribalMailingAddress = false;
+        if (organizationType === "tribal" && selectedTribe) {
+            useTribalMailingAddress = true;
+        }
+
+        // Selects do not support readOnly. The form also ignores submitted Tribal address values.
+        if (stateTerritoryDropdown) {
+            stateTerritoryDropdown.disabled = useTribalMailingAddress;
+        }
+
+        const mailingAddressTextInputs = [
+            addressLine1Input,
+            addressLine2Input,
+            cityInput,
+            zipcodeInput,
+            urbanizationInput,
+        ];
+
+        for (const addressInput of mailingAddressTextInputs) {
+            if (!addressInput) {
+                // Could happen for read-only
+                continue;
+            }
+
+            addressInput.disabled = false;
+            addressInput.readOnly = useTribalMailingAddress;
+        }
+
+        if (useTribalMailingAddress) {
+            getTribeDetails(selectedTribe).then((tribeDetails) => {
+                // Since we just did an AJAX call, ensure values still match (form could have changed during call)
+                if (getSelectedTribe() !== selectedTribe) {
+                    return;
+                }
+                if (organizationTypeDropdown && organizationTypeDropdown.value !== "tribal") {
+                    return;
+                }
+
+                updateTribalMailingAddress(tribeDetails.mailing_address);
+            }).catch(error => {
+                console.error("Error fetching tribe details: ", error);
+            });
+        }
     }
 
     /**
      * Handles the side effects of change on the federal agency field
-     * 
+     *
      * 1. handle org type dropdown or readonly
      * 2. call handleOrganizationTypeChange
      * 3. call getFederalTypeFromAgency and update federal type
@@ -146,7 +262,7 @@ function handlePortfolioFields(){
 
             // 3. Handle federal type
             getFederalTypeFromAgency(selectedFederalAgency).then((federalType) => updateReadOnly(federalType, '.field-federal_type'));
-            
+
             // 4. Handle senior official
             hideElement(seniorOfficialAddress.parentElement);
             getSeniorOfficialFromAgency(selectedFederalAgency).then((senior_official) => {
@@ -178,7 +294,7 @@ function handlePortfolioFields(){
                     // Handle other errors
                     console.error("An error occurred:", error.message);
                 }
-            }); 
+            });
         } else {
             isPageLoading = false;
         }
@@ -198,10 +314,35 @@ function handlePortfolioFields(){
         if ($seniorOfficialDropdown.find(`option[value='${seniorOfficialId}']`).length) {
             // Select the value that is associated with the current Senior Official.
             $seniorOfficialDropdown.val(seniorOfficialId).trigger("change");
-        } else { 
+        } else {
             // Create a DOM Option that matches the desired Senior Official. Then append it and select it.
             let userOption = new Option(seniorOfficialName, seniorOfficialId, true, true);
             $seniorOfficialDropdown.append(userOption).trigger("change");
+        }
+    }
+
+    /** For tribes, update address components. */
+    function updateTribalMailingAddress(mailingAddress) {
+        if (stateTerritoryDropdown) {
+            stateTerritoryDropdown.value = mailingAddress.state_territory;
+        }
+        if (addressLine1Input) {
+            addressLine1Input.value = mailingAddress.address_line1;
+        }
+        if (addressLine2Input) {
+            addressLine2Input.value = mailingAddress.address_line2;
+        }
+        if (cityInput) {
+            cityInput.value = mailingAddress.city;
+        }
+        if (zipcodeInput) {
+            zipcodeInput.value = mailingAddress.zipcode;
+        }
+        if (urbanizationInput) {
+            urbanizationInput.value = mailingAddress.urbanization;
+        }
+        if (urbanizationField && stateTerritoryField) {
+            handleStateTerritoryChange();
         }
     }
 
@@ -241,7 +382,7 @@ function handlePortfolioFields(){
         const titleSpan = seniorOfficialAddress.querySelector(".contact_info_title");
         const emailSpan = seniorOfficialAddress.querySelector(".contact_info_email");
         const phoneSpan = seniorOfficialAddress.querySelector(".contact_info_phone");
-        if (titleSpan) { 
+        if (titleSpan) {
             titleSpan.textContent = senior_official.title || "None";
         };
         // Update the email field and the content for the clipboard
@@ -267,6 +408,9 @@ function handlePortfolioFields(){
      * Initializes necessary data and display configurations for the portfolio fields.
      */
     function initializePortfolioSettings() {
+        if (tribeDropdown) {
+            django.jQuery(tribeDropdown).select2();
+        }
         if (urbanizationField && stateTerritoryField) {
             handleStateTerritoryChange();
         }
@@ -277,6 +421,31 @@ function handlePortfolioFields(){
      * Sets event listeners for key UI elements.
      */
     function setEventListeners() {
+        if (tribeDropdown) {
+            django.jQuery(tribeDropdown).on("change", function() {
+                if (organizationTypeDropdown && organizationTypeDropdown.value === "tribal") {
+                    let organizationName = "";
+                    if (tribeDropdown.value) {
+                        const selectedOption = tribeDropdown.selectedOptions[0];
+                        organizationName = selectedOption.textContent.trim();
+                    }
+                    if (organizationNameInput) {
+                        organizationNameInput.value = organizationName;
+                    }
+                    if (!tribeDropdown.value) {
+                        updateTribalMailingAddress({
+                            state_territory: "",
+                            address_line1: "",
+                            address_line2: "",
+                            city: "",
+                            zipcode: "",
+                            urbanization: "",
+                        });
+                    }
+                }
+                handleTribalMailingAddress();
+            });
+        }
         if ($federalAgencyDropdown && (organizationTypeDropdown || organizationTypeReadonly)) {
             $federalAgencyDropdown.on("change", function() {
                 handleFederalAgencyChange();

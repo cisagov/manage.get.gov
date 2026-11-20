@@ -3,7 +3,24 @@
 {% load static url_helpers %}
 
 {% block field_readonly %}
-    {% if field.field.name == "display_admins" or field.field.name == "display_members" %}
+    {% if adminform.form.use_tribal_mailing_address and field.field.name in tribal_mailing_address %}
+        {# Tribe address values are rendered only when cooking is_embd_tribal waffles #}
+        <div class="readonly">
+            {% if field.field.name == "state_territory" %}
+                {{ adminform.form.tribal_state_territory_display }}
+            {% elif field.field.name == "address_line1" %}
+                {{ tribal_mailing_address.address_line1 }}
+            {% elif field.field.name == "address_line2" %}
+                {{ tribal_mailing_address.address_line2 }}
+            {% elif field.field.name == "city" %}
+                {{ tribal_mailing_address.city }}
+            {% elif field.field.name == "zipcode" %}
+                {{ tribal_mailing_address.zipcode }}
+            {% elif field.field.name == "urbanization" %}
+                {{ tribal_mailing_address.urbanization }}
+            {% endif %}
+        </div>
+    {% elif field.field.name == "display_admins" or field.field.name == "display_members" %}
         <div class="readonly">{{ field.contents|safe }}</div>
     {% elif field.field.name == "roles" %}
         <div class="readonly">
