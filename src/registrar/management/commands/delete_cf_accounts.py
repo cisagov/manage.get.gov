@@ -24,9 +24,7 @@ class Command(BaseCommand):
         """Initialize with Cloudflare credentials and tenant ID"""
         self.email = settings.SECRET_DNS_SERVICE_EMAIL
         self.api_key = settings.SECRET_DNS_TENANT_KEY
-        self.tenant_id = os.environ.get(
-            "DNS_TENANT_ID"
-        )  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
+        self.tenant_id = settings.SECRET_DNS_TENANT_ID  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.headers = {"X-Auth-Email": self.email, "X-Auth-Key": self.api_key, "Content-Type": "application/json"}
 
@@ -246,6 +244,9 @@ class Command(BaseCommand):
         if not self.tenant_id:
             raise CommandError("DNS_TENANT_ID is not set. Set it to the Cloudflare TEST tenant ID.")
 
+        if not self.tenant_id.endswith('d'):
+            raise CommandError("DNS_TENANT_ID must be the test tenant. A different id is set.")
+
         dry_run = not options["execute"]
         if dry_run:
             print("Running in DRY RUN mode. No accounts will be deleted. Pass --execute to delete.\n")
@@ -267,4 +268,3 @@ class Command(BaseCommand):
         except Exception as e:
             print(f"\nError: {e}")
             sys.exit(1)
-            
