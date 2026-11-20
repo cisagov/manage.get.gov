@@ -20,6 +20,7 @@ from registrar.models.utility.portfolio_helper import (
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
+from datetime import timedelta
 
 
 class UserPortfolioPermission(TimeStampedModel):
@@ -124,7 +125,7 @@ class UserPortfolioPermission(TimeStampedModel):
 
     revocation_reason = models.TextField(null=True, blank=True)
 
-    expire_dt = models.DateTimeField(null=True, blank=True)
+    expire_dt = models.DateTimeField(null=True, blank=True, default=timezone.localdate() + timedelta(days=30))
 
     # End Invitation fields
     def save(self, *args, **kwargs):
@@ -351,4 +352,6 @@ class UserPortfolioPermission(TimeStampedModel):
             cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
 
     def is_expired(self) -> bool:
-        return timezone.localdate() > self.expire_dt
+        if self.expire_dt:
+            return timezone.localdate() > self.expire_dt
+        return False

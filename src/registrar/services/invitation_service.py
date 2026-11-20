@@ -25,8 +25,6 @@ from registrar.utility.errors import (
 )
 from registrar.utility.waffle import flag_is_active_for_user
 
-from datetime import date, timedelta
-
 logger = logging.getLogger(__name__)
 
 
@@ -217,7 +215,6 @@ def _save_portfolio_permission(
     permission.roles = roles
     permission.additional_permissions = additional_permissions
     permission.status = get_portfolio_permission_status(user)
-    permission.expire_dt = timezone.localdate() + timedelta(days=30)
     permission.save()
 
     return permission
@@ -468,7 +465,6 @@ def _save_domain_role(
     domain_role.user = user
     domain_role.role = role
     domain_role.status = get_domain_role_status(user)
-    domain_role.expire_dt = timezone.localdate() + timedelta(days=30)
     domain_role.save()
 
     return domain_role
