@@ -18,6 +18,7 @@ function handlePortfolioFields(){
     const organizationTypeReadonly = organizationTypeField.querySelector(".readonly");
     const organizationTypeDropdown = document.getElementById("id_organization_type");
     const organizationNameField = document.querySelector(".field-organization_name");
+    const organizationNameInput = document.getElementById("id_organization_name");
     const federalTypeField = document.querySelector(".field-federal_type");
     const urbanizationField = document.querySelector(".field-urbanization");
     const stateTerritoryDropdown = document.getElementById("id_state_territory");
@@ -422,15 +423,25 @@ function handlePortfolioFields(){
     function setEventListeners() {
         if (tribeDropdown) {
             django.jQuery(tribeDropdown).on("change", function() {
-                if (organizationTypeDropdown && organizationTypeDropdown.value === "tribal" && !tribeDropdown.value) {
-                    updateTribalMailingAddress({
-                        state_territory: "",
-                        address_line1: "",
-                        address_line2: "",
-                        city: "",
-                        zipcode: "",
-                        urbanization: "",
-                    });
+                if (organizationTypeDropdown && organizationTypeDropdown.value === "tribal") {
+                    let organizationName = "";
+                    if (tribeDropdown.value) {
+                        const selectedOption = tribeDropdown.selectedOptions[0];
+                        organizationName = selectedOption.textContent.trim();
+                    }
+                    if (organizationNameInput) {
+                        organizationNameInput.value = organizationName;
+                    }
+                    if (!tribeDropdown.value) {
+                        updateTribalMailingAddress({
+                            state_territory: "",
+                            address_line1: "",
+                            address_line2: "",
+                            city: "",
+                            zipcode: "",
+                            urbanization: "",
+                        });
+                    }
                 }
                 handleTribalMailingAddress();
             });
