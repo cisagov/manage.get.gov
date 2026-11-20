@@ -8,7 +8,6 @@ Refuses to run when IS_PRODUCTION is set.
 """
 
 import argparse
-import os
 from django.core.management import BaseCommand, CommandError
 from django.conf import settings
 import httpx
@@ -24,7 +23,8 @@ class Command(BaseCommand):
         """Initialize with Cloudflare credentials and tenant ID"""
         self.email = settings.SECRET_DNS_SERVICE_EMAIL
         self.api_key = settings.SECRET_DNS_TENANT_KEY
-        self.tenant_id = settings.SECRET_DNS_TENANT_ID  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
+        # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
+        self.tenant_id = settings.SECRET_DNS_TENANT_ID
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.headers = {"X-Auth-Email": self.email, "X-Auth-Key": self.api_key, "Content-Type": "application/json"}
 
@@ -233,7 +233,7 @@ class Command(BaseCommand):
             help="Actually delete accounts. Without this flag the command only previews what would be deleted.",
         )
 
-    def handle(self, **options):
+    def handle(self, **options):  # noqa: C901
         # Guard: this command targets the test tenant only and must never run in production.
         if settings.IS_PRODUCTION:
             raise CommandError(
@@ -244,7 +244,7 @@ class Command(BaseCommand):
         if not self.tenant_id:
             raise CommandError("DNS_TENANT_ID is not set. Set it to the Cloudflare TEST tenant ID.")
 
-        if not self.tenant_id.endswith('d'):
+        if not self.tenant_id.endswith("d"):
             raise CommandError("DNS_TENANT_ID must be the test tenant. A different id is set.")
 
         dry_run = not options["execute"]
