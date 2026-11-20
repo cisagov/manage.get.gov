@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 Cloudflare Tenant Account Deletion Script
-Provides options to delete accounts under the test tenant via Cloudflare API
+Provides options to delete accounts under the test tenant via Cloudflare API.
+
+Runs as a dry run by default. Pass --execute to actually delete accounts.
+Refuses to run when IS_PRODUCTION is set.
 """
 
 import argparse
-import os
-from django.core.management import BaseCommand
+from django.core.management import BaseCommand, CommandError
 from django.conf import settings
 import httpx
 import sys
@@ -16,14 +18,13 @@ from typing import List
 class Command(BaseCommand):
     help = "Deletes Cloudflare accounts for the test tenant based on account name(s) or account id(s)"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         """Initialize with Cloudflare credentials and tenant ID"""
         self.email = settings.SECRET_DNS_SERVICE_EMAIL
         self.api_key = settings.SECRET_DNS_TENANT_KEY
-        self.tenant_id = os.environ.get(
-            "DNS_TENANT_ID"
-        )  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
+        # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
+        self.tenant_id = settings.SECRET_DNS_TENANT_ID
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.headers = {"X-Auth-Email": self.email, "X-Auth-Key": self.api_key, "Content-Type": "application/json"}
 
@@ -82,7 +83,7 @@ class Command(BaseCommand):
             print(f"  Response: {response.text}")
             return False
 
-    def delete_all_accounts(self, dry_run: bool = False) -> None:
+    def delete_all_accounts(self, dry_run: bool = True) -> None:
         """Delete all accounts under the tenant"""
         print(f"Fetching all accounts under tenant {self.tenant_id}...")
         accounts = self.get_tenant_accounts()
@@ -107,7 +108,7 @@ class Command(BaseCommand):
         for account in accounts:
             self.delete_account(account["account_tag"])
 
-    def delete_by_ids(self, account_ids: List[str], dry_run: bool = False) -> None:
+    def delete_by_ids(self, account_ids: List[str], dry_run: bool = True) -> None:
         """Delete multiple accounts by list of IDs"""
         if dry_run:
             print(f"[DRY RUN] Would delete {len(account_ids)} account(s):")
@@ -119,7 +120,7 @@ class Command(BaseCommand):
         for account_id in account_ids:
             self.delete_account(account_id)
 
-    def delete_by_names(self, account_names: List[str], dry_run: bool = False) -> None:
+    def delete_by_names(self, account_names: List[str], dry_run: bool = True) -> None:
         """Delete accounts by list of names"""
         print(f"Fetching all accounts under tenant {self.tenant_id}...")
         accounts = self.get_tenant_accounts()
@@ -154,7 +155,7 @@ class Command(BaseCommand):
         for account in matching_accounts:
             self.delete_account(account["account_tag"])
 
-    def delete_all_except_ids(self, except_ids: List[str], dry_run: bool = False) -> None:
+    def delete_all_except_ids(self, except_ids: List[str], dry_run: bool = True) -> None:
         """Delete all accounts under tenant except the specified list"""
         print(f"Fetching all accounts under tenant {self.tenant_id}...")
         accounts = self.get_tenant_accounts()
@@ -193,15 +194,19 @@ class Command(BaseCommand):
         parser.description = "Delete Cloudflare accounts under a tenant via API"
         parser.formatter_class = argparse.RawDescriptionHelpFormatter
         parser.epilog = """
+            Runs as a DRY RUN by default: nothing is deleted unless --execute is passed.
+            Refuses to run in production (IS_PRODUCTION=True).
+
             Environment Variables:
             DNS_SERVICE_EMAIL: Cloudflare account email
             DNS_TENANT_KEY: Cloudflare API key
             DNS_TENANT_ID: Unique ID associated with Cloudflare tenant
 
+            # Preview deleting all accounts (dry run, the default)
             %(prog)s --all
 
-            # Using command line arguments
-            %(prog)s --all
+            # Actually delete all accounts
+            %(prog)s --all --execute
 
             # Delete multiple accounts by ids
             %(prog)s --ids abc123 def456 ghi789
@@ -212,8 +217,8 @@ class Command(BaseCommand):
             # Delete all except multiple accounts
             %(prog)s --all-except-ids abc123 def456 ghi789
 
-            # Dry run (preview without deleting)
-            %(prog)s --all --dry-run
+            # Actually delete specific accounts by ids
+            %(prog)s --ids abc123 def456 --execute
                     """
 
         group = parser.add_mutually_exclusive_group(required=True)
@@ -222,18 +227,41 @@ class Command(BaseCommand):
         group.add_argument("--names", nargs="+", help="Delete multiple accounts by names")
         group.add_argument("--all-except-ids", nargs="+", help="Delete all accounts except these IDs")
 
-        parser.add_argument("--dry-run", action="store_true", help="Preview operation without actually deleting")
+        parser.add_argument(
+            "--execute",
+            action="store_true",
+            help="Actually delete accounts. Without this flag the command only previews what would be deleted.",
+        )
 
-    def handle(self, **options):
+    def handle(self, **options):  # noqa: C901
+        # Guard: this command targets the test tenant only and must never run in production.
+        if settings.IS_PRODUCTION:
+            raise CommandError(
+                "delete_cf_accounts cannot be run in production (IS_PRODUCTION=True). "
+                "It is only for cleaning up the Cloudflare test tenant."
+            )
+
+        if not self.tenant_id:
+            raise CommandError("DNS_TENANT_ID is not set. Set it to the Cloudflare TEST tenant ID.")
+
+        if not self.tenant_id.endswith("d"):
+            raise CommandError("DNS_TENANT_ID must be the test tenant. A different id is set.")
+
+        dry_run = not options["execute"]
+        if dry_run:
+            print("Running in DRY RUN mode. No accounts will be deleted. Pass --execute to delete.\n")
+        else:
+            print("Running in EXECUTE mode. Accounts WILL be deleted.\n")
+
         try:
             if options.get("all"):
-                self.delete_all_accounts(dry_run=options["dry_run"])
+                self.delete_all_accounts(dry_run=dry_run)
             elif options.get("ids"):
-                self.delete_by_ids(options["ids"], dry_run=options["dry_run"])
+                self.delete_by_ids(options["ids"], dry_run=dry_run)
             elif options.get("names"):
-                self.delete_by_names(options["names"], dry_run=options["dry_run"])
+                self.delete_by_names(options["names"], dry_run=dry_run)
             elif options.get("all_except_ids"):
-                self.delete_all_except_ids(options["all_except_ids"], dry_run=options["dry_run"])
+                self.delete_all_except_ids(options["all_except_ids"], dry_run=dry_run)
         except KeyboardInterrupt:
             print("\n\nOperation cancelled by user.")
             sys.exit(1)
