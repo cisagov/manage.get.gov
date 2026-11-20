@@ -88,6 +88,9 @@ initDNSRecordPreview()
 // Init the state/federal tribe dropdown
 initializeTribalGovernmentToggle();
 
+// Init the state/federal tribe dropdown
+initializeTribalGovernmentToggle();
+
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();
     commentCharacterEventListener()
