@@ -44,7 +44,6 @@ gh secret --repo cisagov/getgov remove CF_${upcase_name}_USERNAME
 gh secret --repo cisagov/getgov remove CF_${upcase_name}_PASSWORD 
 
 echo "Removing files used for $1..."
-rm .github/workflows/deploy-$1.yaml
 rm ops/manifests/manifest-$1.yaml
 sed -i '' "/getgov-$1.app.cloud.gov/d" src/registrar/config/settings.py
 sed -i '' "/- $1/d" .github/workflows/reset-db.yaml

@@ -18,7 +18,6 @@ on:
           - development
           - backup
           - tjh
-          - cp
           - amt
           - ab
           - cw

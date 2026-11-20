@@ -12,7 +12,6 @@ on:
         options:
           - backup
           - tjh
-          - cp
           - amt
           - ab
           - cw
