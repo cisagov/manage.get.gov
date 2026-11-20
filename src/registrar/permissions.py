@@ -103,6 +103,7 @@ URL_PERMISSIONS = {
     "export_data_type_user": [ALL],
     # API endpoints
     "get-senior-official-from-federal-agency-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],
+    "get-tribe-details-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],
     "get-portfolio-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],
     "get-suborganization-list-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],
     "get-federal-and-portfolio-types-from-federal-agency-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],

@@ -28,6 +28,7 @@ from registrar.views.domain_requests_json import get_domain_requests_json
 from registrar.views.domains_json import get_domains_json
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
+    get_tribe_details_json,
     get_portfolio_json,
     get_suborganization_list_json,
     get_federal_and_portfolio_types_from_federal_agency_json,
@@ -224,6 +225,11 @@ urlpatterns = [
         "admin/api/get-senior-official-from-federal-agency-json/",
         get_senior_official_from_federal_agency_json,
         name="get-senior-official-from-federal-agency-json",
+    ),
+    path(
+        "admin/api/get-tribe-details-json/",
+        get_tribe_details_json,
+        name="get-tribe-details-json",
     ),
     path(
         "admin/api/get-portfolio-json/",

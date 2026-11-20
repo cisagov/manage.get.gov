@@ -82,6 +82,7 @@ from registrar.utility.admin_helpers import (
     get_action_needed_reason_default_email,
     get_rejection_reason_default_email,
     get_field_links_as_list,
+    get_tribal_mailing_address,
 )
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DNSRecordTypes
@@ -1226,6 +1227,83 @@ class TribalDomainRequestAdminForm(DomainRequestAdminForm):
 
             if "organization_name" in self.fields:
                 cleaned_data["organization_name"] = self.instance.organization_name
+
+
+class TribalPortfolioAdminForm(forms.ModelForm):
+    """Used by is_embd_tribal waffle flag."""
+
+    mailing_address_fields = [
+        "state_territory",
+        "address_line1",
+        "address_line2",
+        "city",
+        "zipcode",
+        "urbanization",
+    ]
+
+    class Meta:
+        model = Portfolio
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tribal_mailing_address = {}
+        self.tribe_selection = ""
+        self.tribal_state_territory_display = ""
+        self.use_tribal_mailing_address = False
+
+        # Check if we have a linked tribe, if not then we are in a non-tribal portfolio or legacy
+        tribe = self._get_portfolio_tribe()
+        if not tribe:
+            return
+
+        self.tribal_mailing_address = get_tribal_mailing_address(tribe)
+        # The selection will be like federal:12 or state:34, temp placeholder until dropdown created
+        if self.instance.federal_tribe_id:
+            self.tribe_selection = f"federal:{tribe.pk}"
+        else:
+            self.tribe_selection = f"state:{tribe.pk}"
+
+        # Could be blank
+        if tribe.state_territory:
+            self.tribal_state_territory_display = tribe.get_state_territory_display()
+
+        # If portfolio is tribal, we will use its address
+        organization_type = self.instance.organization_type
+        if "organization_type" in self.fields:
+            organization_type = self["organization_type"].value()
+        if organization_type == Portfolio.OrganizationChoices.TRIBAL:
+            self.use_tribal_mailing_address = True
+
+        if self.use_tribal_mailing_address:
+            self._set_tribal_address_field("state_territory", tribe.state_territory)
+            self._set_tribal_address_field("address_line1", tribe.address_line1)
+            self._set_tribal_address_field("address_line2", tribe.address_line2)
+            self._set_tribal_address_field("city", tribe.city)
+            self._set_tribal_address_field("zipcode", tribe.zipcode)
+            self._set_tribal_address_field("urbanization", tribe.urbanization)
+
+    def _set_tribal_address_field(self, field_name, value):
+        # Check that the field exists
+        if field_name not in self.fields:
+            return
+
+        # Disallow manual edits
+        self.fields[field_name].disabled = True
+
+        # Set a default empty value
+        if value is None:
+            value = ""
+
+        self.initial[field_name] = value
+
+    def _get_portfolio_tribe(self):
+        tribe = None
+        if self.instance.federal_tribe:
+            tribe = self.instance.federal_tribe
+        elif self.instance.state_tribe:
+            tribe = self.instance.state_tribe
+        return tribe
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -6140,6 +6218,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         self.is_omb_analyst = False  # Default value in case it's accessed before being set
 
     change_form_template = "django/admin/portfolio_change_form.html"
+    mailing_address_fields = TribalPortfolioAdminForm.mailing_address_fields
+
     fieldsets = [
         # created_on is the created_at field
         (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
@@ -6158,14 +6238,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             {
                 "classes": ["collapse--dgfieldset"],
                 "description": "Extends organization name and mailing address",
-                "fields": [
-                    "state_territory",
-                    "address_line1",
-                    "address_line2",
-                    "city",
-                    "zipcode",
-                    "urbanization",
-                ],
+                "fields": mailing_address_fields,
             },
         ),
         ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
@@ -6471,6 +6544,9 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         """Pass the 'is_omb_analyst' attribute to the form."""
+        if flag_is_active(request, "is_embd_tribal"):
+            kwargs["form"] = TribalPortfolioAdminForm
+
         form = super().get_form(request, obj, **kwargs)
 
         # Store attribute in the form for template access

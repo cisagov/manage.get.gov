@@ -3,6 +3,7 @@ from django.contrib.messages import get_messages as django_get_messages
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
+from waffle import flag_is_active
 from registrar.decorators import (
     IS_CISA_ANALYST,
     IS_FULL_ACCESS,
@@ -10,8 +11,12 @@ from registrar.decorators import (
     ALL,
     grant_access,
 )
-from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
-from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
+from registrar.models import FederalAgency, SeniorOfficial, DomainRequest, FederalTribe, StateTribe
+from registrar.utility.admin_helpers import (
+    get_action_needed_reason_default_email,
+    get_rejection_reason_default_email,
+    get_tribal_mailing_address,
+)
 from registrar.models.portfolio import Portfolio
 from registrar.utility.constants import BranchChoices
 
@@ -37,6 +42,36 @@ def get_senior_official_from_federal_agency_json(request):
         return JsonResponse(so_dict)
     else:
         return JsonResponse({"error": "Senior Official not found"}, status=404)
+
+
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
+def get_tribe_details_json(request):
+    """Returns tribe information as a JSON"""
+
+    if flag_is_active(request, "is_embd_tribal"):
+        tribe_type = request.GET.get("tribe_type")
+        if not tribe_type or tribe_type not in ["federal", "state"]:
+            return JsonResponse({"error": "A valid tribe type is required"}, status=400)
+
+        tribe_id = request.GET.get("tribe_id", "")
+        try:
+            tribe_id = int(tribe_id)
+        except ValueError:
+            return JsonResponse({"error": "A valid tribe id is required"}, status=400)
+
+        tribe = None
+        if tribe_type == "federal":
+            tribe = FederalTribe.objects.filter(pk=tribe_id).first()
+        elif tribe_type == "state":
+            tribe = StateTribe.objects.filter(pk=tribe_id).first()
+
+        if tribe:
+            mailing_address = get_tribal_mailing_address(tribe)
+            return JsonResponse({"mailing_address": mailing_address})
+        else:
+            return JsonResponse({"error": "Tribe not found"}, status=404)
+
+    return JsonResponse({"error": "Tribal portfolio details are not enabled"}, status=404)
 
 
 @grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
