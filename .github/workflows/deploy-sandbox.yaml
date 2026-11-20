@@ -15,7 +15,6 @@ jobs:
       startsWith(github.head_ref, 'cw/')
         || startsWith(github.head_ref, 'product/')
         || startsWith(github.head_ref, 'tjh/')
-        || startsWith(github.head_ref, 'cp/')
         || startsWith(github.head_ref, 'bl/')
         || startsWith(github.head_ref, 'rh/')
         || startsWith(github.head_ref, 'sm/')

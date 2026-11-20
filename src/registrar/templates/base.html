@@ -93,6 +93,8 @@
 >
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
+  <div id="processing-request-status" class="usa-sr-only" role="status" aria-live="polite"></div>
+
   {% if not IS_PRODUCTION %}
     {% include "includes/banner-non-production-alert.html" %}
   {% endif %}
