@@ -51,7 +51,7 @@ DnsHostService calls operations of the vendor, such as CloudflareService. This a
 
 ### Enrolling a domain
 
-For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. The enrollment button only shows for domains in an organization in the `DNS needed` state.  In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active. DNS-enrolled domains show a userfacing status of "Active" in the application (rather than "Ready" when not enrolled). In /admin, the state is displayed, which is still "Ready".
+For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. The enrollment button only shows for domains in an organization in the `DNS needed` state.  In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active. DNS-enrolled domains show a user-facing status of "Active" in the application (rather than "Ready" when not enrolled). In /admin, the backend state is displayed, which is still "Ready".
 
 ## Development
 
