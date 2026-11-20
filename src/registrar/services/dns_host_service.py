@@ -525,7 +525,16 @@ class DnsHostService:
 
     def compare_vendor_and_db_accounts(self):
         # get all the CF accounts and convert data to tuples (name, id). Used for sync status report.
-        vendor_accounts = self.get_all_accounts()
+        all_vendor_accounts = self.get_all_accounts()
+
+        # Accounts with no name can't be matched to a DB account or domain, and break the sorting below
+        unnamed_account_tags = [a["account_tag"] for a in all_vendor_accounts if not a.get("account_pubname")]
+        if unnamed_account_tags:
+            logger.warning(
+                "Skipping %s Cloudflare account(s) with no name: %s", len(unnamed_account_tags), unnamed_account_tags
+            )
+
+        vendor_accounts = [a for a in all_vendor_accounts if a.get("account_pubname")]
         vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
 
         duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
@@ -580,6 +589,7 @@ class DnsHostService:
             domain_name = get_dns_zone_name_from_account_name(name)
         except ValueError:
             logger.error(f"Cannot extract domain name from the account name {name}")
+            raise
         vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
