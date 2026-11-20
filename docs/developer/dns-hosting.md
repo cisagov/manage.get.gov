@@ -3,7 +3,7 @@
 ## Introduction
 DNS hosting allows managers of .gov domain to host its DNS with .GOV instead of an outside provider. Eventually .GOV hosting will be the default, with the option to host DNS elsewhere as needed. .GOV DNS Hosting is a white label for an external vendor (currently Cloudflare), and interfaces with the vendor through APIs.
 
-We make our API calls through [httpx](https://www.python-httpx.org/). We utilize [htmx](https://htmx.org/) and [Alpine.js](https://alpinejs.dev/) for DOM updates. This allows us to change the UI without refeshing the page to update content. See [ADR](../architecture/decisions/0031-adopt-htmx-and-alpine-for-dynamic-content.md) and [HTMX and Alpine](#htmx-and-alpine) for more context.
+We make our API calls through [httpx](https://www.python-httpx.org/). We utilize [htmx](https://htmx.org/) and [Alpine.js](https://alpinejs.dev/) for DOM updates. This allows us to change the UI without refreshing the page to update content. See [ADR](../architecture/decisions/0031-adopt-htmx-and-alpine-for-dynamic-content.md) and [HTMX and Alpine](#htmx-and-alpine) for more context.
 
 ## Scope (last updated: 11-20-2026)
 
@@ -51,7 +51,7 @@ DnsHostService calls operations of the vendor, such as CloudflareService. This a
 
 ### Enrolling a domain
 
-For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. The enrollment button only shows for domains in an organization in the `DNS needed` state.  In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active. DNS-enrolled domains show a status of "Active" (rather than "Ready" when not enrolled).
+For MVP, an analyst can go to the domain page in /admin and click a button to "enroll" a domain in DNS. The enrollment button only shows for domains in an organization in the `DNS needed` state.  In the background, an account gets created, a zone under that account is created, and name servers are assigned. Account creation happens at the vendor and the data is also saved in the registrar's database. Name servers are then registered through EPP to the registry and will appear in the .gov zone file. The domain's DNS is then active. DNS-enrolled domains show a userfacing status of "Active" in the application (rather than "Ready" when not enrolled). In /admin, the state is displayed, which is still "Ready".
 
 ## Development
 
