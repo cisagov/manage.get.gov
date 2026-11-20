@@ -152,6 +152,10 @@ UNCHECKED_URLS = [
     "todo",
     "logout",
     "version",
+    # Dev-only endpoints — only registered when IS_PRODUCTION is False
+    # (see registrar/views/dev_playwright.py and registrar/config/urls.py).
+    "dev-playwright-seed",
+    "dev-playwright-purge",
 ]
 
 

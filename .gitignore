@@ -183,3 +183,11 @@ src/migrationdata/*
 
 # debug output
 src/debug_response.html
+
+# Playwright
+test-results/
+src/test-results/
+playwright-report/
+src/playwright-report/
+src/tests/playwright/.auth-state.json
+src/.ms-playwright/
