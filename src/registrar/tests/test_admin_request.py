@@ -47,7 +47,7 @@ from .common import (
     GenericTestHelper,
     normalize_html,
 )
-from unittest.mock import ANY, patch
+from unittest.mock import ANY, MagicMock, patch
 
 from django.conf import settings
 import boto3_mocking  # type: ignore
@@ -969,7 +969,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         expected_emails = {
             DomainRequest.RejectionReasons.DOMAIN_PURPOSE: "You didn’t provide enough information about how",
-            DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE: "You must be a government employee, or be",
+            DomainRequest.RejectionReasons.REQUESTER_NOT_AUTHORIZED: "You must be a government employee, or be",
             DomainRequest.RejectionReasons.ORG_HAS_DOMAIN: "practice is to approve one domain",
             DomainRequest.RejectionReasons.CONTACTS_NOT_VERIFIED: "we could not verify the organizational",
             DomainRequest.RejectionReasons.ORG_NOT_ELIGIBLE: ".Gov domains are only available to official U.S.-based",
@@ -984,6 +984,20 @@ class TestDomainRequestAdmin(MockEppLib):
             domain_request.rejection_reason_email = None
             domain_request.save()
             domain_request.refresh_from_db()
+
+    def test_status_history_handles_renamed_rejection_reason(self):
+        """Audit log entries written before the requestor_not_eligible -> requester_not_authorized
+        rename still hold the old value. The status history should still render them."""
+        expected_label = "Requester not authorized to make request"
+        for stored_value in ["requestor_not_eligible", "requester_not_authorized"]:
+            with self.subTest(stored_value=stored_value):
+                log_entry = MagicMock(changes={"rejection_reason": ["None", stored_value]})
+                entry = self.admin.process_log_entry(log_entry)
+                self.assertEqual(entry["rejection_reason"], expected_label)
+                self.assertEqual(
+                    entry["status"],
+                    DomainRequest.DomainRequestStatus.get_status_label(DomainRequest.DomainRequestStatus.REJECTED),
+                )
 
     @less_console_noise_decorator
     def test_save_model_sends_submitted_email(self):
@@ -1217,14 +1231,14 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         AllowedEmail.objects.get_or_create(email=_requester.email)
 
-        # Reject for reason REQUESTOR and test email including dynamic organization name
+        # Reject for reason REQUESTER and test email including dynamic organization name
         self.transition_state_and_send_email(
             domain_request,
             DomainRequest.DomainRequestStatus.REJECTED,
-            DomainRequest.RejectionReasons.REQUESTOR_NOT_ELIGIBLE,
+            DomainRequest.RejectionReasons.REQUESTER_NOT_AUTHORIZED,
         )
         self.assert_email_is_accurate(
-            "Your domain request was rejected because we don’t believe you’re eligible to request a \n.gov "
+            "Your domain request was rejected because we don’t believe you’re authorized to request a \n.gov "
             "domain on behalf of Testorg",
             0,
             _requester.email,
