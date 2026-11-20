@@ -122,6 +122,16 @@ class DnsRecordFixture(DomainFixture):
                         "x_record_id": fake.uuid4().replace("-", ""),
                         "comment": "Primary mail server",
                     },
+                ),
+                # TXT
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.TXT,
+                        "record_content": "I am the TXT record content",
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
             logger.info("Successfully created DNS records.")
