@@ -10,8 +10,6 @@
     <input id="federal_and_portfolio_types_from_agency_json_url" class="display-none" value="{{url}}" />
     {% url 'get-tribe-details-json' as url %}
     <input id="tribe_details_json_url" class="display-none" value="{{url}}" />
-    {% comment %} Temporary tribe data for js {% endcomment %}
-    <input id="portfolio-tribe" type="hidden" value="{{adminform.form.tribe_selection}}" />
     {% url "admin:registrar_seniorofficial_add" as url %}
     <input id="senior-official-add-url" class="display-none" value="{{url}}" />
     {{ block.super }}

@@ -83,6 +83,7 @@ from registrar.utility.admin_helpers import (
     get_rejection_reason_default_email,
     get_field_links_as_list,
     get_tribal_mailing_address,
+    get_tribe_choices,
 )
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DNSRecordTypes
@@ -1125,20 +1126,7 @@ class TribalDomainRequestAdminForm(DomainRequestAdminForm):
 
     def _initialize_tribe_field(self, domain_request):
         """Build the tribe selector that combines federal and state choices"""
-        choices = [("", "---------")]
-        tribe_groups = [
-            ("federal", "Federally recognized tribes", FederalTribe),
-            ("state", "State recognized tribes", StateTribe),
-        ]
-        for tribe_type, group_label, tribe_model in tribe_groups:
-            options = []
-            for tribe_record in tribe_model.get_dropdown_options():
-                # The value will look like "federal:12" or "state:34"
-                submitted_value = f"{tribe_type}:{tribe_record['id']}"
-                visible_name = tribe_record["name"]
-                options.append((submitted_value, visible_name))
-            choices.append((group_label, options))
-        self.fields["tribe"].choices = choices
+        self.fields["tribe"].choices = get_tribe_choices()
         self.fields["tribe"].widget.attrs["data-has-saved-tribe"] = "false"
         # Set tribe value on the form if the request already has one stored
         if domain_request:
@@ -1232,6 +1220,8 @@ class TribalDomainRequestAdminForm(DomainRequestAdminForm):
 class TribalPortfolioAdminForm(forms.ModelForm):
     """Used by is_embd_tribal waffle flag."""
 
+    tribe = forms.ChoiceField(label="Tribe name", required=False)
+
     class Meta:
         model = Portfolio
         fields = "__all__"
@@ -1239,9 +1229,19 @@ class TribalPortfolioAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tribal_mailing_address = {}
-        self.tribe_selection = ""
         self.tribal_state_territory_display = ""
         self.use_tribal_mailing_address = False
+
+        # Remove if read-only
+        if self._meta.exclude and "tribe" in self._meta.exclude:
+            self.fields.pop("tribe", None)
+        # If it exists, then lets initialize to the linked tribe
+        if "tribe" in self.fields:
+            self.fields["tribe"].choices = get_tribe_choices()
+            if self.instance.federal_tribe_id:
+                self.initial["tribe"] = f"federal:{self.instance.federal_tribe_id}"
+            elif self.instance.state_tribe_id:
+                self.initial["tribe"] = f"state:{self.instance.state_tribe_id}"
 
         # Check if we have a linked tribe, if not then we are in a non-tribal portfolio or legacy
         tribe = self._get_portfolio_tribe()
@@ -1249,12 +1249,6 @@ class TribalPortfolioAdminForm(forms.ModelForm):
             return
 
         self.tribal_mailing_address = get_tribal_mailing_address(tribe)
-        # The selection will be like federal:12 or state:34, temp placeholder until dropdown created
-        if self.instance.federal_tribe_id:
-            self.tribe_selection = f"federal:{tribe.pk}"
-        else:
-            self.tribe_selection = f"state:{tribe.pk}"
-
         # Could be blank
         if tribe.state_territory:
             self.tribal_state_territory_display = tribe.get_state_territory_display()
@@ -6217,6 +6211,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             "Organization name and mailing address",
             {
                 "fields": [
+                    "tribe",
                     "organization_name",
                     "federal_agency",
                 ]
@@ -6251,6 +6246,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             "Organization name and mailing address",
             {
                 "fields": [
+                    "tribe",
                     "organization_name",
                     "federal_agency",
                     "state_territory",
@@ -6434,12 +6430,33 @@ class PortfolioAdmin(ListHeaderAdmin):
         "senior_official",
     ]
 
+    @admin.display(description="Tribe name", empty_value="")
+    def tribe(self, obj):
+        tribe_name = ""
+        if obj.federal_tribe:
+            tribe_name = str(obj.federal_tribe)
+        elif obj.state_tribe:
+            tribe_name = str(obj.state_tribe)
+        return tribe_name
+
     def get_fieldsets(self, request, obj=None):
         """Override of the default get_fieldsets definition to add an add_fieldsets view"""
         # This is the add view if no obj exists
         if not obj:
-            return self.add_fieldsets
-        return super().get_fieldsets(request, obj)
+            fieldsets = self.add_fieldsets
+        else:
+            fieldsets = super().get_fieldsets(request, obj)
+
+        if flag_is_active(request, "is_embd_tribal"):
+            return fieldsets
+        else:
+            # Follow DomainRequestAdmin.get_fieldsets to remove the selected tribe field if waffle is off
+            modified_fieldsets = []
+            for name, data in fieldsets:
+                fields = data.get("fields", [])
+                fields = tuple(field for field in fields if field != "tribe")
+                modified_fieldsets.append((name, {**data, "fields": fields}))
+            return modified_fieldsets
 
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
@@ -6454,6 +6471,8 @@ class PortfolioAdmin(ListHeaderAdmin):
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
+            if flag_is_active(request, "is_embd_tribal"):
+                readonly_fields.append("tribe")
 
         # Make senior_official readonly for federal organizations
         if obj and obj.organization_type == obj.OrganizationChoices.FEDERAL:
@@ -6468,6 +6487,8 @@ class PortfolioAdmin(ListHeaderAdmin):
         # Return restrictive Read-only fields for OMB analysts
         if request.user.groups.filter(name="omb_analysts_group").exists():
             readonly_fields.extend([field for field in self.omb_analyst_readonly_fields])
+            if flag_is_active(request, "is_embd_tribal"):
+                readonly_fields.append("tribe")
             return readonly_fields
         # Return restrictive Read-only fields for analysts and
         # users who might not belong to groups

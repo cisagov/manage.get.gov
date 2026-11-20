@@ -27,8 +27,8 @@ function handlePortfolioFields(){
     const seniorOfficialApi = document.getElementById("senior_official_from_agency_json_url").value;
     const federalPortfolioApi = document.getElementById("federal_and_portfolio_types_from_agency_json_url").value;
     const tribeDetailsApi = document.getElementById("tribe_details_json_url").value;
-    const savedTribeSelection = document.getElementById("portfolio-tribe").value;
     const tribeDropdown = document.getElementById("id_tribe");
+    const tribeField = document.querySelector(".field-tribe");
     // Mailing address fields (for tribes)
     const addressLine1Input = document.getElementById("id_address_line1");
     const addressLine2Input = document.getElementById("id_address_line2");
@@ -117,10 +117,11 @@ function handlePortfolioFields(){
 
     /** Return the selected tribe */
     function getSelectedTribe() {
+        let selectedTribe = "";
         if (tribeDropdown) {
-            return tribeDropdown.value;
+            selectedTribe = tribeDropdown.value;
         }
-        return savedTribeSelection;
+        return selectedTribe;
     }
 
     /**
@@ -144,6 +145,20 @@ function handlePortfolioFields(){
                 if (federalTypeField) {
                     hideElement(federalTypeField);
                 }
+            }
+        }
+        if (tribeField) {
+            let organizationType = "";
+            if (organizationTypeDropdown) {
+                organizationType = organizationTypeDropdown.value;
+            } else if (organizationTypeReadonly) {
+                organizationType = organizationTypeReadonly.innerText;
+            }
+            organizationType = organizationType.trim().toLowerCase();
+            if (organizationType === "tribal") {
+                showElement(tribeField);
+            } else {
+                hideElement(tribeField);
             }
         }
         handleTribalMailingAddress();
@@ -392,6 +407,9 @@ function handlePortfolioFields(){
      * Initializes necessary data and display configurations for the portfolio fields.
      */
     function initializePortfolioSettings() {
+        if (tribeDropdown) {
+            django.jQuery(tribeDropdown).select2();
+        }
         if (urbanizationField && stateTerritoryField) {
             handleStateTerritoryChange();
         }
@@ -404,6 +422,16 @@ function handlePortfolioFields(){
     function setEventListeners() {
         if (tribeDropdown) {
             django.jQuery(tribeDropdown).on("change", function() {
+                if (organizationTypeDropdown && organizationTypeDropdown.value === "tribal" && !tribeDropdown.value) {
+                    updateTribalMailingAddress({
+                        state_territory: "",
+                        address_line1: "",
+                        address_line2: "",
+                        city: "",
+                        zipcode: "",
+                        urbanization: "",
+                    });
+                }
                 handleTribalMailingAddress();
             });
         }
