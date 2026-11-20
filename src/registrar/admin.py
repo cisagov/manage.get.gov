@@ -1232,15 +1232,6 @@ class TribalDomainRequestAdminForm(DomainRequestAdminForm):
 class TribalPortfolioAdminForm(forms.ModelForm):
     """Used by is_embd_tribal waffle flag."""
 
-    mailing_address_fields = [
-        "state_territory",
-        "address_line1",
-        "address_line2",
-        "city",
-        "zipcode",
-        "urbanization",
-    ]
-
     class Meta:
         model = Portfolio
         fields = "__all__"
@@ -6218,8 +6209,6 @@ class PortfolioAdmin(ListHeaderAdmin):
         self.is_omb_analyst = False  # Default value in case it's accessed before being set
 
     change_form_template = "django/admin/portfolio_change_form.html"
-    mailing_address_fields = TribalPortfolioAdminForm.mailing_address_fields
-
     fieldsets = [
         # created_on is the created_at field
         (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
@@ -6238,7 +6227,14 @@ class PortfolioAdmin(ListHeaderAdmin):
             {
                 "classes": ["collapse--dgfieldset"],
                 "description": "Extends organization name and mailing address",
-                "fields": mailing_address_fields,
+                "fields": [
+                    "state_territory",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "zipcode",
+                    "urbanization",
+                ],
             },
         ),
         ("Portfolio members", {"fields": ["display_admins", "display_members"]}),
