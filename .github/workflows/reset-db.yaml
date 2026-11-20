@@ -17,7 +17,6 @@ on:
           - staging
           - development
           - tjh
-          - cp
           - amt
           - ab
           - cw
