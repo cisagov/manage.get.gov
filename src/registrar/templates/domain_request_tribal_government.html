@@ -37,6 +37,45 @@
         {% input_with_errors forms.0.state_tribe %}
       {% endwith %}
     </div>
+
+    <div aria-live="polite">
+      <div
+        id="tribe-portfolio-warning"
+        class="usa-alert usa-alert--warning usa-alert--slim usa-alert--no-icon display-none margin-top-1"
+      >
+        <div class="usa-alert__body">
+          <p class="usa-alert__text maxw-none">Requests for this organization aren't accepted through this form.</p>
+        </div>
+      </div>
+    </div>  
+
+    <div class="usa-accordion usa-accordion--show-more margin-top-neg-1">
+      <h3 class="usa-accordion__heading">
+        <button
+          type="button"
+          class="usa-accordion__button padding-y-0 text-base"
+          aria-expanded="false"
+          aria-controls="tribe-request-limits"
+        >
+          {# .expand-less is the slot shown while collapsed, so it holds the down chevron #}
+          <svg class="usa-icon text-primary text-middle expand-less" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="/public/img/sprite.svg#expand_more"></use>
+          </svg>
+          {# .expand-more is the slot shown while expanded, so it holds the up chevron #}
+          <svg class="usa-icon text-primary text-middle expand-more" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="/public/img/sprite.svg#expand_less"></use>
+          </svg>
+          <span class="text-middle">Why can't I submit a request for some organizations?</span>
+        </button>
+      </h3>
+      <div
+        id="tribe-request-limits"
+        class="usa-accordion__content bg-transparent padding-top-1 padding-left-0 padding-right-0 text-base"
+        hidden
+      >
+        <p>Requests for some organizations are limited because they already have a .gov domain. Only designated individuals can request new domains. Reach out to someone at the organization who manages domains. They can help you identify the organization admin.</p>
+      </div>
+    </div>
   </div>
 
 {% else %}
