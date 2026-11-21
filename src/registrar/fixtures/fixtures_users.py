@@ -132,13 +132,6 @@ class UserFixture:
             "title": "Software Engineer",
         },
         {
-            "username": "6d11be5-d028-47b6-842b-e52448de36ba",
-            "first_name": "Corwayne",
-            "last_name": "Pyle",
-            "email": "corwayne.pyle@ecstech.com",
-            "title": "Tech Lead",
-        },
-        {
             "username": "fea47f0a-3699-4e04-92c6-08f7ff1d95d6",
             "first_name": "TJ",
             "last_name": "Harris",
