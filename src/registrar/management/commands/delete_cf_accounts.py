@@ -108,6 +108,12 @@ class Command(BaseCommand):
         for account in accounts:
             self.delete_account(account["account_tag"])
 
+    def _get_unmatched_items(self, matched_accounts, arg_items_set: set[str], arg_key):
+        """If an item is passed into an arg list that doesn't match an account, returns it in a list"""
+        matching_account_values = [matched_account[arg_key] for matched_account in matched_accounts]
+        unmatched_values = [v for v in arg_items_set if v not in matching_account_values]
+        return unmatched_values
+
     def delete_by_ids(self, account_ids: List[str], dry_run: bool = True) -> None:
         """Delete multiple accounts by list of IDs"""
         accounts = self.get_tenant_accounts()
@@ -119,9 +125,12 @@ class Command(BaseCommand):
         # Find accounts matching any of the ids
         id_set = set(account_ids)
         matching_accounts = [acc for acc in accounts if acc.get("account_tag") in id_set]
-        matching_account_ids = [matching_account["account_tag"] for matching_account in matching_accounts]
-        unmatched_ids = [id for id in id_set if id not in matching_account_ids ]
 
+        if not matching_accounts:
+            print("No accounts found with the specified ids")
+            return
+
+        unmatched_ids = self._get_unmatched_items(matching_accounts, id_set, "account_tag")
         if dry_run:
             if unmatched_ids:
                 for id in unmatched_ids:
@@ -152,6 +161,10 @@ class Command(BaseCommand):
             print("No accounts found with the specified names")
             return
 
+        unmatched_names = self._get_unmatched_items(matching_accounts, name_set, "account_pubname")
+        if unmatched_names:
+            for name in unmatched_names:
+                print(f"Account name not found in vendor accounts: {name}")
         print(f"Found {len(matching_accounts)} account(s) matching the provided names:")
         for acc in matching_accounts:
             print(f"  - {acc['account_tag']}: {acc.get('account_pubname', 'Unnamed')}")
@@ -185,6 +198,12 @@ class Command(BaseCommand):
         if not to_delete:
             print("No accounts to delete (all accounts are in the exception list).")
             return
+
+        accts_to_not_delete = [acc for acc in accounts if acc["account_tag"] in except_set]
+        unmatched_ids = self._get_unmatched_items(accts_to_not_delete, except_set, "account_tag")
+        if unmatched_ids:
+            for id in unmatched_ids:
+                print(f"id to keep not found in vendor accounts: {id}")
 
         print(f"Found {len(to_delete)} account(s) to delete (keeping {len(except_ids)} account(s))")
 
