@@ -32,8 +32,9 @@ jobs:
             echo "requirements.txt already in sync"; exit 0
           fi
           SHA=$(git rev-parse "HEAD:src/requirements.txt")
+          base64 -w0 src/requirements.txt > "$RUNNER_TEMP/req.b64"
           gh api -X PUT "/repos/${GITHUB_REPOSITORY}/contents/src/requirements.txt" \
             -f message="Regenerate requirements.txt from Pipfile.lock" \
             -f branch="$BRANCH" \
             -f sha="$SHA" \
-            -f content="$(base64 -w0 src/requirements.txt)"
+            -F content=@"$RUNNER_TEMP/req.b64"
