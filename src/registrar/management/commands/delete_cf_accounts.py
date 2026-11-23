@@ -85,7 +85,7 @@ class Command(BaseCommand):
 
     def delete_all_accounts(self, dry_run: bool = True) -> None:
         """Delete all accounts under the tenant"""
-        print(f"Fetching all accounts under test tenant...")
+        print("Fetching all accounts under test tenant...")
         accounts = self.get_tenant_accounts()
 
         if not accounts:
