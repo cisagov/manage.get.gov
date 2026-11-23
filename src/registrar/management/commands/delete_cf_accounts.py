@@ -110,15 +110,30 @@ class Command(BaseCommand):
 
     def delete_by_ids(self, account_ids: List[str], dry_run: bool = True) -> None:
         """Delete multiple accounts by list of IDs"""
-        if dry_run:
-            print(f"[DRY RUN] Would delete {len(account_ids)} account(s):")
-            for acc_id in account_ids:
-                print(f"  - {acc_id}")
+        accounts = self.get_tenant_accounts()
+
+        if not accounts:
+            print("No accounts found or error fetching accounts.")
             return
 
-        print(f"Deleting {len(account_ids)} account(s)...")
-        for account_id in account_ids:
-            self.delete_account(account_id)
+        # Find accounts matching any of the ids
+        id_set = set(account_ids)
+        matching_accounts = [acc for acc in accounts if acc.get("account_tag") in id_set]
+        matching_account_ids = [matching_account["account_tag"] for matching_account in matching_accounts]
+        unmatched_ids = [id for id in id_set if id not in matching_account_ids ]
+
+        if dry_run:
+            if unmatched_ids:
+                for id in unmatched_ids:
+                    print(f"id not found in vendor accounts: {id}")
+            print(f"[DRY RUN] Would delete {len(matching_accounts)} account(s):")
+            for acct in matching_accounts:
+                print((f"  - {acct['account_tag']}: {acct.get('account_pubname', 'Unnamed')}"))
+            return
+
+        print(f"Deleting {len(matching_accounts)} account(s)...")
+        for acct in matching_accounts:
+            self.delete_account(acct["account_tag"])
 
     def delete_by_names(self, account_names: List[str], dry_run: bool = True) -> None:
         """Delete accounts by list of names"""
