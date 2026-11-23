@@ -174,10 +174,6 @@ class PermissionDeniedLoggingTest(TestCase):
         self.user = create_test_user()
         self.domain = Domain.objects.create(name="denied.gov")
 
-    def tearDown(self):
-        Domain.objects.all().delete()
-        get_user_model().objects.all().delete()
-
     @staticmethod
     def _make_record(exc):
         """Build a log record carrying exc as its exc_info."""
