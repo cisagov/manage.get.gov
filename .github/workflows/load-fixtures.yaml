@@ -11,7 +11,7 @@ on:
         type: 'choice'
         options:
           - backup
-          - cp
+          - tjh
           - amt
           - ab
           - cw

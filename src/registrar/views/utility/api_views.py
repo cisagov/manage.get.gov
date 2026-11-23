@@ -7,8 +7,7 @@ from registrar.decorators import (
     IS_CISA_ANALYST,
     IS_FULL_ACCESS,
     IS_OMB_ANALYST,
-    IS_STAFF,
-    IS_DOMAIN_MANAGER,
+    ALL,
     grant_access,
 )
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
@@ -168,7 +167,7 @@ def get_rejection_email_for_user_json(request):
     return JsonResponse({"email": email}, status=200)
 
 
-@grant_access(IS_STAFF, IS_DOMAIN_MANAGER)
+@grant_access(ALL)  # messages are retrieved from logged-in user's session only
 def get_alert_messages(request):
     """Serve all Django messages."""
     messages = django_get_messages(request)

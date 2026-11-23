@@ -86,7 +86,6 @@ from registrar.utility.admin_helpers import (
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import (
-    EnrollmentNotAllowedError,
     FSMDomainRequestError,
     FSMErrorCodes,
     DnsHostingError,
@@ -105,7 +104,7 @@ from registrar.views.utility.invitation_helper import (
 )
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.widgets import NoAutocompleteFilteredSelectMultiple
+from registrar.widgets import NoAutocompleteFilteredSelectMultiple, AdminTribeSelect
 
 from . import models
 from import_export import resources
@@ -927,6 +926,11 @@ class DomainRequestAdminForm(forms.ModelForm):
     class Meta:
         model = models.DomainRequest
         fields = "__all__"
+        # Tribe selection is managed by the combined fed/state selection in TribalDomainRequestAdminForm
+        exclude = (
+            "state_tribe",
+            "federal_tribe",
+        )
         widgets = {
             "current_websites": NoAutocompleteFilteredSelectMultiple("current_websites", False),
             "alternative_domains": NoAutocompleteFilteredSelectMultiple("alternative_domains", False),
@@ -1092,6 +1096,136 @@ class DomainRequestAdminForm(forms.ModelForm):
             self.add_error("investigator", error_message)
 
         return is_valid
+
+
+class TribalDomainRequestAdminForm(DomainRequestAdminForm):
+    """Supports is_embd_tribal waffle flag.  Adds the combined fed/state tribe selection to the domain request"""
+
+    tribe = forms.ChoiceField(label="Tribe name", required=False, widget=AdminTribeSelect)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # For read-only display, Django verifies the fieldlist before calling __init__, so we have to declare tribe
+        # up top and then remove it here (Django will build the read-only text)
+        if self._meta.exclude and "tribe" in self._meta.exclude:
+            self.fields.pop("tribe", None)
+
+        domain_request = kwargs.get("instance")
+        if "tribe" in self.fields:
+            self._initialize_tribe_field(domain_request)
+        self._initialize_tribe_recognition(domain_request)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if "tribe" in self.fields and "tribe" in cleaned_data:
+            self._clean_tribe(cleaned_data)
+        return cleaned_data
+
+    def _initialize_tribe_field(self, domain_request):
+        """Build the tribe selector that combines federal and state choices"""
+        choices = [("", "---------")]
+        tribe_groups = [
+            ("federal", "Federally recognized tribes", FederalTribe),
+            ("state", "State recognized tribes", StateTribe),
+        ]
+        for tribe_type, group_label, tribe_model in tribe_groups:
+            options = []
+            for tribe_record in tribe_model.get_dropdown_options():
+                # The value will look like "federal:12" or "state:34"
+                submitted_value = f"{tribe_type}:{tribe_record['id']}"
+                visible_name = tribe_record["name"]
+                options.append((submitted_value, visible_name))
+            choices.append((group_label, options))
+        self.fields["tribe"].choices = choices
+        self.fields["tribe"].widget.attrs["data-has-saved-tribe"] = "false"
+        # Set tribe value on the form if the request already has one stored
+        if domain_request:
+            if domain_request.federal_tribe_id:
+                self.initial["tribe"] = f"federal:{domain_request.federal_tribe_id}"
+                self.fields["tribe"].widget.attrs["data-has-saved-tribe"] = "true"
+            elif domain_request.state_tribe_id:
+                self.initial["tribe"] = f"state:{domain_request.state_tribe_id}"
+                self.fields["tribe"].widget.attrs["data-has-saved-tribe"] = "true"
+
+    def _initialize_tribe_recognition(self, domain_request):
+        """Prep the "Federally recognized/State recognized and "Yes" based on the selection"""
+        self._initialize_tribe_to_fed_or_state(domain_request)
+        self.tribe_recognition_label = "Federally recognized tribe"
+        self.tribe_recognition_value = ""
+
+        if self.selected_tribe_type == "state":
+            self.tribe_recognition_label = "State recognized tribe"
+
+        if self.selected_tribe_type:
+            self.tribe_recognition_value = "Yes"
+        # Currently only "Federally recognized" and "State recognized" with "Yes" or blank
+
+    def _initialize_tribe_to_fed_or_state(self, domain_request):
+        """Set the selected tribe to federal or state"""
+        self.selected_tribe_type = None
+        if "tribe" in self.fields:
+            selection = self["tribe"].value()
+            if selection:
+                # First part is tribe type, second is key
+                tribe_type = selection.split(":", 1)[0]
+                if tribe_type in ("federal", "state"):
+                    self.selected_tribe_type = tribe_type
+        elif domain_request:
+            if domain_request.federal_tribe_id:
+                self.selected_tribe_type = "federal"
+            elif domain_request.state_tribe_id:
+                self.selected_tribe_type = "state"
+            # Avoid tribe_name legacy field
+
+    def _clean_tribe(self, cleaned_data):
+        """Validation for FederalTribe or StateTribe"""
+        organization_type = cleaned_data.get("organization_type", self.instance.organization_type)
+        # Only applies for tribal requests
+        if organization_type != DomainRequest.OrganizationChoices.TRIBAL:
+            return
+        selection = cleaned_data["tribe"]
+        tribe = None
+        tribe_type = None
+        if selection:
+            # Split around the first colon, into tribe type and key ("federal:12 or state:34 for example")
+            tribe_type, pk = selection.split(":", 1)
+            if tribe_type == "state":
+                model = StateTribe
+            else:
+                model = FederalTribe
+            try:
+                tribe = model.objects.get(pk=pk)
+            except model.DoesNotExist:
+                self.add_error("tribe", "The selected tribe doesn't exist. Please select another tribe.")
+                return
+        self._set_tribe(tribe, tribe_type, cleaned_data)
+
+    def _set_tribe(self, tribe, tribe_type, cleaned_data):
+        """Keep the Domain Request tribe links, organization name, and recognition flags consistent."""
+        previous_tribe = self.instance.federal_tribe_id or self.instance.state_tribe_id
+        # If state, otherwise federal
+        if tribe_type == "state":
+            self.instance.state_tribe = tribe
+            self.instance.federal_tribe = None
+        else:
+            self.instance.state_tribe = None
+            self.instance.federal_tribe = tribe
+
+        # Don't handle previous free text tribe entries (just selected tribes)
+        if tribe or previous_tribe:
+            if tribe:
+                selected_tribe_name = str(tribe)
+                self.instance.organization_name = selected_tribe_name
+                self.instance.federally_recognized_tribe = tribe_type == "federal"
+                self.instance.state_recognized_tribe = tribe_type == "state"
+            else:
+                self.instance.organization_name = ""
+                self.instance.federally_recognized_tribe = None
+                self.instance.state_recognized_tribe = None
+
+            if "organization_name" in self.fields:
+                cleaned_data["organization_name"] = self.instance.organization_name
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
@@ -2853,14 +2987,14 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
-            converted_generic_org_type=Case(
+            converted_organization_type=Case(
                 # When portfolio is present, use its value instead
                 When(
                     domain__domain_info__portfolio__isnull=False,
                     then=F("domain__domain_info__portfolio__organization_type"),
                 ),
                 # Otherwise, return the natively assigned value
-                default=F("domain__domain_info__generic_org_type"),
+                default=F("domain__domain_info__organization_type"),
             ),
             converted_federal_type=Case(
                 # When portfolio is present, use its value instead
@@ -2882,7 +3016,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if request.user.groups.filter(name="omb_analysts_group").exists():
             annotated_qs = self.get_annotated_queryset(qs)
             return annotated_qs.filter(
-                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 converted_federal_type=BranchChoices.EXECUTIVE,
             )
 
@@ -2895,7 +3029,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return (
-                    obj.domain.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    obj.domain.domain_info.converted_organization_type == DomainRequest.OrganizationChoices.FEDERAL
                     and obj.domain.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_view_permission(request, obj)
@@ -3145,26 +3279,26 @@ class DomainInformationResource(resources.ModelResource):
 class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Customize domain information admin class."""
 
-    class GenericOrgFilter(admin.SimpleListFilter):
+    class OrgTypeFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
         organization in the Domain Information object."""
 
-        title = "generic organization"
-        parameter_name = "converted_generic_orgs"
+        title = "organization type"
+        parameter_name = "converted_org_types"
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
             queryset = (
                 DomainInformation.objects.annotate(
-                    converted_generic_org=Case(
+                    converted_org_type=Case(
                         When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
-                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        When(portfolio__isnull=True, organization_type__isnull=False, then="organization_type"),
                         default=Value(""),
                         output_field=CharField(),
                     )
                 )
-                .values_list("converted_generic_org", flat=True)
+                .values_list("converted_org_type", flat=True)
                 .distinct()
             )
 
@@ -3175,7 +3309,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
-                    | Q(portfolio__isnull=True, generic_org_type=self.value())
+                    | Q(portfolio__isnull=True, organization_type=self.value())
                 )
             return queryset
 
@@ -3185,13 +3319,13 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # Customize column header text
     @admin.display(description=_("Org Type"))
-    def converted_generic_org_type(self, obj):
-        return obj.converted_generic_org_type_display
+    def converted_organization_type(self, obj):
+        return obj.converted_organization_type_display
 
     # Columns
     list_display = [
         "domain",
-        "converted_generic_org_type",
+        "converted_organization_type",
         "created_at",
     ]
 
@@ -3262,7 +3396,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     portfolio_urbanization.short_description = "Urbanization"  # type: ignore
 
     # Filters
-    list_filter = [GenericOrgFilter]
+    list_filter = [OrgTypeFilter]
 
     # Search
     search_fields = [
@@ -3447,7 +3581,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_city",
         "portfolio_zipcode",
         "portfolio_urbanization",
-        "organization_type",
         "federal_type",
         "federal_agency",
         "tribe_name",
@@ -3508,11 +3641,11 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
-            conv_generic_org_type=Case(
+            conv_organization_type=Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("generic_org_type"),
+                default=F("organization_type"),
             ),
             conv_federal_type=Case(
                 # When portfolio is present, use its value instead
@@ -3533,7 +3666,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if request.user.groups.filter(name="omb_analysts_group").exists():
             annotated_qs = self.get_annotated_queryset(qs)
             return annotated_qs.filter(
-                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 conv_federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
@@ -3568,26 +3701,26 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         def lookups(self, request, model_admin):
             return DomainRequest.DomainRequestStatus.choices
 
-    class GenericOrgFilter(admin.SimpleListFilter):
+    class OrgTypeFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
         organization in the Domain Request object."""
 
-        title = "generic organization"
-        parameter_name = "converted_generic_orgs"
+        title = "organization type"
+        parameter_name = "converted_org_types"
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
             queryset = (
                 DomainRequest.objects.annotate(
-                    converted_generic_org=Case(
+                    converted_org_type=Case(
                         When(portfolio__organization_type__isnull=False, then="portfolio__organization_type"),
-                        When(portfolio__isnull=True, generic_org_type__isnull=False, then="generic_org_type"),
+                        When(portfolio__isnull=True, organization_type__isnull=False, then="organization_type"),
                         default=Value(""),
                         output_field=CharField(),
                     )
                 )
-                .values_list("converted_generic_org", flat=True)
+                .values_list("converted_org_type", flat=True)
                 .distinct()
             )
 
@@ -3598,7 +3731,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(portfolio__organization_type=self.value())
-                    | Q(portfolio__isnull=True, generic_org_type=self.value())
+                    | Q(portfolio__isnull=True, organization_type=self.value())
                 )
             return queryset
 
@@ -3729,8 +3862,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # These fields map to @Property methods and
     # require these custom definitions to work properly
     @admin.display(description=_("Org Type"))
-    def converted_generic_org_type(self, obj):
-        return obj.converted_generic_org_type_display
+    def converted_organization_type(self, obj):
+        return obj.converted_organization_type_display
 
     @admin.display(description=_("Organization Name"))
     def converted_organization_name(self, obj):
@@ -3847,7 +3980,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "converted_generic_org_type",
+        "converted_organization_type",
         "converted_organization_name",
         "converted_federal_agency",
         "converted_federal_type",
@@ -3864,7 +3997,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_filter = (
         PortfolioFilter,
         StatusListFilter,
-        GenericOrgFilter,
+        OrgTypeFilter,
         FederalTypeFilter,
         "rejection_reason",
         InvestigatorFilter,
@@ -3963,6 +4096,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "fields": [
                     "federal_type",
                     "federal_agency",
+                    "tribe",
+                    "tribe_recognition",
                     "tribe_name",
                     "federally_recognized_tribe",
                     "state_recognized_tribe",
@@ -4046,6 +4181,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "current_websites",
         "alternative_domains",
         "status_history",
+        "tribe_recognition",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -4102,9 +4238,9 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_city",
         "portfolio_zipcode",
         "portfolio_urbanization",
-        "organization_type",
         "federal_type",
         "federal_agency",
+        "tribe",
         "tribe_name",
         "federally_recognized_tribe",
         "state_recognized_tribe",
@@ -4141,6 +4277,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         fieldsets = super().get_fieldsets(request, obj)
 
         excluded_fields = set()
+        # Choose old or new tribal selection method (free text or dropdown)
+        if flag_is_active(request, "is_embd_tribal"):
+            excluded_fields.update(["tribe_name", "federally_recognized_tribe", "state_recognized_tribe"])
+        else:
+            excluded_fields.update(["tribe", "tribe_recognition"])
         feb_fields = [
             "feb_naming_requirements_details",
             "feb_purpose_choice",
@@ -4172,6 +4313,18 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             fields = tuple(field for field in fields if field not in excluded_fields)
             modified_fieldsets.append((name, {**data, "fields": fields}))
         return modified_fieldsets
+
+    @admin.display(description="Tribe name")
+    def tribe(self, obj):
+        if obj:
+            return obj.tribe_display_name
+        else:
+            return ""
+
+    @admin.display(description="Tribe recognition", empty_value="")
+    def tribe_recognition(self, obj):
+        """The template displays whether it is state or federally recognized."""
+        return ""
 
     def _has_version_conflict(self, request, obj):
         """
@@ -4410,6 +4563,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
+            # Need to make the tribe field read-only as well, it is not a model field
+            readonly_fields.append("tribe")
             # Add the multi-select fields to readonly_fields:
             # Complex fields like ManyToManyField require special handling
             readonly_fields.extend(["alternative_domains"])
@@ -4605,11 +4760,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
-            conv_generic_org_type=Case(
+            conv_organization_type=Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("generic_org_type"),
+                default=F("organization_type"),
             ),
             conv_federal_type=Case(
                 # When portfolio is present, use its value instead
@@ -4635,7 +4790,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if request.user.groups.filter(name="omb_analysts_group").exists():
             annotated_qs = self.get_annotated_queryset(qs)
             return annotated_qs.filter(
-                conv_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                conv_organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 conv_federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
@@ -4647,7 +4802,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return (
-                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    obj.converted_organization_type == DomainRequest.OrganizationChoices.FEDERAL
                     and obj.converted_federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_view_permission(request, obj)
@@ -4659,7 +4814,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return (
-                    obj.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    obj.converted_organization_type == DomainRequest.OrganizationChoices.FEDERAL
                     and obj.converted_federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_change_permission(request, obj)
@@ -4684,13 +4839,39 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return combined_queryset, use_distinct
 
     def get_form(self, request, obj=None, **kwargs):
-        """Pass the 'is_omb_analyst' attribute to the form."""
+        # Use the new form for tribal selection behavior
+        if flag_is_active(request, "is_embd_tribal"):
+            kwargs["form"] = TribalDomainRequestAdminForm
+
         form = super().get_form(request, obj, **kwargs)
+
+        # Handle the fed/state tribal selection fields
+        if "tribe" in form.base_fields:
+            # Keep the related widgets on this request's field rather than a shared declared field.
+            tribe_field = copy.deepcopy(form.base_fields["tribe"])
+            form.base_fields["tribe"] = tribe_field
+            self._set_tribe_related_widgets(request, tribe_field.widget)
 
         # Store attribute in the form for template access
         form.show_contact_as_plain_text = request.user.groups.filter(name="omb_analysts_group").exists()
 
         return form
+
+    def _set_tribe_related_widgets(self, request, widget):
+        """Reuse the normal foreign-key widgets for tribe edit/view controls."""
+        widget.related_widgets = {}
+        tribe_fields = [
+            ("federal", "federal_tribe"),
+            ("state", "state_tribe"),
+        ]
+        for tribe_type, field_name in tribe_fields:
+            db_field = self.model._meta.get_field(field_name)
+            related_field = self.formfield_for_dbfield(db_field, request)
+            related_widget = related_field.widget
+            related_widget.can_add_related = False
+            related_widget.can_delete_related = False
+            related_widget.widget.attrs["class"] = "display-none"
+            widget.related_widgets[tribe_type] = related_widget
 
 
 class TransitionDomainAdmin(ListHeaderAdmin):
@@ -4969,19 +5150,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     resource_classes = [DomainResource]
 
     # ------- FILTERS
-    class GenericOrgFilter(admin.SimpleListFilter):
+    class OrgTypeFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
         organization in the Domain Information object."""
 
-        title = "generic organization"
-        parameter_name = "converted_generic_orgs"
+        title = "organization type"
+        parameter_name = "converted_org_types"
 
         def lookups(self, request, model_admin):
             # Annotate the queryset to avoid Python-side iteration
             queryset = (
                 Domain.objects.annotate(
-                    converted_generic_org=Case(
+                    converted_org_type=Case(
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__organization_type__isnull=False,
@@ -4990,14 +5171,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                         When(
                             domain_info__isnull=False,
                             domain_info__portfolio__isnull=True,
-                            domain_info__generic_org_type__isnull=False,
-                            then="domain_info__generic_org_type",
+                            domain_info__organization_type__isnull=False,
+                            then="domain_info__organization_type",
                         ),
                         default=Value(""),
                         output_field=CharField(),
                     )
                 )
-                .values_list("converted_generic_org", flat=True)
+                .values_list("converted_org_type", flat=True)
                 .distinct()
             )
 
@@ -5008,7 +5189,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if self.value():
                 return queryset.filter(
                     Q(domain_info__portfolio__organization_type=self.value())
-                    | Q(domain_info__portfolio__isnull=True, domain_info__generic_org_type=self.value())
+                    | Q(domain_info__portfolio__isnull=True, domain_info__organization_type=self.value())
                 )
             return queryset
 
@@ -5100,11 +5281,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
-            converted_generic_org_type=Case(
+            converted_organization_type=Case(
                 # When portfolio is present, use its value instead
                 When(domain_info__portfolio__isnull=False, then=F("domain_info__portfolio__organization_type")),
                 # Otherwise, return the natively assigned value
-                default=F("domain_info__generic_org_type"),
+                default=F("domain_info__organization_type"),
             ),
             converted_federal_agency=Case(
                 # When portfolio is present, use its value instead
@@ -5165,7 +5346,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         )
 
     # Filters
-    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, "state"]
+    list_filter = [DnsEnrolledFilter, OrgTypeFilter, FederalTypeFilter, "state"]
 
     # ------- END FILTERS
 
@@ -5176,7 +5357,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     list_display = [
         "name",
         "enrolled_dns_hosting_display",
-        "converted_generic_org_type",
+        "converted_organization_type",
         "converted_federal_type",
         "converted_federal_agency",
         "converted_organization_name",
@@ -5219,17 +5400,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # ------- Domain Information Fields
 
-    # --- Generic Org Type
+    # --- Organization Type
     # Use converted value in the table
     @admin.display(description=_("Org Type"))
-    def converted_generic_org_type(self, obj):
-        return obj.domain_info.converted_generic_org_type_display
+    def converted_organization_type(self, obj):
+        return obj.domain_info.converted_organization_type_display
 
-    converted_generic_org_type.admin_order_field = "converted_generic_org_type"  # type: ignore
+    converted_organization_type.admin_order_field = "converted_organization_type"  # type: ignore
 
     # Use native value for the change form
-    def generic_org_type(self, obj):
-        return obj.domain_info.get_generic_org_type_display()
+    def organization_type(self, obj):
+        return obj.domain_info.get_organization_type_display()
 
     # --- Federal Agency
     @admin.display(description=_("Federal Agency"))
@@ -5649,7 +5830,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         # Check if user is in OMB analysts group
         if request.user.groups.filter(name="omb_analysts_group").exists():
             return qs.filter(
-                converted_generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+                converted_organization_type=DomainRequest.OrganizationChoices.FEDERAL,
                 converted_federal_type=BranchChoices.EXECUTIVE,
             )
         return qs
@@ -5661,7 +5842,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if obj:
             if request.user.groups.filter(name="omb_analysts_group").exists():
                 return (
-                    obj.domain_info.converted_generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                    obj.domain_info.converted_organization_type == DomainRequest.OrganizationChoices.FEDERAL
                     and obj.domain_info.converted_federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_view_permission(request, obj)
@@ -5695,9 +5876,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
-        except EnrollmentNotAllowedError as e:
-            logger.warning("DNS enrollment blocked: %s", e)
-            self.message_user(request, str(e), messages.WARNING)
         except DnsHostingError as e:
             request_id = e.context.get("request_id")
             self.message_user(

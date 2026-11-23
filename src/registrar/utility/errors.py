@@ -509,11 +509,3 @@ class DnsUpstreamError(DnsHostingError):
             upstream_status=upstream_status,
             context=context,
         )
-
-
-class EnrollmentNotAllowedError(DnsHostingError):
-    """Raised when a domain isn't permitted to enroll in DNS hosting (e.g. production gating)."""
-
-    def __init__(self, message=None, **kwargs):
-        # Accept positional message for backward compatibility with existing callsites.
-        super().__init__(message=message, **kwargs)

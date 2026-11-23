@@ -17,7 +17,7 @@ on:
           - staging
           - development
           - backup
-          - cp
+          - tjh
           - amt
           - ab
           - cw

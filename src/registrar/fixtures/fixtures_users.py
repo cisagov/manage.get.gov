@@ -138,6 +138,13 @@ class UserFixture:
             "email": "corwayne.pyle@ecstech.com",
             "title": "Tech Lead",
         },
+        {
+            "username": "fea47f0a-3699-4e04-92c6-08f7ff1d95d6",
+            "first_name": "TJ",
+            "last_name": "Harris",
+            "email": "lafayette.harris@ecstech.com",
+            "title": "Software Development Test Engineer",
+        },
     ]
 
     STAFF = [

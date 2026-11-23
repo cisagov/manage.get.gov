@@ -38,7 +38,7 @@ def create_domain(**kwargs):
     test_user = get_user()
 
     try:
-        domain = Domain.objects.create(name=domain_name)
+        domain = Domain.objects.create(name=domain_name, state=Domain.State.DNS_NEEDED)
         default_portfolio, _ = Portfolio.objects.get_or_create(organization_name="Example Org", requester=test_user)
         portfolio = kwargs.get("portfolio", default_portfolio)
         DomainInformation.objects.get_or_create(requester=test_user, domain=domain, portfolio=portfolio)
