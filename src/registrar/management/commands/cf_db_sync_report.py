@@ -1,5 +1,5 @@
 """
-Cloudflare/DB reconciliation report.
+Cloudflare/DB sync report.
 
 Compares the CF tenant accounts against the DnsAccount rows in
 this environment's database and prints one row per mismatch.
@@ -46,7 +46,7 @@ class Command(BaseCommand):
         counts = Counter(row["mismatch_type"] for row in rows)
 
         logger.info(
-            "CF/DB reconciliation report for %s: %s mismatches (%s); %s synced accounts",
+            "CF/DB sync report for %s: %s mismatches (%s); %s synced accounts",
             settings.BASE_URL,
             len(rows),
             ", ".join(f"{t}={counts.get(t, 0)}" for t in MISMATCH_TYPES),
