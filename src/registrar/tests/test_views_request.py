@@ -2346,6 +2346,34 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     @override_flag("is_embd_tribal", active=True)
     @less_console_noise_decorator
+    def test_tribal_government_warning_always_hidden_unless_delta_portfolio(self):
+        """
+        A tribe that alr has a Portfolio (designated with a greek delta) triggers a warning
+        Test to make sure that warning does NOT display when there is a non delta tribe is selected
+        """
+        tribe = FederalTribe.objects.create(tribe_full_name="Mmmmm Nation")
+        Portfolio.objects.create(
+            requester=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+            federal_tribe=tribe,
+        )
+
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        # Even with a delta tribe in the list, the banner loads hidden
+        self.assertRegex(
+            page.text,
+            r'id="tribe-portfolio-warning"[^>]*class="[^"]*display-none',
+        )
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
     def test_tribal_government_page_display_dropdown(self):
         """
         FLAG ON: Making sure dropdown and all renders
