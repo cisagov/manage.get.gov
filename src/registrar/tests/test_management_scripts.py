@@ -2578,7 +2578,6 @@ class TestCfDbSyncReport(TestCase):
 
     COMPARE = "registrar.management.commands.cf_db_sync_report.DnsHostService.compare_vendor_and_db_accounts"
     CLIENT = "registrar.services.dns_host_service.build_dns_client"
-    LOGGER_NAME = "registrar.management.commands.cf_db_sync_report"
 
     def tearDown(self):
         super().tearDown()

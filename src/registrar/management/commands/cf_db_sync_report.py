@@ -7,7 +7,6 @@ this environment's database and prints one row per mismatch.
 
 import logging
 from collections import Counter
-from typing import Optional
 
 from django.conf import settings
 from django.core.management import BaseCommand
@@ -80,7 +79,11 @@ class Command(BaseCommand):
         return rows
 
     def _row(self, account_name: str, cf_id: str, db_id: str, mismatch: str, duplicate: bool) -> dict:
-        domain_name = self._domain_from_account_name(account_name)
+        try:
+            domain_name = get_dns_zone_name_from_account_name(account_name)
+        except ValueError:
+            domain_name = None
+
         return {
             "domain": domain_name or "",
             "object_type": ACCOUNT,
@@ -91,13 +94,6 @@ class Command(BaseCommand):
             "duplicate_name": "yes" if duplicate else "no",
             "domain_in_db": "yes" if domain_name and Domain.objects.filter(name=domain_name).exists() else "no",
         }
-
-    @staticmethod
-    def _domain_from_account_name(account_name: str) -> Optional[str]:
-        try:
-            return get_dns_zone_name_from_account_name(account_name)
-        except ValueError:
-            return None
 
     def print_report(self, rows: list[dict]) -> None:
         if not rows:
