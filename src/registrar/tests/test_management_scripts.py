@@ -11,7 +11,6 @@ from .common import (
     MockSESClient,
     MockDbForIndividualTests,
 )
-from epplibwrapper import commands, common
 from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -19,6 +18,7 @@ from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.test import TestCase, override_settings
+from epplibwrapper import commands, common
 from io import StringIO
 
 from registrar.management.commands.clean_tables import Command as CleanTablesCommand
