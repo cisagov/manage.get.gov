@@ -21,6 +21,7 @@ from registrar.models import (
     FederalAgency,
     Portfolio,
     UserPortfolioPermission,
+    FederalTribe,
 )
 from registrar.views.domain_request import DomainRequestWizard, Step
 
@@ -28,8 +29,12 @@ from .common import less_console_noise
 from .test_views import TestWithUser
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 import logging
+from waffle.testutils import override_flag
 
 logger = logging.getLogger(__name__)
+
+# Tribes that have an associated Portfolio are labelled with this prefix
+DELTA = "\u0394"
 
 
 class DomainRequestTests(TestWithUser, WebTest):
@@ -2278,6 +2283,131 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and the step is on the sidebar list.
         self.assertContains(tribal_government_page, self.TITLES[Step.TRIBAL_GOVERNMENT])
 
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_dr_tribal_government_page_screenreader_delta(self):
+        """
+        Verifies that screen reader reads out the delta
+        """
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        self.assertContains(page, "usa-sr-only")
+        self.assertContains(page, "greek letter delta")
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribal_government_accordion_display(self):
+        """
+        Tests that the accordion works and has the right text
+        """
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        self.assertContains(page, "Why can't I submit a request for some organizations?")
+        self.assertContains(
+            page, "Requests for some organizations are limited because they already have a .gov domain."
+        )
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribal_government_tribe_w_portfolio_delta_and_warning(self):
+        """
+        A tribe that alr has a Portfolio (designated with a greek delta) triggers a warning
+        Test to make sure that warning displays when there is a delta'd tribe selected
+        """
+        tribe = FederalTribe.objects.create(tribe_full_name="Mmmmm Nation")
+        Portfolio.objects.create(
+            requester=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+            federal_tribe=tribe,
+        )
+
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        self.assertContains(page, f"{DELTA} Mmmmm Nation")
+        self.assertContains(page, "Requests for this organization aren't accepted through this form.")
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribal_government_warning_always_hidden_unless_delta_portfolio(self):
+        """
+        A tribe that alr has a Portfolio (designated with a greek delta) triggers a warning
+        Test to make sure that warning does NOT display when there is a non delta tribe is selected
+        """
+        tribe = FederalTribe.objects.create(tribe_full_name="Mmmmm Nation")
+        Portfolio.objects.create(
+            requester=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+            federal_tribe=tribe,
+        )
+
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        # Even with a delta tribe in the list, the banner loads hidden
+        self.assertRegex(
+            page.text,
+            r'id="tribe-portfolio-warning"[^>]*class="[^"]*display-none',
+        )
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_tribal_government_page_display_dropdown(self):
+        """
+        FLAG ON: Making sure dropdown and all renders
+        """
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        self.assertContains(page, 'id="tribe-select-wrapper"')
+        self.assertContains(page, 'id="federal-tribe-field"')
+        self.assertContains(page, 'id="state-tribe-field"')
+
+    @override_flag("is_embd_tribal", active=False)
+    @less_console_noise_decorator
+    def test_tribal_government_page_flag_off_keeps_the_old_page(self):
+        """
+        FLAG OFF: Making sure legacy displays render
+        """
+        domain_request = completed_domain_request(
+            user=self.user,
+            organization_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        page = self.app.get(
+            reverse("domain-request:tribal_government", kwargs={"domain_request_pk": domain_request.pk})
+        )
+
+        self.assertContains(page, "What is the name of the tribe you represent?")
+        self.assertNotContains(page, 'id="tribe-select-wrapper"')
+        self.assertNotContains(page, 'id="tribe-portfolio-warning"')
+
     @less_console_noise_decorator
     def test_domain_request_so_dynamic_text(self):
         intro_page = self.app.get(reverse("domain-request:start"))
@@ -3439,6 +3569,8 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.assertIsNone(domain_request.tribe_name)
         self.assertIsNone(domain_request.federally_recognized_tribe)
         self.assertIsNone(domain_request.state_recognized_tribe)
+        self.assertIsNone(domain_request.state_tribe)
+        self.assertIsNone(domain_request.federal_tribe)
 
         # Clean up
         domain_request.delete()
