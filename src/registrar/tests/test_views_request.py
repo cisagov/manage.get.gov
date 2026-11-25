@@ -2332,7 +2332,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # ---- SO CONTACT PAGE  ----
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         so_page = about_your_org_result.follow()
-        self.assertContains(so_page, "Interstate organizations")
+        self.assertContains(so_page, "interstate organizations")
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2359,7 +2359,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # Navigate back to the so page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         so_page = org_contact_result.follow()
-        self.assertContains(so_page, "Domain requests from cities")
+        self.assertContains(so_page, 'For <span class="text-bold">cities</span>, this might include:')
 
     @less_console_noise_decorator
     def test_domain_request_dotgov_domain_dynamic_text(self):
