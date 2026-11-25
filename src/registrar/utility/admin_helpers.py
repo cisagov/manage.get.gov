@@ -1,4 +1,5 @@
 from registrar.models.domain_request import DomainRequest
+from registrar.models import FederalTribe, StateTribe
 from django.conf import settings
 from django.template.loader import get_template
 from django.utils.html import format_html
@@ -101,6 +102,53 @@ def get_field_links_as_list(
     else:
         links = "".join(links)
         return format_html(f'<ul class="add-list-reset">{links}</ul>') if links else msg_for_none
+
+
+def get_tribe_choices():
+    """Build the combined federal and state tribe choices used by admin, for is_embd_tribal waffle flag."""
+    choices = [("", "---------")]
+    tribe_groups = [
+        ("federal", "Federally recognized tribes", FederalTribe),
+        ("state", "State recognized tribes", StateTribe),
+    ]
+    for tribe_type, group_label, tribe_model in tribe_groups:
+        options = []
+        for tribe_record in tribe_model.get_dropdown_options():
+            submitted_value = f"{tribe_type}:{tribe_record['id']}"
+            visible_name = tribe_record["name"]
+            options.append((submitted_value, visible_name))
+        choices.append((group_label, options))
+    return choices
+
+
+def get_tribal_mailing_address(tribe):
+    """Return a tribe's mailing address."""
+    mailing_address = {
+        "address_line1": "",
+        "address_line2": "",
+        "city": "",
+        "state_territory": "",
+        "zipcode": "",
+        "urbanization": "",
+    }
+
+    if tribe is None:
+        return mailing_address
+
+    if tribe.address_line1:
+        mailing_address["address_line1"] = tribe.address_line1
+    if tribe.address_line2:
+        mailing_address["address_line2"] = tribe.address_line2
+    if tribe.city:
+        mailing_address["city"] = tribe.city
+    if tribe.state_territory:
+        mailing_address["state_territory"] = tribe.state_territory
+    if tribe.zipcode:
+        mailing_address["zipcode"] = tribe.zipcode
+    if tribe.urbanization:
+        mailing_address["urbanization"] = tribe.urbanization
+
+    return mailing_address
 
 
 class AutocompleteSelectWithPlaceholder(AutocompleteSelect):
