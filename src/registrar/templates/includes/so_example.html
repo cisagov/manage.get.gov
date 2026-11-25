@@ -1,11 +1,9 @@
 {% if is_federal %}
   {% if federal_type == 'executive' %}
-    <h3>Executive branch federal agencies</h3>
     <p>Domain requests from executive branch agencies must be authorized by the agency's CIO or the head of the agency.</p>
     <p>See <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.whitehouse.gov/wp-content/uploads/2023/02/M-23-10-DOTGOV-Act-Guidance.pdf">OMB Memorandum M-23-10</a> for more information.</p>
 
   {% elif federal_type == 'legislative' %}
-    <h3>Legislative branch federal agencies</h3>
 
     <h4>U.S. Senate</h4>
     <p>Domain requests from the U.S. Senate must be authorized by the Senate CIO.</p>
@@ -25,7 +23,6 @@
   {% endif %}
 
 {% elif organization_type == 'state_or_territory' %}
-  <h3>U.S. states and territories</h3>
   <p>For <span class="text-bold">states and territories (executive branch)</span>, this might include: </p>
 
   <ul>
@@ -45,12 +42,10 @@
   </ul>
 
 {% elif organization_type == 'tribal' %}
-  <h3>Tribal governments</h3>
   <p>For<span class="text-bold">federally-recognized tribes </span>, requests must be authorized by the tribal leader the <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.bia.gov/service/tribal-leaders-directory">Bureau of Indian Affairs</a> recognizes.</p>
   <p>For <span class="text-bold">state-recognized tribes </span> (that aren’t federally-recognized), requests must be authorized by the tribal leader the state recognizes.</p>
       
 {% elif organization_type == 'city' %}
-  <h3>Cities</h3>
   <p>For <span class="text-bold">cities</span>, this might include:</p>
   <ul>
     <li>Mayor</li>
@@ -63,7 +58,6 @@
   </ul>
 
 {% elif organization_type == 'county' %}
-  <h3>Counties</h3>
   <p>For <span class="text-bold">counties</span>, this might include:</p>
 
   <ul>
@@ -78,7 +72,6 @@
     Other county-level offices (county clerk, sheriff, county auditor, comptroller) may qualify in some instances. 
   </p>
 {% elif organization_type == 'school_district' %}
-  <h3>School districts</h3>
   <p>For <span class="text-bold">school districts</span>,</p>
   <ul>
     <li>Board chair</li>
@@ -86,7 +79,6 @@
     <li>Senior technology officer</li>
     </ul>
 {% elif organization_type == 'special_district' %}
-  <h3>Special districts</h3>
   <p>For <span class="text-bold">special districts</span>, this might include:</p>
   <ul>
     <li>CEO</li>
@@ -96,7 +88,6 @@
   </ul>
 
 {% elif organization_type == 'interstate' %}
-  <h3>Interstate organizations</h3>
   <p> For <span class="text-bold">interstate organizations</span>, this might include:</p>
   <ul>
     <li>President</li>
