@@ -387,6 +387,7 @@ WAFFLE_FLAG_MODEL = "registrar.WaffleFlag"
 # Content-Security-Policy configuration for django-csp 4.0+ New format required
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
+        "base-uri": (SELF,),
         "connect-src": [
             SELF,
             "https://www.google-analytics.com/",
