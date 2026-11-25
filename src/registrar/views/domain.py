@@ -1100,26 +1100,29 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         self.dns_host_service = DnsHostService()
         try:
-            x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
-            if x_zone_id is None:
-                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
-                return self._error_response(request, status=400)
-            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
-            response_form = DomainDNSRecordForm()
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
 
-            # DELETE
-            if delete_record:
-                self._handle_delete(request, x_zone_id, self.dns_record)
-            else:
-                form_record_data = self._build_dns_record_form_data(form)
-                # EDIT
-                if self.dns_record:
-                    edit_form_id = self.dns_record.id
-                    self._handle_edit(request, x_zone_id, form_record_data)
+                x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
+                if x_zone_id is None:
+                    messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                    return self._error_response(request, status=400)
+                headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+                response_form = DomainDNSRecordForm()
 
-                # CREATE
+                # DELETE
+                if delete_record:
+                    self._handle_delete(request, x_zone_id, self.dns_record)
                 else:
-                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
+                    form_record_data = self._build_dns_record_form_data(form)
+                    # EDIT
+                    if self.dns_record:
+                        edit_form_id = self.dns_record.id
+                        self._handle_edit(request, x_zone_id, form_record_data)
+
+                    # CREATE
+                    else:
+                        is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
             if delete_record:

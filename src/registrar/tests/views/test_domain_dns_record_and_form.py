@@ -346,6 +346,39 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
+    def test_repeated_create_calls_vendor_only_once(self):
+        for data in self.RECORD_TEST_CASES:
+            with self.subTest(record_type=data["type"]):
+                request_data = {
+                    "type": data["type"],
+                    "name": data["name"],
+                    "ttl": data["ttl"],
+                    "comment": data["comment"],
+                    "content": data["content"],
+                }
+                with patch("registrar.views.domain.DnsHostService") as MockSvc:
+                    svc = MockSvc.return_value
+                    svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
+
+                    def _create_and_return(*_args, _data=data, **_kwargs):
+                        return create_dns_record(
+                            self.dns_zone,
+                            record_name=_data["name"],
+                            record_type=_data["type"],
+                            record_content=_data["content"],
+                            ttl=_data["ttl"],
+                            x_record_id=f"x-create-{_data['type']}",
+                        )
+
+                    svc.create_dns_record.side_effect = _create_and_return
+                    response1 = self.client.post(self._url(), request_data)
+                    response2 = self.client.post(self._url(), request_data)
+
+                self.assertEqual(response1.status_code, 200)
+                self.assertEqual(response2.status_code, 200)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
     def test_post_valid_form_api_error_returns_200_with_error_message(self):
         """Regression test for when create_and_save_record raises APIError after a valid
         form submission, the view must return 200 with an error message rather than crashing
