@@ -12,6 +12,15 @@ def get_portfolio_from_session(session):
 
 
 @contextmanager
+def lock_domain_row_for_update(domain_id):
+    """Yield a fresh Domain instance while locking its row in database"""
+    from registrar.models import Domain
+
+    with transaction.atomic():
+        yield Domain.objects.select_for_update().get(pk=domain_id)
+
+
+@contextmanager
 def ignore_unique_violation():
     """
     Execute within an atomic transaction so that if a unique constraint violation occurs,

@@ -2,12 +2,14 @@ from unittest import skip
 from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
+from django.db import connection
 from django.http import Http404
 from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
+from registrar.utility.db_helpers import lock_domain_row_for_update
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -2040,7 +2042,11 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         nameservers_page.form["form-0-ip"] = valid_ip
         nameservers_page.form["form-1-server"] = nameserver2
         nameservers_page.form["form-1-ip"] = valid_ip_2
-        result = nameservers_page.form.submit()
+        with patch(
+            "registrar.views.domain.lock_domain_row_for_update", wraps=lock_domain_row_for_update
+        ) as lock_domain:
+            result = nameservers_page.form.submit()
+        lock_domain.assert_called_once_with(self.domain.pk)
         # form submission was a successful post, response should be a 302
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
@@ -2895,7 +2901,11 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        result = add_data_page.forms[0].submit()
+        with patch(
+            "registrar.views.domain.lock_domain_row_for_update", wraps=lock_domain_row_for_update
+        ) as lock_domain:
+            result = add_data_page.forms[0].submit()
+        lock_domain.assert_called_once_with(self.domain_dsdata.pk)
         # form submission was a post, response should be a redirect
         self.assertEqual(result.status_code, 302)
         self.assertEqual(
@@ -4194,3 +4204,22 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         )  # Bad Request due to missing required values
 
         mock_service_cls.assert_not_called()
+
+
+class TestLockDomainRowForUpdate(MockEppLib):
+    """Test locking Domain row in database and Yield a fresh Domain instance."""
+
+    @less_console_noise_decorator
+    def test_yields_fresh_domain_in_locked_atomic_transaction(self):
+        domain = Domain.objects.create(name="locked-atomic-test.gov")
+        original_domain = Domain.objects.get(pk=domain.pk)
+
+        # Count of TestCase default atomic blocks before the lock
+        atomic_block_count = len(connection.atomic_blocks)
+
+        with lock_domain_row_for_update(original_domain.pk) as locked_domain:
+            self.assertEqual(len(connection.atomic_blocks), atomic_block_count + 1)
+            self.assertIsNot(locked_domain, original_domain)
+            self.assertEqual(locked_domain.pk, original_domain.pk)
+
+        self.assertEqual(len(connection.atomic_blocks), atomic_block_count)

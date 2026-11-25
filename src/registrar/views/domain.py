@@ -50,7 +50,7 @@ from registrar.utility.errors import (
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.utility.db_helpers import get_portfolio_from_session
+from registrar.utility.db_helpers import get_portfolio_from_session, lock_domain_row_for_update
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     handle_invitation_exceptions,
@@ -1100,26 +1100,29 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         self.dns_host_service = DnsHostService()
         try:
-            x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
-            if x_zone_id is None:
-                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
-                return self._error_response(request, status=400)
-            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
-            response_form = DomainDNSRecordForm()
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
 
-            # DELETE
-            if delete_record:
-                self._handle_delete(request, x_zone_id, self.dns_record)
-            else:
-                form_record_data = self._build_dns_record_form_data(form)
-                # EDIT
-                if self.dns_record:
-                    edit_form_id = self.dns_record.id
-                    self._handle_edit(request, x_zone_id, form_record_data)
+                x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
+                if x_zone_id is None:
+                    messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                    return self._error_response(request, status=400)
+                headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+                response_form = DomainDNSRecordForm()
 
-                # CREATE
+                # DELETE
+                if delete_record:
+                    self._handle_delete(request, x_zone_id, self.dns_record)
                 else:
-                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
+                    form_record_data = self._build_dns_record_form_data(form)
+                    # EDIT
+                    if self.dns_record:
+                        edit_form_id = self.dns_record.id
+                        self._handle_edit(request, x_zone_id, form_record_data)
+
+                    # CREATE
+                    else:
+                        is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
             if delete_record:
@@ -1248,7 +1251,6 @@ class DomainNameserversView(DomainFormBaseView):
         # return self.form_invalid(formset)
 
         self.request.session["nameservers_form_domain"] = self.object.id
-        initial_state = self.object.state
 
         # Set the nameservers from the formset
         nameservers = []
@@ -1271,7 +1273,10 @@ class DomainNameserversView(DomainFormBaseView):
                 # no server information in this field, skip it
                 pass
         try:
-            self.object.nameservers = nameservers
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
+                initial_state = self.object.state
+                self.object.nameservers = nameservers
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
@@ -1463,7 +1468,9 @@ class DomainDsDataView(DomainFormBaseView):
                 # not been interacted with; in that case, want to ignore
                 pass
         try:
-            self.object.dnssecdata = dnssecdata
+            with lock_domain_row_for_update(self.object.pk) as domain:
+                self.object = domain
+                self.object.dnssecdata = dnssecdata
         except RegistryError as err:
             if err.is_connection_error():
                 messages.error(

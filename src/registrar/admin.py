@@ -20,7 +20,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.admin.views.main import ORDER_VAR
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import transaction
 from django.db.models import (
     Case,
     CharField,
@@ -84,6 +83,7 @@ from registrar.utility.admin_helpers import (
     get_field_links_as_list,
 )
 from registrar.utility.constants import BranchChoices
+from registrar.utility.db_helpers import lock_domain_row_for_update
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import (
     FSMDomainRequestError,
@@ -5658,7 +5658,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            with transaction.atomic():
+            with lock_domain_row_for_update(obj.pk) as domain:
+                obj = domain
                 obj.deleteInEpp()
                 obj.save(optimistic_lock=True)
         except RegistryError as err:

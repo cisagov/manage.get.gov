@@ -327,6 +327,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
+        domain.save()
         # Ensure everything is displaying correctly
         response = self.client.get(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
@@ -368,7 +369,9 @@ class TestDomainAdminAsStaff(MockEppLib):
         self.assertContains(response, "When a domain is removed from the registry:")
         self.assertContains(response, "Yes, remove from registry")
 
-        self.assertEqual(domain.state, Domain.State.DELETED)
+        # Collect the updated Domain state from database
+        domain_state = Domain.objects.values_list("state", flat=True).get(pk=domain.pk)
+        self.assertEqual(domain_state, Domain.State.DELETED)
 
     @less_console_noise_decorator
     def test_deletion_is_unsuccessful(self):
@@ -470,6 +473,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="my-nameserver.gov", state=Domain.State.READY)
         # Put in client hold
         domain.place_client_hold()
+        domain.save()
         # Ensure everything is displaying correctly
         response = self.client.get(
             "/admin/registrar/domain/{}/change/".format(domain.pk),
@@ -496,6 +500,9 @@ class TestDomainAdminAsStaff(MockEppLib):
                 extra_tags="",
                 fail_silently=False,
             )
+
+        # Collect the updated Domain instance from database
+        domain = Domain.objects.get(pk=domain.pk)
 
         self.assertEqual(domain.state, Domain.State.DELETED)
         # Try to delete it again
