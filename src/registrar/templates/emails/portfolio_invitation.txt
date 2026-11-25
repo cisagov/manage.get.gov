@@ -6,15 +6,15 @@ Hi,
 You can view this organization on the .gov registrar <{{ manage_url }}>.
 
 ----------------------------------------------------------------
+{% if not requested_user %}
+Log in to the .gov registrar <https://manage.get.gov> to accept the invite. If the 
+invitation is not accepted within 30 days, it will expire.
 
-YOU NEED A LOGIN.GOV ACCOUNT
-You’ll need a Login.gov account to access this .gov organization. That account
-needs to be associated with the following email address: {{ email }}
+This invitation will expire on {{ date_of_expiration }}
 
-Login.gov provides a simple and secure process for signing in to many government
-services with one account. If you don’t already have one, follow these steps to
-create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
-
+{% else %}
+You can view this organization on the .gov registrar <https://manage.get.gov>.
+{% endif %}
 
 NEED ASSISTANCE?
 If you’re not affiliated with {{ portfolio.organization_name }} or think you received this

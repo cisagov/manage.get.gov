@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, timedelta
+from django.utils import timezone
 from django.conf import settings
 from registrar.models import Domain, DomainInvitation, UserDomainRole, DomainInformation
 from registrar.models.portfolio import Portfolio
@@ -122,6 +123,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
                 "requestor_email": requestor_email,
                 "invitee_email_address": email,
                 "requested_user": requested_user,
+                "date_of_expiration": timezone.localdate() + timedelta(days=30)
             },
         )
     except EmailSendingError as err:
@@ -518,6 +520,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
                 "portfolio": portfolio,
                 "requestor_email": requestor_email,
                 "email": email,
+                "date_of_expiration": timezone.localdate() + timedelta(days=30)
             },
         )
     except EmailSendingError as err:

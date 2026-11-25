@@ -20,4 +20,24 @@ class Migration(migrations.Migration):
             name="expire_dt",
             field=models.DateTimeField(blank=True, null=True),
         ),
-    ]
+        migrations.AddField(
+            model_name="domaininvitation",
+            name="expire_dt",
+            field=models.DateTimeField(blank=True, default=datetime.date(2026, 12, 25), null=True),
+        ),
+        migrations.AddField(
+            model_name="portfolioinvitation",
+            name="expire_dt",
+            field=models.DateTimeField(blank=True, default=datetime.date(2026, 12, 25), null=True),
+        ),
+        migrations.AlterField(
+            model_name="userdomainrole",
+            name="expire_dt",
+            field=models.DateTimeField(blank=True, default=datetime.date(2026, 12, 25), null=True),
+        ),
+        migrations.AlterField(
+            model_name="userportfoliopermission",
+            name="expire_dt",
+            field=models.DateTimeField(blank=True, default=datetime.date(2026, 12, 25), null=True),
+        ),
+]

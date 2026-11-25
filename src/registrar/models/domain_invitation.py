@@ -10,6 +10,8 @@ from registrar.utility.errors import MultipleUsersWithEmailError
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,8 @@ class DomainInvitation(TimeStampedModel):
         default=DomainInvitationStatus.INVITED,
         protected=True,  # can't alter state except through transition methods!
     )
+
+    expire_dt = models.DateTimeField(null=False, blank=False, default=timezone.localdate() + timedelta(days=30))
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"

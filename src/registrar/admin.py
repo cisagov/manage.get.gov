@@ -2810,6 +2810,10 @@ class BaseInvitationAdmin(ListHeaderAdmin):
 
         return response
 
+class DomainInvitationForm(forms.ModelForm):
+    class Meta:
+        model = models.DomainInvitation
+        fields = ["email", "domain", "status"]  # only show these
 
 class DomainInvitationAdmin(BaseInvitationAdmin):
     """Custom domain invitation admin class."""
@@ -2819,6 +2823,8 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         fields = "__all__"
 
     _meta = Meta()
+
+    form = DomainInvitationForm
 
     # Columns
     list_display = [
@@ -2946,7 +2952,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         which will be successful if a single User exists for that email; otherwise, will
         just continue to create the invitation.
         """
-
+        logger.info("TESTING HERE")
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)

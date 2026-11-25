@@ -22,6 +22,8 @@ from .utility.portfolio_helper import (
 )  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,8 @@ class PortfolioInvitation(TimeStampedModel):
         default=PortfolioInvitationStatus.INVITED,
         protected=True,  # can't alter state except through transition methods!
     )
+
+    expire_dt = models.DateTimeField(null=True, blank=True, default=timezone.localdate() + timedelta(days=30))
 
     def __str__(self):
         return f"Invitation for {self.email} on {self.portfolio} is {self.status}"
