@@ -394,7 +394,7 @@ def _is_staff_managing_domain(request, **kwargs):
     can_do_action = (
         "analyst_action" in session
         and "analyst_action_location" in session
-        and session["analyst_action_location"] == domain_id
+        and str(session["analyst_action_location"]) == str(domain_id)
     )
 
     if not can_do_action:
