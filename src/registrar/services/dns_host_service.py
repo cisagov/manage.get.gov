@@ -1,7 +1,7 @@
 from collections import Counter
 import logging
 import random
-from typing import List, Optional
+from typing import List
 
 from django.conf import settings
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
@@ -207,6 +207,11 @@ class DnsHostService:
         """Calls the vendor service's list accounts method"""
         per_page_max = 50
         return self.dns_vendor_service.get_tenant_accounts(per_page_max)
+
+    def get_all_zones(self) -> List[dict]:
+        """Calls the vendor service's list zones method"""
+        per_page_max = 50
+        return self.dns_vendor_service.get_all_zones(per_page_max)
 
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
@@ -544,19 +549,9 @@ class DnsHostService:
         db_only = set(db_accounts_data) - set(vendor_accounts_data)
 
         synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
-        vendor_accounts_with_zone = set()
 
         # which vendor-only accounts have corresponding zone
-        for name, account_id in sorted(vendor_only):
-            # Check if a vendor zone exists for vendor_only accounts.
-            # Because the account and zone creation are inside of a transaction,
-            # failures would result in rolling back db account/zone, but not the cf account/zone
-            try:
-                vendor_zone_data = self._get_existing_zone_data(name, account_id)
-            except ValueError:
-                continue
-            if vendor_zone_data:
-                vendor_accounts_with_zone.add((name, account_id))
+        vendor_accounts_with_zone = self._get_vendor_accounts_with_zone(vendor_only)
 
         # Return each as a sorted list
         return {
@@ -574,13 +569,34 @@ class DnsHostService:
         duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
         return duplicate_account_names
 
-    def _get_existing_zone_data(self, name, account_id) -> Optional[tuple]:
-        # get vendor zone data (name, id)
-        try:
-            domain_name = get_dns_zone_name_from_account_name(name)
-        except ValueError:
-            logger.error(f"Cannot extract domain name from the account name {name}")
-        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
-        vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
+    def _get_vendor_accounts_with_zone(self, vendor_only) -> set[tuple[str, str]]:
+        """Returns the vendor-only accounts (name, x_account_id) that have a matching vendor zone.
 
-        return vendor_zone_data
+        Because the account and zone creation are inside of a transaction, failures would result
+        in rolling back db account/zone, but not the vendor account/zone.
+
+        Zones are fetched once for all accounts, and matched on both account id and zone name.
+        """
+        # Zone name each vendor-only account should own. Skip names that don't follow our naming convention.
+        expected_zone_names = {}
+        for name, x_account_id in vendor_only:
+            try:
+                expected_zone_names[(name, x_account_id)] = get_dns_zone_name_from_account_name(name)
+            except ValueError:
+                logger.error("Cannot extract domain name from the account name %s", name, extra={"account_name": name})
+
+        if not expected_zone_names:
+            return set()
+
+        vendor_zones = set()
+        for zone in self.get_all_zones():
+            account = zone.get("account")
+            # A zone without an account id can't be matched to an account, so it is left out
+            if isinstance(account, dict) and account.get("id") and zone.get("name"):
+                vendor_zones.add((account["id"], zone["name"]))
+
+        return {
+            (name, x_account_id)
+            for (name, x_account_id), zone_name in expected_zone_names.items()
+            if (x_account_id, zone_name) in vendor_zones
+        }
